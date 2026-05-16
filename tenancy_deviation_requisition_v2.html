@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Tenancy Deviation Requisition — Crestechnologies IS Ltd</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<style>
+:root{
+  --ink:#0f0e0c;--gold:#c9960c;--gl:#e8b422;--dim:#8a7a60;
+  --cream:#faf8f4;--bg:#f0ebe1;--wg:#e2ddd5;--rule:#d4ccbe;
+  --red:#8c1f1f;--green:#1a5c2e;--blue:#1e3a5f;
+  --card:#ffffff;--sh:0 2px 16px rgba(0,0,0,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--ink);min-height:100vh;padding:0 0 80px;font-size:14px}
+
+/* LOADER */
+#ls{position:fixed;inset:0;background:#0f0e0c;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .6s .2s}
+#ls.out{opacity:0;pointer-events:none}
+.ls-ring{width:68px;height:68px;border-radius:50%;border:2px solid #2a2620;border-top-color:var(--gold);animation:spin .9s linear infinite;margin-bottom:18px;position:relative;flex-shrink:0}
+.ls-logo-inner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;object-fit:cover}
+.ls-name{font-family:'Cormorant Garamond',serif;color:#fff;font-size:1.1rem;letter-spacing:.08em;margin-bottom:4px}
+.ls-sub{color:var(--gold);font-size:.65rem;letter-spacing:.2em;text-transform:uppercase}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* HOST BANNER */
+#hb{background:#1a1510;border-bottom:2px solid var(--gold);padding:10px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+#hb p{font-size:.75rem;color:#d4c4a0;line-height:1.6}
+#hb strong{color:var(--gl)}
+#hb code{background:#2a2218;padding:1px 5px;border-radius:2px;font-size:.7rem;color:var(--gl)}
+.hb-opts{display:flex;gap:8px;margin-top:5px;flex-wrap:wrap}
+.hb-opt{background:rgba(201,150,12,.1);border:1px solid rgba(201,150,12,.2);border-radius:3px;padding:3px 10px;font-size:.7rem;color:#d4c4a0}
+.hb-opt a{color:var(--gl);font-weight:600;text-decoration:none}
+#hb-x{background:none;border:1px solid rgba(201,150,12,.3);border-radius:3px;color:var(--gold);font-size:.7rem;cursor:pointer;padding:4px 9px;white-space:nowrap;font-family:inherit;flex-shrink:0}
+
+/* TOAST */
+.toast{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-70px);background:#0f0e0c;color:#fff;padding:10px 20px;border-radius:3px;font-size:.8rem;z-index:8000;transition:transform .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;border-bottom:3px solid var(--gold);max-width:88vw;text-align:center;letter-spacing:.03em}
+.toast.on{transform:translateX(-50%) translateY(0)}
+
+/* VIEWS */
+.view{display:none;max-width:900px;margin:0 auto;padding:20px 12px 40px}
+.view.on{display:block}
+
+/* LETTERHEAD */
+.lh{background:var(--ink);border-radius:6px 6px 0 0;overflow:hidden;box-shadow:var(--sh)}
+.lh-top{display:flex;align-items:center;justify-content:space-between;padding:16px 26px;gap:14px;flex-wrap:wrap}
+.lh-brand{display:flex;align-items:center;gap:13px}
+.lh-logo{width:56px;height:56px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;flex-shrink:0;background:#fff}
+.lh-co{line-height:1.2}
+.lh-name{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;color:#fff;letter-spacing:.04em}
+.lh-sub{font-size:.62rem;color:var(--gold);letter-spacing:.14em;text-transform:uppercase;margin-top:3px;opacity:.85}
+.lh-doc{text-align:right}
+.lh-doc-main{font-family:'Cormorant Garamond',serif;font-size:.93rem;font-weight:700;color:#fff;line-height:1.3;letter-spacing:.02em}
+.lh-doc-sub{font-size:.62rem;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-top:3px;opacity:.8}
+.lh-stripe{height:3px;background:linear-gradient(90deg,var(--gold),var(--gl),var(--gold))}
+.lh-info{background:#181613;padding:6px 26px;display:flex;justify-content:space-between;font-size:.68rem;color:#9a8a6a;flex-wrap:wrap;gap:4px;border-bottom:1px solid #2a2620}
+.sbar{display:flex;justify-content:space-between;align-items:center;padding:7px 26px;background:var(--cream);border-bottom:1px solid var(--rule);font-size:.68rem;flex-wrap:wrap;gap:5px}
+.sbar-ref{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:700;color:var(--ink);letter-spacing:.05em}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
+.b-draft{background:rgba(201,150,12,.1);color:#8a6a00;border:1px solid rgba(201,150,12,.25)}
+.b-sent{background:rgba(30,58,95,.1);color:var(--blue);border:1px solid rgba(30,58,95,.2)}
+.b-pend{background:rgba(201,150,12,.15);color:#7a5a00;border:1px solid rgba(201,150,12,.3)}
+.b-ok{background:rgba(26,92,46,.1);color:var(--green);border:1px solid rgba(26,92,46,.2)}
+.b-no{background:rgba(140,31,31,.1);color:var(--red);border:1px solid rgba(140,31,31,.2)}
+
+/* PAPER */
+.paper{background:var(--cream);border-radius:0 0 6px 6px;box-shadow:var(--sh)}
+.pi{padding:26px 30px 34px}
+
+/* PROGRESS */
+.prog{display:flex;align-items:center;margin-bottom:20px}
+.prog-step{flex:1;display:flex;flex-direction:column;align-items:center;position:relative}
+.prog-step:not(:last-child)::after{content:'';position:absolute;top:12px;left:55%;width:90%;height:1px;background:var(--rule)}
+.prog-step.done::after{background:var(--gold)}
+.prog-dot{width:24px;height:24px;border-radius:50%;border:2px solid var(--rule);background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:600;color:#bbb;z-index:1;position:relative;transition:all .3s;font-family:'Cormorant Garamond',serif}
+.prog-step.done .prog-dot{background:var(--gold);border-color:var(--gold);color:#fff}
+.prog-step.active .prog-dot{background:var(--cream);border-color:var(--gold);color:var(--gold);box-shadow:0 0 0 3px rgba(201,150,12,.15)}
+.prog-lbl{font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:#bbb;margin-top:5px;text-align:center}
+.prog-step.done .prog-lbl,.prog-step.active .prog-lbl{color:var(--gold)}
+
+/* SECTIONS */
+.sec{margin-bottom:22px}
+.sl{font-family:'Cormorant Garamond',serif;font-size:.76rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);border-bottom:1px solid var(--rule);padding-bottom:6px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sl-num{width:20px;height:20px;border-radius:50%;background:var(--gold);color:#fff;font-size:.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Sans',sans-serif}
+
+/* FIELDS */
+.fr{display:grid;gap:10px;margin-bottom:10px}
+.c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:1fr 1fr 1fr}
+.f{display:flex;flex-direction:column;gap:4px}
+.lbl{font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.req{color:var(--red)}
+input[type=text],input[type=date],input[type=number],input[type=email],input[type=tel],textarea,select{
+  font-family:'DM Sans',sans-serif;font-size:.87rem;background:var(--card);
+  border:1px solid var(--rule);border-bottom:2px solid var(--gold);
+  border-radius:4px 4px 0 0;padding:8px 11px;color:var(--ink);
+  transition:all .2s;width:100%;-webkit-appearance:none}
+input:focus,textarea:focus,select:focus{outline:none;border-bottom-color:var(--gl);box-shadow:0 3px 0 rgba(201,150,12,.15);background:#fffdf5}
+input[readonly],textarea[readonly]{background:#f4f1eb;color:#888;cursor:default;border-bottom-color:#ccc}
+textarea{resize:vertical;min-height:64px;line-height:1.6}
+
+/* SEND METHOD PANEL */
+.send-panel{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:18px;margin-top:16px}
+.send-panel h4{font-family:'Cormorant Garamond',serif;font-size:.9rem;font-weight:700;color:var(--gold);letter-spacing:.06em;margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.send-methods{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.sm-opt{position:relative}
+.sm-opt input[type=checkbox]{position:absolute;opacity:0;width:0;height:0}
+.sm-label{display:flex;align-items:center;gap:8px;padding:9px 16px;background:#f8f5ef;border:1.5px solid var(--rule);border-radius:4px;cursor:pointer;transition:all .2s;font-size:.84rem;font-weight:500;color:var(--dim);white-space:nowrap}
+.sm-label .sm-icon{font-size:1.2rem}
+.sm-opt input:checked+.sm-label{border-color:var(--gold);background:#fffdf0;color:var(--ink)}
+.sm-opt input:checked+.sm-label::after{content:'✓';position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:var(--gold);color:#fff;font-size:.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:16px;text-align:center}
+.sm-fields{display:grid;gap:10px}
+.sm-field{display:none;flex-direction:column;gap:4px}
+.sm-field.vis{display:flex}
+.send-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+.send-btn{font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;border:none;border-radius:4px;padding:10px 18px;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.send-btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.sb-wa{background:#25D366;color:#fff;box-shadow:0 3px 10px rgba(37,211,102,.25)}
+.sb-em{background:#1e3a5f;color:#fff;box-shadow:0 3px 10px rgba(30,58,95,.25)}
+.sb-sms{background:#5856d6;color:#fff;box-shadow:0 3px 10px rgba(88,86,214,.25)}
+.sb-cp{background:var(--gold);color:#fff;box-shadow:0 3px 10px rgba(201,150,12,.25)}
+
+/* DEVIATION TYPES */
+.dev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:10px;margin-bottom:12px}
+.dev-opt{position:relative}
+.dev-opt input[type=checkbox]{position:absolute;opacity:0;width:0;height:0}
+.dev-label{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;background:var(--card);border:1.5px solid var(--rule);border-radius:4px;cursor:pointer;transition:all .2s;font-size:.83rem;font-weight:500;color:var(--dim);min-height:60px}
+.dev-label .di{font-size:1.3rem;flex-shrink:0;margin-top:1px}
+.dev-label .dt{line-height:1.3}
+.dev-label .dt small{font-size:.7rem;opacity:.7;display:block;margin-top:1px}
+.dev-opt input:checked+.dev-label{border-color:var(--gold);background:#fffdf0;color:var(--ink)}
+.dev-opt input:checked+.dev-label::after{content:'✓';position:absolute;top:6px;right:8px;width:17px;height:17px;border-radius:50%;background:var(--gold);color:#fff;font-size:.62rem;display:flex;align-items:center;justify-content:center;line-height:17px;text-align:center;font-weight:700}
+.dev-label:hover{border-color:rgba(201,150,12,.4);background:#fffdf5}
+
+/* CLAUSES */
+.cb{background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--gold);border-radius:0 4px 4px 0;padding:10px 13px;margin-bottom:7px;font-size:.82rem;line-height:1.75;color:#2a2318}
+.cb strong{color:var(--gold)}
+.cb.w{border-left-color:var(--red);background:#fff9f9}.cb.w strong{color:var(--red)}
+.cn{font-family:'Cormorant Garamond',serif;font-size:.7rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.12em;display:block;margin-bottom:2px}
+.cn.r{color:var(--red)}
+
+/* CHECKLIST */
+.cklist{list-style:none;padding:0}
+.cklist li{display:flex;align-items:flex-start;gap:9px;padding:5px 0;border-bottom:1px dashed var(--wg);font-size:.83rem;line-height:1.5}
+.cklist li:last-child{border-bottom:none}
+.cklist li input[type=checkbox]{width:15px;height:15px;margin-top:2px;accent-color:var(--gold);flex-shrink:0;cursor:pointer;border:none;border-bottom:none;box-shadow:none;padding:0}
+.cl{font-size:.83rem!important;font-weight:400!important;color:var(--ink)!important;cursor:pointer;text-transform:none!important;letter-spacing:0!important}
+
+/* FEE */
+.fee-card{background:linear-gradient(135deg,#fdf9ee,#faf3e0);border:1px solid var(--gold);border-radius:6px;padding:13px 16px;margin-bottom:10px;display:flex;align-items:center;gap:16px}
+.fee-amt{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:var(--ink);white-space:nowrap}
+.fee-amt sup{font-size:.9rem;vertical-align:super}
+.fee-info p{font-size:.78rem;color:var(--dim);line-height:1.6}
+.fee-info strong{color:var(--gold)}
+
+/* SIGNATURE */
+.sig-wrap{border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--card)}
+.sig-tabs{display:flex;background:var(--wg)}
+.sig-tab{flex:1;padding:7px;font-size:.67rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border:none;cursor:pointer;background:none;color:var(--dim);transition:all .15s;font-family:'DM Sans',sans-serif}
+.sig-tab.active{background:var(--card);color:var(--gold);border-bottom:2px solid var(--gold)}
+.sig-panel{display:none}.sig-panel.on{display:block}
+canvas.sig-canvas{display:block;cursor:crosshair;touch-action:none;width:100%;height:108px;background:#fff}
+canvas.sig-canvas.ro{cursor:default}
+.up-area{padding:12px 16px;text-align:center;cursor:pointer;position:relative;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:2px dashed var(--rule);margin:8px;border-radius:3px;transition:border-color .2s}
+.up-area:hover{border-color:var(--gold);background:#fffdf5}
+.up-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border:none;border-bottom:none;background:transparent;box-shadow:none;padding:0}
+.up-area p{font-size:.76rem;color:var(--dim);line-height:1.5}
+.up-icon{font-size:1.5rem}
+.sig-preview{width:100%;height:90px;object-fit:contain;display:none;padding:4px}
+.sig-foot{padding:5px 12px;font-size:.67rem;color:#aaa;font-style:italic;border-top:1px dashed var(--wg);display:flex;justify-content:space-between;align-items:center}
+.sig-foot button{background:none;border:1px solid var(--rule);border-radius:2px;padding:2px 8px;font-size:.64rem;cursor:pointer;color:var(--red);font-family:inherit}
+
+/* ATTACHMENTS */
+.az{border:2px dashed var(--rule);border-radius:4px;padding:16px;text-align:center;cursor:pointer;background:var(--card);position:relative;transition:all .2s}
+.az:hover,.az.dv{border-color:var(--gold);background:#fffdf5}
+.az input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border:none;border-bottom:none;background:transparent;box-shadow:none;padding:0}
+.az-icon{font-size:1.7rem;display:block;margin-bottom:4px}
+.az p{font-size:.77rem;color:var(--dim);line-height:1.5}
+.flist{margin-top:8px}
+.fitem{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:5px 10px;margin-bottom:4px;font-size:.76rem}
+.fn{color:var(--green);font-weight:500}.fs{color:#bbb;margin-left:5px}
+.fitem button{background:none;border:none;color:var(--red);cursor:pointer;font-size:.9rem;padding:0 3px}
+
+/* INFO BOXES */
+.info{background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--blue);border-radius:0 4px 4px 0;padding:11px 14px;margin-bottom:12px;font-size:.82rem;line-height:1.7}
+.info strong{color:var(--blue)}
+.info.ok{border-left-color:var(--green)}.info.ok strong{color:var(--green)}
+.info.warn{border-left-color:var(--gold)}.info.warn strong{color:#7a5a00}
+
+/* BUTTONS */
+.btn-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+.btn{font-family:'Cormorant Garamond',serif;font-size:.92rem;font-weight:700;letter-spacing:.06em;border:none;border-radius:4px;padding:12px 22px;cursor:pointer;transition:all .2s;text-transform:uppercase;white-space:nowrap;display:inline-flex;align-items:center;gap:7px}
+.btn-gold{color:#fff;background:linear-gradient(135deg,#9a7010,var(--gold),#9a7010);background-size:200%;box-shadow:0 4px 14px rgba(201,150,12,.3)}
+.btn-gold:hover{background-position:100%;transform:translateY(-1px)}
+.btn-dk{color:var(--gl);background:#1a1814;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.btn-dk:hover{background:#2a2418;transform:translateY(-1px)}
+.btn-gr{color:#fff;background:var(--green);box-shadow:0 3px 10px rgba(26,92,46,.25)}
+.btn-gr:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn-rd{color:#fff;background:var(--red);box-shadow:0 3px 10px rgba(140,31,31,.25)}
+.btn-rd:hover{filter:brightness(1.1);transform:translateY(-1px)}
+
+/* LINK BOX */
+.lnk-wrap{display:flex;gap:8px;align-items:stretch;margin-top:7px}
+.lnk-txt{flex:1;font-family:'DM Sans',sans-serif;font-size:.72rem;background:#f4f1eb;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:4px 4px 0 0;padding:8px 10px;color:var(--ink);word-break:break-all;overflow-wrap:anywhere;user-select:all;cursor:text;line-height:1.5}
+.lnk-copy{font-family:'Cormorant Garamond',serif;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--gold);color:#fff;border:none;border-radius:4px;padding:0 12px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .2s}
+.lnk-copy:hover{background:var(--gl)}
+.lnk-meta{font-size:.67rem;color:var(--dim);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.lnk-size{background:rgba(26,92,46,.1);color:var(--green);border:1px solid rgba(26,92,46,.2);border-radius:10px;padding:1px 8px;font-size:.62rem;font-weight:600}
+
+/* RADIO */
+.dec-opts{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.dec-opt{display:flex;align-items:center;gap:9px;cursor:pointer;padding:9px 14px;border:1.5px solid var(--rule);border-radius:4px;font-size:.83rem;transition:all .15s;flex:1;min-width:140px}
+.dec-opt:has(input:checked){border-color:var(--gold);background:#fffdf0}
+.dec-opt input[type=radio]{accent-color:var(--gold);width:15px;height:15px;border:none;border-bottom:none;box-shadow:none;padding:0;flex-shrink:0}
+
+/* PRINT */
+@media print{
+  #hb,#ls,.btn-row,.az,.toast,.prog,.lnk-wrap,.lnk-copy,.info,.sig-tabs,.sig-foot,.send-panel{display:none!important}
+  body{background:#fff;padding:0}
+  .view{display:block!important;padding:0;max-width:100%}
+  .lh,.paper{box-shadow:none;border-radius:0}
+  .pi{padding:14px}
+  input,textarea{border:none!important;border-bottom:1px solid #bbb!important;background:transparent!important;box-shadow:none!important;padding:3px!important}
+  canvas.sig-canvas,.sig-preview{border-bottom:1px solid #bbb;height:70px!important;display:block!important}
+  .sig-panel{display:block!important}
+  .dev-label{border:1px solid #ccc!important}
+}
+@media(max-width:600px){
+  .pi{padding:16px 13px}
+  .fr.c2,.fr.c3{grid-template-columns:1fr}
+  .lh-top{flex-direction:column}.lh-doc{text-align:left}
+  .btn-row{flex-direction:column;align-items:stretch}
+  .btn{justify-content:center}
+  .fee-card{flex-direction:column;gap:8px}
+  .dev-grid{grid-template-columns:1fr 1fr}
+  .send-methods{flex-direction:column}
+  .send-actions{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="ls">
+  <div style="position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:18px">
+    <div class="ls-ring"></div>
+    <img class="ls-logo-inner" src="data:image/jpeg;base64,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" alt="">
+  </div>
+  <div class="ls-name">Crestechnologies IS Ltd</div>
+  <div class="ls-sub">Tenancy Deviation Requisition System</div>
+</div>
+
+<!-- HOST BANNER -->
+<div id="hb">
+  <div>
+    <p><strong>⚠ Host this file online so shared links work for recipients.</strong> A <code>file:///</code> path only opens on your own computer.</p>
+    <div class="hb-opts">
+      <div class="hb-opt"><strong>Easiest →</strong> <a href="https://tiiny.host" target="_blank">tiiny.host</a> — upload &amp; get HTTPS link in 30 sec</div>
+      <div class="hb-opt"><a href="https://app.netlify.com/drop" target="_blank">netlify.com/drop</a> — drag &amp; drop, free</div>
+      <div class="hb-opt"><a href="https://pages.github.com" target="_blank">GitHub Pages</a> — best for permanent use</div>
+    </div>
+  </div>
+  <button id="hb-x" onclick="document.getElementById('hb').style.display='none'">✕ Dismiss</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     VIEW A — LANDLORD SETUP
+═══════════════════════════════════════════════════ -->
+<div class="view" id="vA">
+<div class="lh">
+  <div class="lh-top">
+    <div class="lh-brand">
+      <img class="lh-logo" src="data:image/jpeg;base64,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" alt="Crestechnologies IS Ltd">
+      <div class="lh-co">
+        <div class="lh-name">Crestechnologies IS Ltd</div>
+        <div class="lh-sub">Property &amp; Facility Management Services</div>
+      </div>
+    </div>
+    <div class="lh-doc">
+      <div class="lh-doc-main">Tenancy Deviation<br>Requisition Form</div>
+      <div class="lh-doc-sub">Landlord Setup — Step 1 of 3</div>
+    </div>
+  </div>
+  <div class="lh-stripe"></div>
+  <div class="lh-info">
+    <span>🏢 Crestechnologies IS Ltd — Property &amp; Facility Services</span>
+    <span>📍 Ojodu, Ogun State, Nigeria</span>
+    <span>✉ crestechnologies@outlook.com</span>
+  </div>
+  <div class="sbar">
+    <span class="sbar-ref" id="A-ref">TDR–––</span>
+    <span style="font-size:.68rem;color:var(--dim)">Date: <strong id="A-date" style="color:var(--ink)"></strong></span>
+    <span class="badge b-draft">● Draft</span>
+  </div>
+</div>
+<div class="paper"><div class="pi">
+
+  <div class="prog">
+    <div class="prog-step active"><div class="prog-dot">1</div><div class="prog-lbl">Setup</div></div>
+    <div class="prog-step"><div class="prog-dot">2</div><div class="prog-lbl">Tenant</div></div>
+    <div class="prog-step"><div class="prog-dot">3</div><div class="prog-lbl">Approval</div></div>
+  </div>
+
+  <div class="info">
+    <strong>Landlord:</strong> Fill property and party details below. Choose how to send the link to your tenant, enter their contact, then click <em>"Generate &amp; Send Tenant Link"</em>.
+  </div>
+
+  <!-- §1 Parties -->
+  <div class="sec">
+    <div class="sl"><span class="sl-num">1</span> Property &amp; Parties</div>
+    <div class="fr">
+      <div class="f"><span class="lbl">Property Address <span class="req">*</span></span>
+        <input type="text" id="A-addr" placeholder="Full address including estate, city, state"></div>
+    </div>
+    <div class="fr c2">
+      <div class="f"><span class="lbl">Landlord Full Name <span class="req">*</span></span>
+        <input type="text" id="A-llName" placeholder="Your full legal name"></div>
+      <div class="f"><span class="lbl">Landlord Phone / Email</span>
+        <input type="text" id="A-llContact" placeholder="Your contact details"></div>
+    </div>
+    <div class="fr c2">
+      <div class="f"><span class="lbl">Tenant Full Name <span class="req">*</span></span>
+        <input type="text" id="A-teName" placeholder="Tenant full legal name"></div>
+      <div class="f"><span class="lbl">Tenant Phone / Email</span>
+        <input type="text" id="A-teContact" placeholder="Tenant contact"></div>
+    </div>
+    <div class="fr c3">
+      <div class="f"><span class="lbl">Tenancy Start Date</span>
+        <input type="date" id="A-tenDate"></div>
+      <div class="f"><span class="lbl">Approval Issue Date <span class="req">*</span></span>
+        <input type="date" id="A-appDate"></div>
+      <div class="f"><span class="lbl">Form Expiry Date</span>
+        <input type="date" id="A-expDate"></div>
+    </div>
+  </div>
+
+  <!-- §2 Notes -->
+  <div class="sec">
+    <div class="sl"><span class="sl-num">2</span> Landlord Instructions for Tenant</div>
+    <div class="fr">
+      <div class="f"><span class="lbl">Special Conditions / Restrictions / Notes</span>
+        <textarea id="A-note" placeholder="Any specific instructions, restricted zones, or conditions the tenant must be aware of…"></textarea></div>
+    </div>
+  </div>
+
+  <!-- §3 GENERATE & SEND PANEL -->
+  <div class="sec">
+    <div class="sl"><span class="sl-num">3</span> Generate &amp; Send Tenant Link</div>
+
+    <button class="btn btn-gold" style="margin-bottom:14px" onclick="generateLink()">⚙ Generate Tenant Link</button>
+
+    <div id="A-gen-result" style="display:none">
+      <div class="info ok" style="margin-bottom:14px">
+        <strong>✓ Link ready!</strong> Choose how to send it to <strong id="A-teOut"></strong> below.
+      </div>
+
+      <!-- COPY LINK BOX always shown -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:5px">Generated Tenant Link:</div>
+        <div class="lnk-wrap">
+          <div class="lnk-txt" id="A-lnk">—</div>
+          <button class="lnk-copy" onclick="copyL('A-lnk')">Copy</button>
+        </div>
+        <div class="lnk-meta">
+          <span>Link size:</span><span class="lnk-size" id="A-lnk-size">—</span>
+          <span style="color:#bbb">· DEFLATE compressed · Safe for WhatsApp &amp; SMS</span>
+        </div>
+      </div>
+
+      <!-- SEND METHOD PANEL -->
+      <div class="send-panel">
+        <h4>📤 Send via…</h4>
+
+        <!-- Method checkboxes -->
+        <div class="send-methods">
+          <div class="sm-opt">
+            <input type="checkbox" id="sm-wa" onchange="toggleSendField()">
+            <label class="sm-label" for="sm-wa"><span class="sm-icon">💬</span> WhatsApp</label>
+          </div>
+          <div class="sm-opt">
+            <input type="checkbox" id="sm-em" onchange="toggleSendField()">
+            <label class="sm-label" for="sm-em"><span class="sm-icon">✉️</span> Email</label>
+          </div>
+          <div class="sm-opt">
+            <input type="checkbox" id="sm-sms" onchange="toggleSendField()">
+            <label class="sm-label" for="sm-sms"><span class="sm-icon">📱</span> SMS</label>
+          </div>
+          <div class="sm-opt">
+            <input type="checkbox" id="sm-all" onchange="toggleAll()">
+            <label class="sm-label" for="sm-all"><span class="sm-icon">🔀</span> All Methods</label>
+          </div>
+        </div>
+
+        <!-- Contact fields (show/hide based on selection) -->
+        <div class="sm-fields">
+          <div class="sm-field" id="sf-wa">
+            <span class="lbl">Tenant WhatsApp Number <span class="req">*</span></span>
+            <input type="tel" id="in-wa" placeholder="e.g. +2348012345678 (include country code)">
+          </div>
+          <div class="sm-field" id="sf-em">
+            <span class="lbl">Tenant Email Address <span class="req">*</span></span>
+            <input type="email" id="in-em" placeholder="e.g. tenant@email.com">
+          </div>
+          <div class="sm-field" id="sf-sms">
+            <span class="lbl">Tenant Phone Number for SMS <span class="req">*</span></span>
+            <input type="tel" id="in-sms" placeholder="e.g. +2348012345678">
+          </div>
+          <div class="sm-field" id="sf-msg">
+            <span class="lbl">Custom Message (Optional)</span>
+            <textarea id="in-msg" placeholder="Add a personal message to accompany the link…" style="min-height:52px"></textarea>
+          </div>
+        </div>
+
+        <div class="send-actions" id="send-actions" style="display:none">
+          <button class="send-btn sb-wa" id="btn-wa" style="display:none" onclick="sendWA()">💬 Send via WhatsApp</button>
+          <button class="send-btn sb-em" id="btn-em" style="display:none" onclick="sendEmail()">✉️ Open Email</button>
+          <button class="send-btn sb-sms" id="btn-sms" style="display:none" onclick="sendSMS()">📱 Send SMS</button>
+          <button class="send-btn sb-cp" onclick="copyL('A-lnk')">📋 Copy Link</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-dk" onclick="window.print()">🖨 Print</button>
+  </div>
+
+</div></div>
+</div><!-- /vA -->
+
+
+<!-- ═══════════════════════════════════════════════════
+     VIEW B — TENANT FILLS
+═══════════════════════════════════════════════════ -->
+<div class="view" id="vB">
+<div class="lh">
+  <div class="lh-top">
+    <div class="lh-brand">
+      <img class="lh-logo" src="data:image/jpeg;base64,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" alt="Crestechnologies IS Ltd">
+      <div class="lh-co">
+        <div class="lh-name">Crestechnologies IS Ltd</div>
+        <div class="lh-sub">Tenancy Deviation Requisition — Tenant Completion</div>
+      </div>
+    </div>
+    <div class="lh-doc">
+      <div class="lh-doc-main">Tenancy Deviation<br>Requisition Form</div>
+      <div class="lh-doc-sub">Tenant Section — Step 2 of 3</div>
+    </div>
+  </div>
+  <div class="lh-stripe"></div>
+  <div class="lh-info">
+    <span>🏢 Crestechnologies IS Ltd — Property &amp; Facility Services</span>
+    <span>📍 Ojodu, Ogun State, Nigeria</span>
+    <span>✉ crestechnologies@outlook.com</span>
+  </div>
+  <div class="sbar">
+    <span class="sbar-ref" id="B-ref">TDR–––</span>
+    <span style="font-size:.68rem;color:var(--dim)">Issued: <strong id="B-issued" style="color:var(--ink)">—</strong></span>
+    <span class="badge b-sent">● Awaiting Tenant</span>
+  </div>
+</div>
+<div class="paper"><div class="pi">
+
+  <div class="prog">
+    <div class="prog-step done"><div class="prog-dot">✓</div><div class="prog-lbl">Setup</div></div>
+    <div class="prog-step active"><div class="prog-dot">2</div><div class="prog-lbl">Tenant</div></div>
+    <div class="prog-step"><div class="prog-dot">3</div><div class="prog-lbl">Approval</div></div>
+  </div>
+
+  <div class="info">
+    <strong>Tenant:</strong> Review all terms. Grey fields are locked (pre-filled by landlord). Complete all white fields, select your deviation type(s), sign, then click <em>"Submit to Landlord"</em>.
+  </div>
+
+  <!-- READ-ONLY parties -->
+  <div class="sec">
+    <div class="sl"><span class="sl-num">1</span> Agreement Parties <span style="font-style:italic;font-weight:400;text-transform:none;letter-spacing:0;font-size:.68rem;color:#bbb;">(pre-filled by landlord)</span></div>
+    <div class="fr"><div class="f"><span class="lbl">Property Address</span><input type="text" id="B-addr" readonly></div></div>
+    <div class="fr c2">
+      <div class="f"><span class="lbl">Landlord Name</span><input type="text" id="B-llName" readonly></div>
+      <div class="f"><span class="lbl">Landlord Contact</span><input type="text" id="B-llContact" readonly></div>
+    </div>
+    <div class="fr c2">
+      <div class="f"><span class="lbl">Your Name (Tenant)</span><input type="text" id="B-teName" readonly></div>
+      <div class="f"><span class="lbl">Your Contact</span><input type="text" id="B-teContact" readonly></div>
+    </div>
+    <div class="fr c3">
+      <div class="f"><span class="lbl">Tenancy Date</span><input type="date" id="B-tenDate" readonly></div>
+      <div class="f"><span class="lbl">Approval Date</span><input type="date" id="B-appDate" readonly></div>
+      <div class="f"><span class="lbl">Expiry Date</span><input type="date" id="B-expDate" readonly></div>
+    </div>
+    <div id="B-noteBox" style="display:none" class="cb" style="border-left-color:var(--gold)">
+      <span class="cn">Special Conditions from Landlord</span>
+      <span id="B-noteTxt"></span>
+    </div>
+  </div>
+
+  <!-- DEVIATION TYPE -->
+  <div class="sec">
+    <div class="sl"><span class="sl-num">2</span> Deviation Request Type <span class="req">*</span></div>
+    <p style="font-size:.77rem;color:var(--dim);margin-bottom:11px">Select all categories that apply to your deviation request:</p>
+    <div class="dev-grid">
+      <div class="dev-opt">
+        <input type="checkbox" id="dev-elec" value="electrical">
+        <label class="dev-label" for="dev-elec">
+          <span class="di">⚡</span>
+          <span class="dt">Electrical<small>Wiring, sockets, solar, lighting, panels</small></span>
+        </label>
+      </div>
+      <div class="dev-opt">
+        <input type="checkbox" id="dev-mas" value="masonry">
+        <label class="dev-label" for="dev-mas">
+          <span class="di">🧱</span>
+          <span class="dt">Masonry<small>Walls, concrete, tiling, screed works</small></span>
+        </label>
+      </div>
+      <div class="dev-opt">
+        <input type="checkbox" id="dev-struct" value="structural">
+        <label class="dev-label" for="dev-struct">
+          <span class="di">🏗</span>
+          <span class="dt">Building Structure<small>Windows, doors, toilets, partitions, others</small></span>
+        </label>
+      </div>
+      <div class="dev-opt">
+        <input type="checkbox" id="dev-occ" value="occupancy">
+        <label class="dev-label" for="dev-occ">
+          <span class="di">👨‍👩‍👧‍👦</span>
+          <span class="dt">Occupancy Change<small>Addition or reduction of family / occupants</small></span>
+        </label>
+      </div>
+      <div class="dev-opt">
+        <input type="checkbox" id="dev-other" value="other">
+        <label class="dev-label" for="dev-other">
+          <span class="di">📋</span>
+          <span class="dt">Other Deviation<small>Any deviation not listed above</small></span>
+        </label>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="f"><span class="lbl">Detailed Description of Deviation <span class="req">*</span></span>
+        <textarea id="B-devNote" placeholder="Describe exactly what you intend to do, where in the property, materials to be used, contractor details, and expected duration…" style="min-height:86px"></textarea></div>
+    </div>
+    <div class="fr">
+      <div class="f"><span class="lbl">Additional Information / Supporting Details</span>
+        <textarea id="B-addInfo" placeholder="Any further context, special circumstances, or supporting information for this request…"></textarea></div>
+    </div>
+  </div>
+
+  <!-- CONDITIONS -->
+  <div class="sec">
+    <div class="sl"><span class="sl-num">3</span> Conditions &amp; Compliance</div>
+    <div class="cb w"><span class="cn r">Clause 3.1 — No Unauthorised Alterations</span>No permanent alterations, penetrations, drilling, or modifications to the building shall be made without the written approval granted by this form. Any deviation from the described scope requires a fresh requisition.</div>
+    <div class="cb w"><span class="cn r">Clause 3.2 — Regulatory Compliance</span>All works must comply with <strong>applicable Nigerian Building Codes, NERC standards (electrical), and all relevant local authority regulations</strong>. Specialist works must be carried out by licensed certified tradespeople.</div>
+    <div class="cb"><span class="cn">Clause 3.3 — Reinstatement Obligation</span>Unless otherwise agreed in writing, the Tenant shall <strong>restore all affected areas to original condition</strong> at end of tenancy at the Tenant's cost.</div>
+    <div class="cb w"><span class="cn r">Clause 3.4 — Full Tenant Liability</span>The Tenant accepts <strong>full and sole liability</strong> for all damage to the building, fixtures, common areas, persons, or animals arising from the approved deviation works, during and after tenancy.</div>
+    <div style="background:var(--card);border:1px solid var(--rule);border-radius:4px;padding:12px 14px;margin-top:8px">
+      <div style="font-size:.62rem;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--gold);margin-bottom:8px">Confirm All Five Points Before Submitting:</div>
+      <ul class="cklist">
+        <li><input type="checkbox" id="c1"><label for="c1" class="cl">I will not exceed the scope of works described without fresh written approval</label></li>
+        <li><input type="checkbox" id="c2"><label for="c2" class="cl">All works will comply with applicable building codes, safety standards, and regulations</label></li>
+        <li><input type="checkbox" id="c3"><label for="c3" class="cl">I will use licensed and qualified tradespeople for all specialist works</label></li>
+        <li><input type="checkbox" id="c4"><label for="c4" class="cl">I accept full liability for all damage, injury, or loss arising from these deviation works</label></li>
+        <li><input type="checkbox" id="c5"><label for="c5" class="cl">I will reinstate affected areas to original condition at end of tenancy unless agreed otherwise in writing</label></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- CAUTION -->
+  <div class="sec">
+    <div class="sl"><span class="sl-num">4</span> Additional Caution Deposit</div>
+    <div class="fee-card">
+      <div class="fee-amt"><sup>₦</sup>100,000</div>
+      <div class="fee-info">
+        <p><strong>Refundable caution deposit</strong> payable within 7 days of approval, in addition to existing tenancy deposit. Fully refunded on reinstatement of property at end of tenancy with no damage attributable to the approved deviation.</p>
+      </div>
+    </div>
+    <div class="fr c2">
+      <div class="f"><span class="lbl">Payment Date (if already paid)</span><input type="date" id="B-feeDate"></div>
+      <div class="f"><span class="lbl">Payment Reference / Receipt No.</span><input type="text" id="B-feeRef" placeholder="Bank teller or transfer reference"></div>
+    </div>
+  </div>
+
+  <!-- ATTACHMENTS -->
+  <div class="sec">
+    <div class="sl"><span class="sl-num">5</span> Supporting Documents</div>
+    <p style="font-size:.76rem;color:var(--dim);margin-bottom:8px;font-style:italic">Attach drawings, quotes, photos, contractor certs. File names are recorded; share actual files with landlord separately.</p>
+    <div class="az" id="B-az">
+      <input type="file" id="B-fi" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+      <span class="az-icon">📎</span>
+      <p><strong>Drag &amp; drop or click to browse</strong><br><small>PDF, JPG, PNG, DOC/DOCX · Max 10 MB each</small></p>
+    </div>
+    <div class="flist" id="B-fl"></div>
+  </div>
+
+  <!-- SIGNATURE -->
+  <div class="sec">
+    <div class="sl"><span class="sl-num">6</span> Tenant Signature</div>
+    <p style="font-size:.76rem;color:var(--dim);margin-bottom:12px">By signing you confirm you have read and agree to all terms. Draw or upload your signature below.</p>
+    <div class="fr c2">
+      <div>
+        <div class="sig-wrap">
+          <div class="sig-tabs">
+            <button class="sig-tab active" onclick="sigTab('B','draw',this)">✏ Draw Signature</button>
+            <button class="sig-tab" onclick="sigTab('B','upload',this)">⬆ Upload Image</button>
+          </div>
+          <div class="sig-panel on" id="B-draw-panel">
+            <canvas class="sig-canvas" id="B-canvas"></canvas>
+          </div>
+          <div class="sig-panel" id="B-upload-panel">
+            <div class="up-area" id="B-up-area">
+              <input type="file" accept="image/*" onchange="handleUpload('B',this)">
+              <span class="up-icon">🖊</span>
+              <p><strong>Click to upload</strong> signature image<br><small>JPG, PNG — transparent background preferred</small></p>
+              <img id="B-sig-prev" class="sig-preview">
+            </div>
+          </div>
+          <div class="sig-foot">
+            <span id="B-sig-status">Sign or upload above</span>
+            <button onclick="clearSig('B')">Clear</button>
+          </div>
+        </div>
+        <div class="fr c2" style="margin-top:9px">
+          <div class="f"><span class="lbl">Your Name (Print) <span class="req">*</span></span><input type="text" id="B-print" placeholder="Full printed name"></div>
+          <div class="f"><span class="lbl">Date Signed</span><input type="date" id="B-sigDate"></div>
+        </div>
+      </div>
+      <div>
+        <div class="cb" style="height:auto">
+          <span class="cn">After You Submit</span>
+          1. A <strong>Landlord Review Link</strong> appears below.<br>
+          2. Copy &amp; send to <strong id="B-llHint">your landlord</strong> via WhatsApp or email.<br>
+          3. Landlord reviews, countersigns &amp; returns the final approved copy.<br>
+          4. Pay <strong>₦100,000 caution deposit</strong> within 7 days of approval.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-gold" onclick="tenantSubmit()">📨 Submit to Landlord</button>
+    <button class="btn btn-dk" onclick="window.print()">🖨 Print</button>
+  </div>
+
+  <div id="B-result" style="display:none;margin-top:22px">
+    <div class="info ok">
+      <strong>✓ Submitted!</strong> Copy the Landlord Review link and send to <strong id="B-llOut"></strong>.
+    </div>
+    <div style="font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:5px">Landlord Review Link:</div>
+    <div class="lnk-wrap">
+      <div class="lnk-txt" id="B-rlnk">—</div>
+      <button class="lnk-copy" onclick="copyL('B-rlnk')">Copy</button>
+    </div>
+    <div class="lnk-meta"><span>Link size:</span><span class="lnk-size" id="B-sz">—</span><span style="color:#bbb">· DEFLATE compressed</span></div>
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn btn-gold" style="background:#25D366;background-image:none" onclick="waShareB()">💬 Send via WhatsApp</button>
+    </div>
+  </div>
+
+</div></div>
+</div><!-- /vB -->
+
+
+<!-- ═══════════════════════════════════════════════════
+     VIEW C — LANDLORD REVIEW & APPROVAL
+═══════════════════════════════════════════════════ -->
+<div class="view" id="vC">
+<div class="lh">
+  <div class="lh-top">
+    <div class="lh-brand">
+      <img class="lh-logo" src="data:image/jpeg;base64,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" alt="Crestechnologies IS Ltd">
+      <div class="lh-co">
+        <div class="lh-name">Crestechnologies IS Ltd</div>
+        <div class="lh-sub">Landlord Approval Portal — Tenancy Deviation</div>
+      </div>
+    </div>
+    <div class="lh-doc">
+      <div class="lh-doc-main">Landlord Review<br>&amp; Decision</div>
+      <div class="lh-doc-sub">Step 3 of 3 — Final Approval</div>
+    </div>
+  </div>
+  <div class="lh-stripe"></div>
+  <div class="lh-info">
+    <span>🏢 Crestechnologies IS Ltd — Property &amp; Facility Services</span>
+    <span>📍 Ojodu, Ogun State, Nigeria</span>
+    <span>✉ crestechnologies@outlook.com</span>
+  </div>
+  <div class="sbar">
+    <span class="sbar-ref" id="C-ref">TDR–––</span>
+    <span style="font-size:.68rem;color:var(--dim)">Submitted: <strong id="C-sub" style="color:var(--ink)">—</strong></span>
+    <span id="C-badge" class="badge b-pend">● Awaiting Decision</span>
+  </div>
+</div>
+<div class="paper"><div class="pi">
+
+  <div class="prog">
+    <div class="prog-step done"><div class="prog-dot">✓</div><div class="prog-lbl">Setup</div></div>
+    <div class="prog-step done"><div class="prog-dot">✓</div><div class="prog-lbl">Tenant</div></div>
+    <div class="prog-step active"><div class="prog-dot">3</div><div class="prog-lbl">Decision</div></div>
+  </div>
+
+  <div class="info"><strong>Landlord:</strong> Review the completed tenant submission below (all read-only). Scroll down to record your decision and countersign.</div>
+
+  <div class="sec">
+    <div class="sl"><span class="sl-num">1</span> Parties</div>
+    <div class="fr"><div class="f"><span class="lbl">Property</span><input type="text" id="C-addr" readonly></div></div>
+    <div class="fr c2">
+      <div class="f"><span class="lbl">Landlord</span><input type="text" id="C-llName" readonly></div>
+      <div class="f"><span class="lbl">Contact</span><input type="text" id="C-llContact" readonly></div>
+    </div>
+    <div class="fr c2">
+      <div class="f"><span class="lbl">Tenant</span><input type="text" id="C-teName" readonly></div>
+      <div class="f"><span class="lbl">Contact</span><input type="text" id="C-teContact" readonly></div>
+    </div>
+    <div class="fr c3">
+      <div class="f"><span class="lbl">Tenancy Date</span><input type="date" id="C-tenDate" readonly></div>
+      <div class="f"><span class="lbl">Approval Date</span><input type="date" id="C-appDate" readonly></div>
+      <div class="f"><span class="lbl">Expiry</span><input type="date" id="C-expDate" readonly></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sl"><span class="sl-num">2</span> Deviation Types Requested</div>
+    <div id="C-devChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px"></div>
+    <div class="f"><span class="lbl">Description</span><textarea id="C-devNote" readonly style="min-height:70px"></textarea></div>
+    <div class="f" style="margin-top:8px"><span class="lbl">Additional Information</span><textarea id="C-addInfo" readonly style="min-height:46px"></textarea></div>
+  </div>
+
+  <div class="sec">
+    <div class="sl"><span class="sl-num">4</span> Caution Deposit</div>
+    <div class="fr c2">
+      <div class="f"><span class="lbl">Payment Date</span><input type="date" id="C-feeDate" readonly></div>
+      <div class="f"><span class="lbl">Payment Ref</span><input type="text" id="C-feeRef" readonly></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sl">Tenant Acknowledgements</div>
+    <div style="background:var(--card);border:1px solid var(--rule);border-radius:4px;padding:11px 13px">
+      <ul class="cklist">
+        <li><input type="checkbox" id="C-c1" disabled><label for="C-c1" class="cl">Will not exceed scope without fresh approval</label></li>
+        <li><input type="checkbox" id="C-c2" disabled><label for="C-c2" class="cl">Works comply with applicable codes and regulations</label></li>
+        <li><input type="checkbox" id="C-c3" disabled><label for="C-c3" class="cl">Licensed tradespeople for all specialist works</label></li>
+        <li><input type="checkbox" id="C-c4" disabled><label for="C-c4" class="cl">Full liability accepted for all damage and injury</label></li>
+        <li><input type="checkbox" id="C-c5" disabled><label for="C-c5" class="cl">Will reinstate to original condition at end of tenancy</label></li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="C-noteBox" style="display:none" class="sec">
+    <div class="sl">Landlord Original Notes</div>
+    <div class="f"><textarea id="C-note" readonly style="min-height:46px"></textarea></div>
+  </div>
+
+  <div id="C-attBox" style="display:none" class="sec">
+    <div class="sl"><span class="sl-num">5</span> Tenant Attachments Listed</div>
+    <div id="C-attList" style="font-size:.82rem;color:var(--dim);line-height:2"></div>
+    <p style="font-size:.74rem;color:#bbb;font-style:italic;margin-top:4px">Request actual files from tenant separately if not yet received.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sl">Tenant Signature on Record</div>
+    <div class="fr c2">
+      <div>
+        <div class="sig-wrap">
+          <div class="sig-tabs" style="pointer-events:none;opacity:.6"><button class="sig-tab active">Submitted Signature</button></div>
+          <canvas class="sig-canvas ro" id="C-teSig" style="height:88px"></canvas>
+          <div class="sig-foot"><span>Captured on submission</span></div>
+        </div>
+      </div>
+      <div class="fr">
+        <div class="f"><span class="lbl">Tenant Printed Name</span><input type="text" id="C-tePrint" readonly></div>
+        <div class="f"><span class="lbl">Tenant Sign Date</span><input type="date" id="C-teDate" readonly></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ★ LANDLORD DECISION ONLY EDITABLE SECTION ★ -->
+  <div class="sec">
+    <div class="sl" style="color:var(--green);border-bottom-color:rgba(26,92,46,.25)">★ Your Decision &amp; Countersignature</div>
+    <div style="background:var(--card);border:1px solid var(--rule);border-radius:4px;padding:18px">
+      <div style="font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">Select Decision:</div>
+      <div class="dec-opts">
+        <label class="dec-opt"><input type="radio" name="dec" value="approved">✅ Approve Deviation</label>
+        <label class="dec-opt"><input type="radio" name="dec" value="conditional">⚠️ Approve with Conditions</label>
+        <label class="dec-opt"><input type="radio" name="dec" value="rejected">❌ Reject / Return</label>
+      </div>
+      <div class="f" style="margin-bottom:13px">
+        <span class="lbl">Comments / Conditions / Rejection Reason</span>
+        <textarea id="C-comments" placeholder="Enter approval conditions, required amendments, or rejection reasons…" style="min-height:66px"></textarea>
+      </div>
+      <!-- Landlord signature with draw/upload tabs -->
+      <div class="sig-wrap" style="margin-bottom:13px">
+        <div class="sig-tabs">
+          <button class="sig-tab active" onclick="sigTab('C','draw',this)">✏ Draw Signature</button>
+          <button class="sig-tab" onclick="sigTab('C','upload',this)">⬆ Upload Image</button>
+        </div>
+        <div class="sig-panel on" id="C-draw-panel">
+          <canvas class="sig-canvas" id="C-canvas"></canvas>
+        </div>
+        <div class="sig-panel" id="C-upload-panel">
+          <div class="up-area" id="C-up-area">
+            <input type="file" accept="image/*" onchange="handleUpload('C',this)">
+            <span class="up-icon">🖊</span>
+            <p><strong>Click to upload</strong> your signature image<br><small>JPG, PNG — transparent background preferred</small></p>
+            <img id="C-sig-prev" class="sig-preview">
+          </div>
+        </div>
+        <div class="sig-foot"><span>Your countersignature (required)</span><button onclick="clearSig('C')">Clear</button></div>
+      </div>
+      <div class="fr c2">
+        <div class="f"><span class="lbl">Your Name (Print) <span class="req">*</span></span><input type="text" id="C-llPrint" placeholder="Your full printed name"></div>
+        <div class="f"><span class="lbl">Date of Decision</span><input type="date" id="C-llDate"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-gr" onclick="decide()">✅ Record Decision &amp; Generate Final</button>
+    <button class="btn btn-dk" onclick="window.print()">🖨 Print / PDF</button>
+  </div>
+
+  <div id="C-result" style="display:none;margin-top:22px">
+    <div class="info ok" id="C-msg"></div>
+    <div style="font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:5px">Final Record Link (send to Tenant):</div>
+    <div class="lnk-wrap">
+      <div class="lnk-txt" id="C-flnk">—</div>
+      <button class="lnk-copy" onclick="copyL('C-flnk')">Copy</button>
+    </div>
+    <div class="lnk-meta"><span>Link size:</span><span class="lnk-size" id="C-sz">—</span><span style="color:#bbb">· DEFLATE compressed</span></div>
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn btn-gold" style="background:#25D366;background-image:none" onclick="waShareC()">💬 Send Final Record via WhatsApp</button>
+    </div>
+  </div>
+
+</div></div>
+</div><!-- /vC -->
+
+
+<script>
+'use strict';
+/* ── STATE ─────────────────────────────────────── */
+let _D=null, _files=[], _sigData={B:null,C:null};
+const DEV_LABELS={electrical:'⚡ Electrical',masonry:'🧱 Masonry',structural:'🏗 Building Structure',occupancy:'👨‍👩‍👧‍👦 Occupancy Change',other:'📋 Other'};
+
+/* ── COMPRESS / DECOMPRESS ─────────────────────── */
+function compress(obj){
+  // Pull out signatures — store in sessionStorage, not URL
+  const o={...obj};
+  const ts=o.teSig; delete o.teSig;
+  const ls=o.llSig; delete o.llSig;
+  const json=JSON.stringify(o);
+  const bytes=pako.deflate(json,{level:9});
+  let b='';for(let i=0;i<bytes.length;i++)b+=String.fromCharCode(bytes[i]);
+  const b64=btoa(b).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  if(ts&&o.ref)sessionStorage.setItem('ts_'+o.ref,ts);
+  if(ls&&o.ref)sessionStorage.setItem('ls_'+o.ref,ls);
+  return b64;
+}
+function decompress(b64){
+  const std=b64.replace(/-/g,'+').replace(/_/g,'/');
+  const bin=atob(std);
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  const json=pako.inflate(bytes,{to:'string'});
+  const obj=JSON.parse(json);
+  if(obj.ref){
+    const ts=sessionStorage.getItem('ts_'+obj.ref);
+    const ls=sessionStorage.getItem('ls_'+obj.ref);
+    if(ts)obj.teSig=ts;
+    if(ls)obj.llSig=ls;
+  }
+  return obj;
+}
+function mkLink(obj){return location.href.split('#')[0]+'#'+compress(obj);}
+function lsz(url){const h=url.split('#')[1]||'';return h.length+' chars'+(h.length<800?' ✓ (WhatsApp safe)':'');}
+
+/* ── BOOT ──────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded',()=>{
+  const t=new Date(),fmt=d=>d.toISOString().split('T')[0];
+  document.getElementById('A-date').textContent=t.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  document.getElementById('A-appDate').value=fmt(t);
+  const ex=new Date(t);ex.setDate(ex.getDate()+30);
+  document.getElementById('A-expDate').value=fmt(ex);
+  document.getElementById('B-sigDate').value=fmt(t);
+  document.getElementById('C-llDate').value=fmt(t);
+  mkRef();
+  initC('B-canvas');initC('C-canvas');initC('C-teSig',true);
+  const az=document.getElementById('B-az'),fi=document.getElementById('B-fi');
+  az.addEventListener('dragover',e=>{e.preventDefault();az.classList.add('dv');});
+  az.addEventListener('dragleave',()=>az.classList.remove('dv'));
+  az.addEventListener('drop',e=>{e.preventDefault();az.classList.remove('dv');addF(e.dataTransfer.files);});
+  fi.addEventListener('change',()=>{addF(fi.files);fi.value='';});
+  boot();
+  setTimeout(()=>document.getElementById('ls').classList.add('out'),1100);
+});
+
+function mkRef(){
+  const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let r='TDR-'+new Date().getFullYear()+'-';
+  for(let i=0;i<4;i++)r+=c[Math.floor(Math.random()*c.length)];
+  document.getElementById('A-ref').textContent=r;
+  return r;
+}
+function boot(){
+  const raw=location.hash.slice(1);
+  if(!raw){show('A');return;}
+  try{_D=decompress(raw);show(_D._m||'A');if(_D._m==='B')fillB(_D);if(_D._m==='C')fillC(_D);}
+  catch(e){show('A');}
+}
+function show(m){['A','B','C'].forEach(v=>document.getElementById('v'+v).classList.remove('on'));document.getElementById('v'+m).classList.add('on');window.scrollTo(0,0);}
+function gv(id){const e=document.getElementById(id);return e?e.value:'';}
+
+/* ── VIEW A ────────────────────────────────────── */
+function generateLink(){
+  if(!gv('A-addr').trim()||!gv('A-llName').trim()||!gv('A-teName').trim()||!gv('A-appDate').trim()){
+    toast('⚠ Fill required fields: Property, Landlord Name, Tenant Name, Approval Date');return;
+  }
+  const ref=document.getElementById('A-ref').textContent;
+  const p={_m:'B',ref,addr:gv('A-addr'),llName:gv('A-llName'),llContact:gv('A-llContact'),
+    teName:gv('A-teName'),teContact:gv('A-teContact'),tenDate:gv('A-tenDate'),
+    appDate:gv('A-appDate'),expDate:gv('A-expDate'),note:gv('A-note')};
+  const url=mkLink(p);
+  document.getElementById('A-lnk').textContent=url;
+  document.getElementById('A-lnk-size').textContent=lsz(url);
+  document.getElementById('A-teOut').textContent=p.teName;
+  document.getElementById('A-gen-result').style.display='block';
+  document.getElementById('A-gen-result').scrollIntoView({behavior:'smooth',block:'center'});
+  toast('✓ Link generated — select send method below');
+  window._curLink=url;window._curTe=p.teName;
+}
+
+/* ── SEND METHOD TOGGLE ────────────────────────── */
+function toggleSendField(){
+  const wa=document.getElementById('sm-wa').checked;
+  const em=document.getElementById('sm-em').checked;
+  const sms=document.getElementById('sm-sms').checked;
+  const any=wa||em||sms||document.getElementById('sm-all').checked;
+  document.getElementById('sf-wa').classList.toggle('vis',wa||document.getElementById('sm-all').checked);
+  document.getElementById('sf-em').classList.toggle('vis',em||document.getElementById('sm-all').checked);
+  document.getElementById('sf-sms').classList.toggle('vis',sms||document.getElementById('sm-all').checked);
+  document.getElementById('sf-msg').classList.toggle('vis',any);
+  document.getElementById('send-actions').style.display=any?'flex':'none';
+  document.getElementById('btn-wa').style.display=(wa||document.getElementById('sm-all').checked)?'flex':'none';
+  document.getElementById('btn-em').style.display=(em||document.getElementById('sm-all').checked)?'flex':'none';
+  document.getElementById('btn-sms').style.display=(sms||document.getElementById('sm-all').checked)?'flex':'none';
+}
+function toggleAll(){
+  const all=document.getElementById('sm-all').checked;
+  ['sm-wa','sm-em','sm-sms'].forEach(id=>document.getElementById(id).checked=all);
+  toggleSendField();
+}
+
+function getLink(){return(document.getElementById('A-lnk').textContent||'').trim();}
+function getMsg(method){
+  const custom=gv('in-msg').trim();
+  const te=window._curTe||'Tenant';
+  const base=`Hello ${te}, your Tenancy Deviation Requisition Form is ready. Please complete and submit:\n`;
+  return custom?`${custom}\n${getLink()}`:`${base}${getLink()}`;
+}
+
+function sendWA(){
+  const num=gv('in-wa').trim().replace(/\s+/g,'');
+  if(!num){toast('⚠ Enter tenant WhatsApp number');return;}
+  const clean=num.startsWith('+')?num.slice(1):num;
+  window.open(`https://wa.me/${clean}?text=${encodeURIComponent(getMsg('wa'))}`,'_blank');
+}
+function sendEmail(){
+  const em=gv('in-em').trim();
+  if(!em){toast('⚠ Enter tenant email address');return;}
+  const te=window._curTe||'Tenant';
+  const sub=encodeURIComponent('Tenancy Deviation Requisition Form — Action Required');
+  const body=encodeURIComponent(getMsg('em'));
+  window.open(`mailto:${em}?subject=${sub}&body=${body}`,'_blank');
+}
+function sendSMS(){
+  const num=gv('in-sms').trim();
+  if(!num){toast('⚠ Enter tenant phone number');return;}
+  window.open(`sms:${num}?body=${encodeURIComponent(getMsg('sms'))}`,'_blank');
+}
+
+/* ── VIEW B ────────────────────────────────────── */
+function fillB(d){
+  document.getElementById('B-ref').textContent=d.ref||'—';
+  document.getElementById('B-issued').textContent=d.appDate||'—';
+  document.getElementById('B-llHint').textContent=d.llName||'your landlord';
+  ['addr','llName','llContact','teName','teContact','tenDate','appDate','expDate'].forEach(k=>{
+    const e=document.getElementById('B-'+k);if(e)e.value=d[k]||'';
+  });
+  if(d.note&&d.note.trim()){document.getElementById('B-noteBox').style.display='block';document.getElementById('B-noteTxt').textContent=d.note;}
+}
+function tenantSubmit(){
+  const devs=['elec','mas','struct','occ','other'].filter(v=>document.getElementById('dev-'+v).checked).map(v=>document.getElementById('dev-'+v).value);
+  if(!devs.length){toast('⚠ Select at least one deviation type');return;}
+  if(!gv('B-devNote').trim()){toast('⚠ Describe your deviation request in detail');return;}
+  if(![1,2,3,4,5].every(n=>document.getElementById('c'+n).checked)){toast('⚠ Confirm all 5 acknowledgements');return;}
+  if(!gv('B-print').trim()){toast('⚠ Enter your printed name in the signature section');return;}
+  const sig=getSig('B');
+  const orig=_D||{};
+  const p={...orig,_m:'C',devTypes:devs,devNote:gv('B-devNote'),addInfo:gv('B-addInfo'),
+    feeDate:gv('B-feeDate'),feeRef:gv('B-feeRef'),tePrint:gv('B-print'),teDate:gv('B-sigDate'),
+    teSig:sig,checks:[1,2,3,4,5].map(n=>document.getElementById('c'+n).checked),
+    attNames:_files.map(f=>f.name),subAt:new Date().toISOString()};
+  const url=mkLink(p);
+  document.getElementById('B-rlnk').textContent=url;
+  document.getElementById('B-sz').textContent=lsz(url);
+  document.getElementById('B-llOut').textContent=orig.llName||'your landlord';
+  document.getElementById('B-result').style.display='block';
+  document.getElementById('B-result').scrollIntoView({behavior:'smooth',block:'center'});
+  toast('✓ Submitted — send review link to landlord!');
+  window._rl=url;window._llName=orig.llName||'';
+}
+
+/* ── VIEW C ────────────────────────────────────── */
+function fillC(d){
+  document.getElementById('C-ref').textContent=d.ref||'—';
+  document.getElementById('C-sub').textContent=d.appDate||'—';
+  ['addr','llName','llContact','teName','teContact','tenDate','appDate','expDate','devNote','addInfo','feeDate','feeRef','tePrint','teDate'].forEach(k=>{
+    const e=document.getElementById('C-'+k);if(e)e.value=d[k]||'';
+  });
+  const chips=document.getElementById('C-devChips');
+  chips.innerHTML=(d.devTypes||[]).map(v=>`<span style="background:rgba(201,150,12,.1);border:1px solid rgba(201,150,12,.25);border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:600;color:#7a5a00">${DEV_LABELS[v]||v}</span>`).join('');
+  if(d.checks)d.checks.forEach((v,i)=>{const e=document.getElementById('C-c'+(i+1));if(e)e.checked=v;});
+  if(d.note&&d.note.trim()){document.getElementById('C-noteBox').style.display='block';document.getElementById('C-note').value=d.note;}
+  if(d.attNames&&d.attNames.length){document.getElementById('C-attBox').style.display='block';document.getElementById('C-attList').innerHTML=d.attNames.map(n=>`<div>📄 ${n}</div>`).join('');}
+  document.getElementById('C-llPrint').value=d.llName||'';
+  if(d.teSig)drawUrl('C-teSig',d.teSig);
+}
+function decide(){
+  const dec=document.querySelector('input[name="dec"]:checked')?.value;
+  if(!dec){toast('⚠ Select a decision');return;}
+  if(!gv('C-llPrint').trim()){toast('⚠ Print your full name');return;}
+  const orig=_D||{};
+  const p={...orig,_m:'C',_final:true,decision:dec,comments:gv('C-comments'),
+    llPrint:gv('C-llPrint'),llDate:gv('C-llDate'),llSig:getSig('C'),decidedAt:new Date().toISOString()};
+  const url=mkLink(p);
+  const msgs={approved:'<strong>✓ Deviation Approved.</strong> Send the Final Record link to the tenant. They must pay the <strong>₦100,000 caution deposit within 7 days</strong>.',
+    conditional:'<strong>⚠ Approved with Conditions.</strong> Send the link — tenant must comply with your conditions before commencing works.',
+    rejected:'<strong>✗ Rejected.</strong> Send the link to the tenant with your reasons.'};
+  const bc={approved:'b-ok',conditional:'b-pend',rejected:'b-no'};
+  const bt={approved:'✓ Approved',conditional:'⚠ Conditional',rejected:'✗ Rejected'};
+  document.getElementById('C-badge').textContent=bt[dec];document.getElementById('C-badge').className='badge '+bc[dec];
+  document.getElementById('C-msg').innerHTML=msgs[dec];
+  document.getElementById('C-flnk').textContent=url;document.getElementById('C-sz').textContent=lsz(url);
+  document.getElementById('C-result').style.display='block';
+  document.getElementById('C-result').scrollIntoView({behavior:'smooth',block:'center'});
+  toast('✓ Decision recorded!');window._fl=url;
+}
+
+/* ── SIGNATURE ─────────────────────────────────── */
+function sigTab(who,mode,btn){
+  document.getElementById(who+'-draw-panel').classList.toggle('on',mode==='draw');
+  document.getElementById(who+'-upload-panel').classList.toggle('on',mode==='upload');
+  btn.closest('.sig-tabs').querySelectorAll('.sig-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+}
+function handleUpload(who,inp){
+  const file=inp.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    const prev=document.getElementById(who+'-sig-prev');
+    prev.src=e.target.result;prev.style.display='block';
+    document.querySelector('#'+who+'-up-area .up-icon').style.display='none';
+    document.querySelector('#'+who+'-up-area p').style.display='none';
+    _sigData[who]=e.target.result;
+    const st=document.getElementById(who+'-sig-status');
+    if(st)st.textContent='✓ Signature uploaded';
+    // Mirror to canvas
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.getElementById(who+'-canvas');if(!c)return;
+      const ctx=c.getContext('2d'),rect=c.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+      c.width=rect.width*dpr;c.height=rect.height*dpr;ctx.scale(dpr,dpr);
+      ctx.clearRect(0,0,rect.width,rect.height);
+      const sc=Math.min(rect.width/img.width,rect.height/img.height);
+      ctx.drawImage(img,(rect.width-img.width*sc)/2,(rect.height-img.height*sc)/2,img.width*sc,img.height*sc);
+    };
+    img.src=e.target.result;
+  };
+  r.readAsDataURL(file);
+}
+function clearSig(who){
+  const c=document.getElementById(who+'-canvas');if(c)c.getContext('2d').clearRect(0,0,c.width,c.height);
+  const pr=document.getElementById(who+'-sig-prev');if(pr){pr.src='';pr.style.display='none';}
+  ['up-icon','p'].forEach(sel=>{const el=document.querySelector('#'+who+'-up-area .'+sel);if(el)el.style.display='';});
+  const fi=document.getElementById(who+'-sig-file');if(fi)fi.value='';
+  _sigData[who]=null;
+  const st=document.getElementById(who+'-sig-status');if(st)st.textContent='Sign or upload above';
+}
+function getSig(who){
+  if(_sigData[who])return _sigData[who];
+  const c=document.getElementById(who+'-canvas');return c?c.toDataURL('image/png'):'';
+}
+function initC(id,ro){
+  const c=document.getElementById(id);if(!c)return;
+  const ctx=c.getContext('2d');
+  const rsz=()=>{const r=c.getBoundingClientRect(),dpr=window.devicePixelRatio||1;c.width=r.width*dpr;c.height=r.height*dpr;ctx.scale(dpr,dpr);ctx.strokeStyle='#111';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';};
+  rsz();
+  if(ro){c.style.cursor='default';return;}
+  let on=false,lx=0,ly=0;
+  const gp=e=>{const r=c.getBoundingClientRect(),s=e.touches?e.touches[0]:e;return{x:s.clientX-r.left,y:s.clientY-r.top};};
+  c.addEventListener('mousedown',e=>{on=true;const p=gp(e);lx=p.x;ly=p.y;});
+  c.addEventListener('mousemove',e=>{if(!on)return;const p=gp(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();lx=p.x;ly=p.y;});
+  ['mouseup','mouseleave'].forEach(ev=>c.addEventListener(ev,()=>on=false));
+  c.addEventListener('touchstart',e=>{e.preventDefault();on=true;const p=gp(e);lx=p.x;ly=p.y;},{passive:false});
+  c.addEventListener('touchmove',e=>{if(!on)return;e.preventDefault();const p=gp(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();lx=p.x;ly=p.y;},{passive:false});
+  c.addEventListener('touchend',()=>on=false);
+}
+function drawUrl(id,src){
+  if(!src)return;
+  setTimeout(()=>{
+    const c=document.getElementById(id);if(!c)return;
+    const ctx=c.getContext('2d'),img=new Image();
+    img.onload=()=>{const r=c.getBoundingClientRect(),dpr=window.devicePixelRatio||1;c.width=r.width*dpr;c.height=r.height*dpr;ctx.scale(dpr,dpr);ctx.drawImage(img,0,0,r.width,r.height);};
+    img.src=src;
+  },350);
+}
+
+/* ── FILES ─────────────────────────────────────── */
+function addF(fs){[...fs].forEach(f=>{if(f.size>10485760){toast('⚠ '+f.name+' > 10 MB');return;}if(!_files.find(x=>x.name===f.name))_files.push(f);});rndrF();}
+function rndrF(){const fl=document.getElementById('B-fl');fl.innerHTML='';_files.forEach((f,i)=>{const sz=f.size>1048576?(f.size/1048576).toFixed(1)+' MB':(f.size/1024).toFixed(0)+' KB';const el=document.createElement('div');el.className='fitem';el.innerHTML=`<span>📄 <span class="fn">${f.name}</span><span class="fs">${sz}</span></span><button onclick="rmF(${i})">✕</button>`;fl.appendChild(el);});}
+window.rmF=i=>{_files.splice(i,1);rndrF();};
+
+/* ── COPY & SHARE ───────────────────────────────── */
+function copyL(id){
+  const t=document.getElementById(id).textContent.trim();
+  if(!t||t==='—'||t.length<10){toast('⚠ Generate a link first');return;}
+  navigator.clipboard.writeText(t).then(()=>toast('✓ Link copied!')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✓ Copied!');
+  });
+}
+function waShareB(){
+  const l=window._rl||document.getElementById('B-rlnk').textContent.trim();
+  if(!l||l==='—'){toast('⚠ Submit form first');return;}
+  const ll=window._llName||'your landlord';
+  window.open('https://wa.me/?text='+encodeURIComponent('Hi '+ll+', I have completed the Tenancy Deviation Requisition. Please review and approve:\n'+l),'_blank');
+}
+function waShareC(){
+  const l=window._fl||document.getElementById('C-flnk').textContent.trim();
+  if(!l||l==='—'){toast('⚠ Record decision first');return;}
+  window.open('https://wa.me/?text='+encodeURIComponent('Tenancy Deviation Requisition — Final Decision Record:\n'+l),'_blank');
+}
+
+/* ── TOAST ──────────────────────────────────────── */
+let _tt;
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('on'),3600);}
+</script>
+
+<script type="module">
+import { initializeApp }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, addDoc }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+const firebaseConfig = {
+  apiKey:            "AIzaSyAiQ7q1qbwx1i_qjVFaTSJIeb9yneMT21U",
+  authDomain:        "solarappform.firebaseapp.com",
+  projectId:         "solarappform",
+  storageBucket:     "solarappform.firebasestorage.app",
+  messagingSenderId: "298700249528",
+  appId:             "1:298700249528:web:85f6a70780da9479f1174d"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+window.sendCRSEmail = async (to, subject, html) => {
+  try {
+    await addDoc(collection(db, 'mail'), {
+      to: Array.isArray(to) ? to : [to],
+      message: { subject, html }
+    });
+    return true;
+  } catch(e) { console.error('CRS Email error:', e); return false; }
+};
+</script>
+</body>
+</html>
