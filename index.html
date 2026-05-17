@@ -13,6 +13,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, query, where, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, listAll, deleteObject } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAiQ7q1qbwx1i_qjVFaTSJIeb9yneMT21U",
@@ -32,6 +33,8 @@ window._db = db;
 window._auth = auth;
 window._googleProvider = googleProvider;
 window._firebase = { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInWithPopup, getDocs, collection, addDoc, doc, setDoc, getDoc, updateDoc, deleteDoc, query, where, onSnapshot };
+window._storage = getStorage(app);
+window._storageFn = { ref, uploadBytesResumable, getDownloadURL, listAll, deleteObject };
 window._firebaseReady = true;
 window.dispatchEvent(new Event('firebaseReady'));
 </script>
@@ -274,6 +277,88 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .modal-close:hover { color: #fff; }
 .modal-body { padding: 22px 22px 28px; }
 .modal-footer { display: flex; gap: 10px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid var(--rule); margin-top: 20px; }
+
+
+/* ── PROPERTIES ENHANCED ── */
+.prop-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--rule); margin-bottom: 18px; }
+.prop-tab { padding: 8px 18px; font-size: .82rem; font-weight: 600; border: none; background: none; cursor: pointer; color: var(--dim); border-bottom: 2px solid transparent; font-family: 'DM Sans', sans-serif; transition: all .15s; }
+.prop-tab.on { color: var(--gold); border-bottom-color: var(--gold); }
+.prop-sub-page { display: none; }
+.prop-sub-page.on { display: block; }
+
+/* IMPORT PANEL */
+.import-panel { background: linear-gradient(135deg, #0f0e0c, #1a1814); border-radius: 10px; padding: 24px; margin-bottom: 20px; border: 1px solid #2a2620; }
+.import-panel h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.import-panel p { font-size: .8rem; color: #9a8a6a; margin-bottom: 16px; line-height: 1.6; }
+.drop-zone { border: 2px dashed #3a3428; border-radius: 8px; padding: 32px; text-align: center; cursor: pointer; transition: all .2s; position: relative; background: rgba(255,255,255,.02); }
+.drop-zone:hover, .drop-zone.drag-over { border-color: var(--gold); background: rgba(201,150,12,.06); }
+.drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.drop-zone-icon { font-size: 2.5rem; display: block; margin-bottom: 8px; }
+.drop-zone-label { font-size: .9rem; font-weight: 600; color: #e8dfc8; margin-bottom: 4px; }
+.drop-zone-sub { font-size: .74rem; color: #7a6e62; }
+.import-progress { margin-top: 14px; display: none; }
+.import-progress-bar { height: 4px; background: #2a2620; border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+.import-progress-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width .3s; }
+.import-log { background: #0a0908; border-radius: 6px; padding: 12px 14px; max-height: 180px; overflow-y: auto; font-family: 'DM Mono', monospace; font-size: .72rem; line-height: 1.8; color: #5aaf7a; }
+.import-log .log-err { color: #f57272; }
+.import-log .log-warn { color: #e8b422; }
+.import-log .log-info { color: #9a8a6a; }
+.csv-template-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+/* TENANT DETAIL DRAWER */
+.drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 600; display: none; backdrop-filter: blur(2px); }
+.drawer-overlay.on { display: block; }
+.drawer { position: fixed; top: 0; right: -100%; bottom: 0; width: 100%; max-width: 560px; background: var(--cream); z-index: 700; transition: right .3s cubic-bezier(.4,0,.2,1); overflow-y: auto; box-shadow: -8px 0 40px rgba(0,0,0,.2); display: flex; flex-direction: column; }
+.drawer.on { right: 0; }
+.drawer-head { background: var(--ink); padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.drawer-head h2 { font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; font-weight: 700; color: #fff; }
+.drawer-close { background: none; border: none; color: #9a8a6a; font-size: 1.4rem; cursor: pointer; line-height: 1; }
+.drawer-close:hover { color: #fff; }
+.drawer-stripe { height: 3px; background: linear-gradient(90deg, var(--gold), var(--gl), var(--gold)); flex-shrink: 0; }
+.drawer-body { padding: 20px; flex: 1; }
+.drawer-section { margin-bottom: 22px; }
+.drawer-section-title { font-size: .65rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
+
+/* TENANT INFO GRID in drawer */
+.tenant-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ti-item label { font-size: .6rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); display: block; margin-bottom: 2px; }
+.ti-item span { font-size: .86rem; font-weight: 500; color: var(--ink); }
+
+/* DOCUMENT UPLOAD AREA */
+.doc-upload-area { border: 2px dashed var(--rule); border-radius: 6px; padding: 18px; text-align: center; cursor: pointer; position: relative; transition: all .2s; background: var(--card); }
+.doc-upload-area:hover { border-color: var(--gold); background: #fffdf5; }
+.doc-upload-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.doc-upload-area p { font-size: .79rem; color: var(--dim); line-height: 1.5; }
+
+/* DOCUMENT LIST */
+.doc-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.doc-item { background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 10px 13px; display: flex; align-items: center; gap: 10px; }
+.doc-item-icon { font-size: 1.2rem; flex-shrink: 0; }
+.doc-item-body { flex: 1; min-width: 0; }
+.doc-item-name { font-size: .82rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doc-item-meta { font-size: .7rem; color: var(--dim); margin-top: 1px; }
+.doc-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* UPLOAD PROGRESS */
+.upload-progress-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: .78rem; color: var(--dim); }
+.upr-bar { flex: 1; height: 3px; background: var(--rule); border-radius: 2px; overflow: hidden; }
+.upr-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width .2s; }
+
+/* STATUS PILL for property card */
+.prop-card-status { position: absolute; top: 12px; right: 12px; }
+.doc-count-pill { display: inline-flex; align-items: center; gap: 4px; background: var(--ink); color: var(--gold); font-size: .65rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+
+/* IMPORT SUMMARY BOX */
+.import-summary { background: var(--card); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px; margin-top: 14px; display: none; }
+.is-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.is-item { text-align: center; }
+.is-num { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 700; color: var(--ink); }
+.is-lbl { font-size: .7rem; color: var(--dim); }
+
+@media(max-width: 600px) {
+  .drawer { max-width: 100%; }
+  .tenant-info-grid { grid-template-columns: 1fr; }
+}
 
 /* ── RECEIPT ── */
 #receiptPrint { display: none; }
@@ -647,23 +732,134 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       <!-- ── PROPERTIES (admin) ── -->
       <div class="pg" id="pgProperties">
         <div class="page-header">
-          <div><h1>Properties</h1><div class="ph-sub">Master property list — all units</div></div>
+          <div><h1>Properties</h1><div class="ph-sub">Master property list · Tenant documents · Mass import</div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-gold" onclick="showPropTab('tabUnits',this)">🗂️ All Units</button>
+            <button class="btn btn-outline" onclick="showPropTab('tabImport',this)">⬆ Import CSV</button>
+            <button class="btn btn-outline" onclick="downloadCSVTemplate()">⬇ CSV Template</button>
+          </div>
         </div>
         <div class="page-body">
-          <div class="search-row">
-            <input class="search-input" placeholder="🔍 Search…" id="propSearch" oninput="renderProperties()"/>
-            <select class="filter-select" id="propCityFilter" onchange="renderProperties()">
-              <option value="">All Cities</option>
-              <option>Ojodu</option><option>Ibadan</option><option>Enugu</option>
-            </select>
+
+          <!-- TAB: ALL UNITS -->
+          <div class="prop-sub-page on" id="tabUnits">
+            <div class="search-row">
+              <input class="search-input" placeholder="🔍 Search property, tenant…" id="propSearch" oninput="renderProperties()"/>
+              <select class="filter-select" id="propCityFilter" onchange="renderProperties()">
+                <option value="">All Cities</option>
+                <option>Ojodu</option><option>Ibadan</option><option>Enugu</option>
+              </select>
+              <select class="filter-select" id="propStatusFilter" onchange="renderProperties()">
+                <option value="">All Status</option>
+                <option value="occupied">Occupied</option>
+                <option value="vacant">Vacant</option>
+              </select>
+            </div>
+            <div class="units-grid" id="propGrid"></div>
           </div>
-          <div class="units-grid" id="propGrid"></div>
+
+          <!-- TAB: IMPORT -->
+          <div class="prop-sub-page" id="tabImport">
+            <div class="import-panel">
+              <h3>📤 Mass Import — Rent CSV</h3>
+              <p>Upload a CSV file exported from your existing rent spreadsheet or the template below. The system will automatically extract property unit, location, tenant name, email, rent amount, tenancy start/expiry dates, and vacancy status. Existing records with matching unit IDs will be updated.</p>
+
+              <div class="drop-zone" id="csvDropZone">
+                <input type="file" id="csvFileInput" accept=".csv,.xlsx,.xls" onchange="handleCSVImport(this)"/>
+                <span class="drop-zone-icon">📊</span>
+                <div class="drop-zone-label">Drop CSV file here or click to browse</div>
+                <div class="drop-zone-sub">Accepts: .csv · Max 5 MB · Encoding: UTF-8</div>
+              </div>
+
+              <div class="import-progress" id="importProgress">
+                <div class="import-progress-bar"><div class="import-progress-fill" id="importProgressFill" style="width:0%"></div></div>
+                <div class="import-log" id="importLog"></div>
+              </div>
+
+              <div class="import-summary" id="importSummary">
+                <div style="font-size:.82rem;font-weight:600;color:var(--ink);margin-bottom:10px">Import Complete</div>
+                <div class="is-grid">
+                  <div class="is-item"><div class="is-num" id="isTotal">0</div><div class="is-lbl">Rows processed</div></div>
+                  <div class="is-item"><div class="is-num" id="isAdded">0</div><div class="is-lbl">Records added</div></div>
+                  <div class="is-item"><div class="is-num" id="isUpdated">0</div><div class="is-lbl">Updated</div></div>
+                  <div class="is-item"><div class="is-num" id="isSkipped">0</div><div class="is-lbl">Skipped / errors</div></div>
+                </div>
+                <div style="margin-top:12px;display:flex;gap:8px">
+                  <button class="btn btn-gold" onclick="showPropTab('tabUnits',null);renderProperties()">View All Properties →</button>
+                  <button class="btn btn-outline" onclick="clearImport()">Clear & Import Again</button>
+                </div>
+              </div>
+
+              <div class="csv-template-row">
+                <div style="font-size:.78rem;color:#9a8a6a;flex:1;line-height:1.6">
+                  <strong style="color:#e8dfc8">Required columns:</strong> unit_id, unit_label, location, city, type, tenant_name, tenant_email, rent_amount, start_date, expiry_date, vacancy<br>
+                  <strong style="color:#e8dfc8">Optional:</strong> tenant_phone, tenant_nin, notes
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
     </div><!-- /pages container -->
   </div><!-- /content-area -->
 </div><!-- /vApp -->
+
+
+<!-- ═══ TENANT DETAIL DRAWER ═══ -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="tenantDrawer">
+  <div class="drawer-head">
+    <h2 id="drawerTitle">Tenant Details</h2>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-stripe"></div>
+  <div class="drawer-body">
+
+    <!-- TENANT INFO -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">Tenant Information</div>
+      <div class="tenant-info-grid" id="drawerTenantInfo"></div>
+    </div>
+
+    <!-- TENANCY DETAILS -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">Tenancy Details</div>
+      <div class="tenant-info-grid" id="drawerTenancyInfo"></div>
+    </div>
+
+    <!-- DOCUMENTS VAULT -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">📁 Document Vault</div>
+
+      <!-- Category tabs -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="docCategoryBtns">
+        <button class="btn btn-sm btn-gold" onclick="setDocCategory('tenancy_agreement',this)">📝 Tenancy Agreement</button>
+        <button class="btn btn-sm btn-outline" onclick="setDocCategory('kyc',this)">🪪 KYC / ID</button>
+        <button class="btn btn-sm btn-outline" onclick="setDocCategory('deviation',this)">🔄 Deviation</button>
+        <button class="btn btn-sm btn-outline" onclick="setDocCategory('receipt',this)">🧾 Receipts</button>
+        <button class="btn btn-sm btn-outline" onclick="setDocCategory('other',this)">📎 Other</button>
+      </div>
+
+      <!-- Upload area -->
+      <div class="doc-upload-area" id="docUploadArea">
+        <input type="file" id="docFileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="handleDocUpload(this)"/>
+        <p>📎 <strong>Click to upload</strong> or drag files here<br>
+        <small>PDF, JPG, PNG, DOC, DOCX · Max 10 MB per file</small></p>
+      </div>
+
+      <!-- Upload progress -->
+      <div id="uploadProgressList" style="margin-top:8px"></div>
+
+      <!-- Document list -->
+      <div class="doc-list" id="docList">
+        <div style="text-align:center;padding:20px;color:var(--dim);font-size:.82rem" id="docListEmpty">No documents in this category yet</div>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 <!-- ── RENT RECORD MODAL ── -->
 <div class="modal-overlay" id="rentModal">
@@ -866,6 +1062,7 @@ function initAuth() {
         renderAll();
         if(!isAdmin) loadMyProperty(data);
         loadTenantsTable();
+        loadAllTenantDocs();
       } catch(e) {
         isAdmin = ADMIN_EMAILS.includes(user.email);
         showApp();
@@ -1349,6 +1546,484 @@ waitForFirebase(() => {
   // Hide loader after max 3s
   setTimeout(() => document.getElementById('globalLoader').classList.add('out'), 3000);
 });
+
+
+/* ════════════════════════════════════════════════════
+   PROPERTIES ENHANCED
+════════════════════════════════════════════════════ */
+
+/* ── PROP TAB SWITCH ── */
+function showPropTab(id, btn) {
+  document.querySelectorAll('.prop-sub-page').forEach(p => p.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+
+/* ── RENDER PROPERTIES (enhanced) ── */
+function renderProperties() {
+  const search = (document.getElementById('propSearch')?.value||'').toLowerCase();
+  const city = document.getElementById('propCityFilter')?.value||'';
+  const status = document.getElementById('propStatusFilter')?.value||'';
+  const occupiedIds = new Set(rentLogs.filter(e => e.vacancy !== 'vacant').map(e => e.unitId));
+
+  let props = PROPERTIES.filter(p => {
+    const rec = rentLogs.find(e => e.unitId === p.id);
+    const searchStr = (p.label+p.location+p.type+(rec?rec.tenant:'')).toLowerCase();
+    const matchSearch = !search || searchStr.includes(search);
+    const matchCity = !city || p.city === city;
+    const occupied = occupiedIds.has(p.id);
+    const matchStatus = !status || (status === 'occupied' && occupied) || (status === 'vacant' && !occupied);
+    return matchSearch && matchCity && matchStatus;
+  });
+
+  const icons = {'2 Bedroom Flat':'🏠','3 Bedroom Flat':'🏡','Self Contained':'🏘','Room & Parlour':'🛋️','Commercial':'🏪'};
+  const grid = document.getElementById('propGrid');
+  if(!grid) return;
+
+  grid.innerHTML = props.map(p => {
+    const occupied = occupiedIds.has(p.id);
+    const rec = rentLogs.find(e => e.unitId === p.id);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const exp = rec?.expiry ? new Date(rec.expiry) : null;
+    if(exp) exp.setHours(0,0,0,0);
+    const daysLeft = exp ? Math.round((exp - today)/(1000*60*60*24)) : null;
+    const isOverdue = daysLeft !== null && daysLeft < 0;
+    const docCount = _docCounts[p.id] || 0;
+
+    return `<div class="unit-card" style="position:relative">
+      <div class="uc-top">
+        <div class="uc-type-row">
+          <span class="uc-icon">${icons[p.type]||'🏠'}</span>
+          <span class="badge ${occupied ? (isOverdue?'badge-overdue':'badge-active') : 'badge-vacant'}">
+            ${occupied ? (isOverdue ? 'Overdue' : 'Occupied') : 'Vacant'}
+          </span>
+        </div>
+        <div class="uc-title">${p.label}</div>
+        <div class="uc-loc">📍 ${p.location}</div>
+        <div style="margin-top:4px;font-size:.71rem;color:var(--dim)">${p.type} · <span style="font-family:'DM Mono',monospace">${p.id}</span></div>
+        ${rec ? `
+          <div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--rule)">
+            <div style="font-size:.84rem;font-weight:600;color:var(--ink)">${rec.tenant}</div>
+            <div style="font-size:.72rem;color:var(--dim);margin-top:1px">${rec.tenantEmail||''}</div>
+            ${daysLeft !== null ? `<div style="margin-top:5px"><span class="days-pill ${daysLeft<0?'dp-danger':daysLeft<=30?'dp-warn':'dp-ok'}">${daysLeft<0?Math.abs(daysLeft)+' days overdue':daysLeft+' days left'}</span></div>` : ''}
+          </div>` : ''}
+        ${docCount > 0 ? `<div style="margin-top:6px"><span class="doc-count-pill">📁 ${docCount} doc${docCount>1?'s':''}</span></div>` : ''}
+      </div>
+      <div class="uc-bottom">
+        <div class="uc-rent">${rec ? '₦'+Number(rec.amount).toLocaleString() : '—'}</div>
+        <div style="display:flex;gap:6px">
+          ${occupied ? `<button class="btn btn-sm btn-outline" onclick="openTenantDrawer('${p.id}')">📁 Docs</button>
+          <button class="btn btn-sm btn-outline" onclick="editRentByUnit('${p.id}')">✏️</button>` :
+          `<button class="btn btn-sm btn-gold" onclick="addRecordForUnit('${p.id}')">+ Add</button>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="text-align:center;padding:40px;color:var(--dim)">No properties match your filters</div>';
+}
+
+/* ── DOCUMENT COUNTS CACHE ── */
+const _docCounts = {};
+
+/* ════════════════════════════════════════════════════
+   CSV IMPORT
+════════════════════════════════════════════════════ */
+
+function downloadCSVTemplate() {
+  const headers = 'unit_id,unit_label,location,city,type,tenant_name,tenant_email,tenant_phone,rent_amount,start_date,expiry_date,vacancy,notes';
+  const sample  = 'OJ-1A,2BDR Flat 1A,11 Jibewa Somorin Close Ojodu,Ojodu,2 Bedroom Flat,John Doe,john@email.com,+2348012345678,500000,2025-01-01,2026-01-01,occupied,';
+  const sample2 = 'OJ-2A,2BDR Flat 2A,11 Jibewa Somorin Close Ojodu,Ojodu,2 Bedroom Flat,,,,350000,,,vacant,Available from Feb';
+  const blob = new Blob([headers+'\n'+sample+'\n'+sample2], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'CRS_Rent_Import_Template.csv';
+  a.click();
+  toast('✓ CSV template downloaded');
+}
+
+function clearImport() {
+  document.getElementById('importProgress').style.display = 'none';
+  document.getElementById('importSummary').style.display = 'none';
+  document.getElementById('importLog').innerHTML = '';
+  document.getElementById('csvFileInput').value = '';
+}
+
+function logImport(msg, type='ok') {
+  const el = document.getElementById('importLog');
+  const cls = type === 'err' ? 'log-err' : type === 'warn' ? 'log-warn' : type === 'info' ? 'log-info' : '';
+  el.innerHTML += `<div class="${cls}">${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function setImportProgress(pct) {
+  document.getElementById('importProgressFill').style.width = pct + '%';
+}
+
+async function handleCSVImport(input) {
+  const file = input.files[0];
+  if(!file) return;
+  document.getElementById('importProgress').style.display = 'block';
+  document.getElementById('importSummary').style.display = 'none';
+  document.getElementById('importLog').innerHTML = '';
+  setImportProgress(5);
+  logImport(`📂 Reading: ${file.name} (${(file.size/1024).toFixed(1)} KB)`, 'info');
+
+  const text = await file.text();
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if(lines.length < 2) { logImport('✗ File appears empty or has no data rows', 'err'); return; }
+
+  // Parse header — flexible, case-insensitive
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z0-9_]/g,'_'));
+  logImport(`✓ Columns detected: ${headers.join(', ')}`, 'info');
+  setImportProgress(15);
+
+  // Column mapping (flexible)
+  const col = (names) => {
+    for(const n of names) {
+      const idx = headers.indexOf(n);
+      if(idx >= 0) return idx;
+    }
+    return -1;
+  };
+  const cols = {
+    unitId:      col(['unit_id','id','unit id']),
+    unitLabel:   col(['unit_label','label','unit','property']),
+    location:    col(['location','address']),
+    city:        col(['city']),
+    type:        col(['type','property_type','unit_type']),
+    tenantName:  col(['tenant_name','tenant','name','full_name']),
+    tenantEmail: col(['tenant_email','email']),
+    tenantPhone: col(['tenant_phone','phone','mobile']),
+    amount:      col(['rent_amount','amount','rent','annual_rent']),
+    start:       col(['start_date','start','tenancy_start','from']),
+    expiry:      col(['expiry_date','expiry','end_date','end','tenure_end']),
+    vacancy:     col(['vacancy','status','vacant']),
+    notes:       col(['notes','note','remarks']),
+    nin:         col(['nin','tenant_nin','national_id']),
+  };
+
+  let added=0, updated=0, skipped=0;
+  const dataRows = lines.slice(1);
+
+  for(let i=0; i<dataRows.length; i++) {
+    const row = parseCSVRow(dataRows[i]);
+    if(!row.length || row.every(c => !c.trim())) continue;
+    setImportProgress(15 + Math.round((i/dataRows.length)*70));
+
+    const get = (c) => c >= 0 && c < row.length ? row[c].trim() : '';
+    const unitId = get(cols.unitId) || autoMatchUnitId(get(cols.unitLabel), get(cols.location));
+
+    if(!unitId) {
+      logImport(`⚠ Row ${i+2}: Could not identify unit — skipping (label: "${get(cols.unitLabel)}")`, 'warn');
+      skipped++; continue;
+    }
+
+    const record = {
+      id: unitId + '_' + Date.now() + '_' + i,
+      unitId,
+      unit: get(cols.unitLabel) || getPropertyLabel(unitId),
+      location: get(cols.location),
+      city: get(cols.city),
+      type: get(cols.type),
+      tenant: get(cols.tenantName),
+      tenantEmail: get(cols.tenantEmail),
+      tenantPhone: get(cols.tenantPhone),
+      tenantNIN: get(cols.nin),
+      amount: get(cols.amount).replace(/[^0-9.]/g,''),
+      start: normaliseDate(get(cols.start)),
+      expiry: normaliseDate(get(cols.expiry)),
+      vacancy: (get(cols.vacancy)||'').toLowerCase().includes('vacant') ? 'vacant' : 'occupied',
+      notes: get(cols.notes),
+      importedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    // Check for existing record with same unitId
+    const existIdx = rentLogs.findIndex(e => e.unitId === unitId);
+    if(existIdx >= 0) {
+      rentLogs[existIdx] = {...rentLogs[existIdx], ...record, id: rentLogs[existIdx].id};
+      updated++;
+      logImport(`↻ Row ${i+2}: Updated — ${unitId} · ${record.tenant||'(vacant)'}`, 'info');
+    } else {
+      rentLogs.push(record);
+      added++;
+      logImport(`✓ Row ${i+2}: Added — ${unitId} · ${record.tenant||'(vacant)'}`, 'ok');
+    }
+  }
+
+  setImportProgress(100);
+  logImport(`─── Import complete: ${added} added · ${updated} updated · ${skipped} skipped ───`, 'info');
+
+  // Update summary
+  document.getElementById('isTotal').textContent = dataRows.length;
+  document.getElementById('isAdded').textContent = added;
+  document.getElementById('isUpdated').textContent = updated;
+  document.getElementById('isSkipped').textContent = skipped;
+  document.getElementById('importSummary').style.display = 'block';
+
+  renderAll(); renderRentManager();
+  toast(`✓ Import complete: ${added+updated} records processed`);
+
+  // Sync to Firestore
+  try {
+    for(const rec of rentLogs) {
+      await window._firebase.setDoc(window._firebase.doc(window._db,'rentRecords',rec.id), rec);
+    }
+    logImport('☁ Synced to Firestore', 'info');
+  } catch(e) { logImport('⚠ Firestore sync skipped (offline)', 'warn'); }
+}
+
+function parseCSVRow(line) {
+  const result = []; let cur = ''; let inQ = false;
+  for(let i=0; i<line.length; i++) {
+    const ch = line[i];
+    if(ch === '"') { inQ = !inQ; }
+    else if(ch === ',' && !inQ) { result.push(cur); cur = ''; }
+    else { cur += ch; }
+  }
+  result.push(cur);
+  return result;
+}
+
+function normaliseDate(d) {
+  if(!d) return '';
+  // Handle dd/mm/yyyy, dd-mm-yyyy, mm/dd/yyyy, yyyy-mm-dd
+  const dmy = d.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if(dmy) return `${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;
+  const ymd = d.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+  if(ymd) return `${ymd[1]}-${ymd[2].padStart(2,'0')}-${ymd[3].padStart(2,'0')}`;
+  return d;
+}
+
+function autoMatchUnitId(label, location) {
+  if(!label && !location) return '';
+  const search = (label+' '+location).toLowerCase();
+  const match = PROPERTIES.find(p =>
+    search.includes(p.id.toLowerCase()) ||
+    search.includes(p.label.toLowerCase()) ||
+    (p.location.toLowerCase().split(',').some(part => search.includes(part.trim().toLowerCase())) && search.includes(p.type.toLowerCase().slice(0,4)))
+  );
+  return match ? match.id : '';
+}
+
+/* ════════════════════════════════════════════════════
+   TENANT DOCUMENT DRAWER
+════════════════════════════════════════════════════ */
+
+let _currentTenantUnit = null;
+let _currentDocCategory = 'tenancy_agreement';
+let _tenantDocs = {}; // { unitId: { category: [{name, url, size, uploadedAt}] } }
+
+function openTenantDrawer(unitId) {
+  _currentTenantUnit = unitId;
+  _currentDocCategory = 'tenancy_agreement';
+  const p = PROPERTIES.find(x => x.id === unitId);
+  const rec = rentLogs.find(e => e.unitId === unitId);
+  const drawer = document.getElementById('tenantDrawer');
+  document.getElementById('drawerOverlay').classList.add('on');
+  drawer.classList.add('on');
+
+  document.getElementById('drawerTitle').textContent = (p?.label||unitId) + ' — Documents';
+
+  // Tenant info
+  const ti = document.getElementById('drawerTenantInfo');
+  ti.innerHTML = [
+    ['Tenant Name', rec?.tenant||'—'],
+    ['Email', rec?.tenantEmail||'—'],
+    ['Phone', rec?.tenantPhone||'—'],
+    ['NIN', rec?.tenantNIN||'—'],
+  ].map(([l,v]) => `<div class="ti-item"><label>${l}</label><span>${v}</span></div>`).join('');
+
+  // Tenancy info
+  const today = new Date(); today.setHours(0,0,0,0);
+  const exp = rec?.expiry ? new Date(rec.expiry) : null;
+  if(exp) exp.setHours(0,0,0,0);
+  const days = exp ? Math.round((exp-today)/(1000*60*60*24)) : null;
+  const tn = document.getElementById('drawerTenancyInfo');
+  tn.innerHTML = [
+    ['Unit', p?.label||unitId],
+    ['Location', p?.location||'—'],
+    ['Annual Rent', rec?.amount ? '₦'+Number(rec.amount).toLocaleString() : '—'],
+    ['Start Date', rec?.start||'—'],
+    ['Expiry Date', rec?.expiry||'—'],
+    ['Days Left', days !== null ? (days<0?Math.abs(days)+' days overdue':days+' days left') : '—'],
+    ['Status', rec?.vacancy||'occupied'],
+    ['Notes', rec?.notes||'—'],
+  ].map(([l,v]) => `<div class="ti-item"><label>${l}</label><span>${v}</span></div>`).join('');
+
+  // Reset category button styles
+  document.querySelectorAll('#docCategoryBtns .btn').forEach(b => { b.className='btn btn-sm btn-outline'; b.onclick.toString().includes(_currentDocCategory) || null; });
+  document.querySelector('#docCategoryBtns .btn').className = 'btn btn-sm btn-gold';
+
+  loadDocList();
+}
+
+function closeDrawer() {
+  document.getElementById('tenantDrawer').classList.remove('on');
+  document.getElementById('drawerOverlay').classList.remove('on');
+  _currentTenantUnit = null;
+}
+
+function setDocCategory(cat, btn) {
+  _currentDocCategory = cat;
+  document.querySelectorAll('#docCategoryBtns .btn').forEach(b => b.className='btn btn-sm btn-outline');
+  if(btn) btn.className = 'btn btn-sm btn-gold';
+  loadDocList();
+}
+
+function loadDocList() {
+  const list = document.getElementById('docList');
+  const empty = document.getElementById('docListEmpty');
+  const unitId = _currentTenantUnit;
+  if(!unitId) return;
+
+  const docs = (_tenantDocs[unitId]||{})[_currentDocCategory] || [];
+  if(!docs.length) { list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--dim);font-size:.82rem" id="docListEmpty">No documents in this category yet</div>'; return; }
+
+  const icons = {pdf:'📄', jpg:'🖼️', jpeg:'🖼️', png:'🖼️', doc:'📝', docx:'📝', default:'📎'};
+  list.innerHTML = docs.map((d,i) => {
+    const ext = (d.name||'').split('.').pop().toLowerCase();
+    const icon = icons[ext]||icons.default;
+    const size = d.size ? (d.size/1024 < 1024 ? (d.size/1024).toFixed(0)+'KB' : (d.size/1024/1024).toFixed(1)+'MB') : '';
+    return `<div class="doc-item">
+      <div class="doc-item-icon">${icon}</div>
+      <div class="doc-item-body">
+        <div class="doc-item-name">${d.name}</div>
+        <div class="doc-item-meta">${size} · ${d.uploadedAt ? new Date(d.uploadedAt).toLocaleDateString('en-GB') : ''}</div>
+      </div>
+      <div class="doc-item-actions">
+        ${d.url ? `<a href="${d.url}" target="_blank" class="btn btn-sm btn-blue">View</a>` : ''}
+        <button class="btn btn-sm btn-red" onclick="removeDoc('${unitId}','${_currentDocCategory}',${i})">Del</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Update doc count cache
+  const allDocs = Object.values(_tenantDocs[unitId]||{}).flat();
+  _docCounts[unitId] = allDocs.length;
+}
+
+async function handleDocUpload(input) {
+  const files = Array.from(input.files);
+  if(!files.length || !_currentTenantUnit) return;
+  const progressList = document.getElementById('uploadProgressList');
+  progressList.innerHTML = '';
+
+  for(const file of files) {
+    if(file.size > 10 * 1024 * 1024) { toast('⚠ ' + file.name + ' exceeds 10 MB limit'); continue; }
+
+    // Add progress row
+    const rowId = 'upr_' + Date.now() + Math.random().toString(36).slice(2);
+    progressList.innerHTML += `<div class="upload-progress-row" id="${rowId}">
+      <span>📤 ${file.name}</span>
+      <div class="upr-bar"><div class="upr-fill" id="${rowId}_fill" style="width:0%"></div></div>
+      <span id="${rowId}_pct">0%</span>
+    </div>`;
+
+    // Try Firebase Storage upload; fall back to local blob URL
+    let url = '';
+    try {
+      if(window._storage && window._storageFn) {
+        const path = `tenant_docs/${_currentTenantUnit}/${_currentDocCategory}/${Date.now()}_${file.name}`;
+        const storageRef = window._storageFn.ref(window._storage, path);
+        const task = window._storageFn.uploadBytesResumable(storageRef, file);
+        url = await new Promise((resolve, reject) => {
+          task.on('state_changed',
+            snap => {
+              const pct = Math.round(snap.bytesTransferred/snap.totalBytes*100);
+              const fill = document.getElementById(rowId+'_fill');
+              const pctEl = document.getElementById(rowId+'_pct');
+              if(fill) fill.style.width = pct+'%';
+              if(pctEl) pctEl.textContent = pct+'%';
+            },
+            reject,
+            async () => { resolve(await window._storageFn.getDownloadURL(task.snapshot.ref)); }
+          );
+        });
+      } else { throw new Error('Storage not ready'); }
+    } catch(e) {
+      // Fallback: store as local object URL (session only — prompt to enable Storage)
+      url = URL.createObjectURL(file);
+      const fill = document.getElementById(rowId+'_fill');
+      if(fill) fill.style.width = '100%';
+      document.getElementById(rowId+'_pct').textContent = '✓';
+    }
+
+    // Save to local store
+    if(!_tenantDocs[_currentTenantUnit]) _tenantDocs[_currentTenantUnit] = {};
+    if(!_tenantDocs[_currentTenantUnit][_currentDocCategory]) _tenantDocs[_currentTenantUnit][_currentDocCategory] = [];
+    _tenantDocs[_currentTenantUnit][_currentDocCategory].push({
+      name: file.name, url, size: file.size, uploadedAt: new Date().toISOString(), type: file.type
+    });
+
+    // Persist to Firestore
+    try {
+      await window._firebase.setDoc(
+        window._firebase.doc(window._db, 'tenantDocs', _currentTenantUnit),
+        { [_currentDocCategory]: _tenantDocs[_currentTenantUnit][_currentDocCategory] },
+        { merge: true }
+      );
+    } catch(e) { console.log('Doc save to Firestore:', e); }
+  }
+
+  // Clear progress after 2s
+  setTimeout(() => { progressList.innerHTML = ''; }, 2000);
+  input.value = '';
+  loadDocList();
+  toast('✓ ' + files.length + ' document(s) uploaded');
+}
+
+function removeDoc(unitId, category, idx) {
+  if(!confirm('Remove this document?')) return;
+  const doc = (_tenantDocs[unitId]||{})[category]?.[idx];
+  if(doc?.url?.startsWith('https://firebasestorage')) {
+    try {
+      const ref = window._storageFn.ref(window._storage, doc.url);
+      window._storageFn.deleteObject(ref).catch(()=>{});
+    } catch(e){}
+  }
+  if(_tenantDocs[unitId]?.[category]) {
+    _tenantDocs[unitId][category].splice(idx, 1);
+    _docCounts[unitId] = Object.values(_tenantDocs[unitId]).flat().length;
+    // Update Firestore
+    window._firebase.setDoc(
+      window._firebase.doc(window._db, 'tenantDocs', unitId),
+      { [category]: _tenantDocs[unitId][category] },
+      { merge: true }
+    ).catch(()=>{});
+  }
+  loadDocList();
+  toast('Document removed');
+}
+
+/* Load tenant docs from Firestore on init */
+async function loadAllTenantDocs() {
+  try {
+    const snap = await window._firebase.getDocs(window._firebase.collection(window._db, 'tenantDocs'));
+    snap.docs.forEach(d => { _tenantDocs[d.id] = d.data(); });
+    // Update doc counts
+    Object.keys(_tenantDocs).forEach(uid => {
+      _docCounts[uid] = Object.values(_tenantDocs[uid]).flat().length;
+    });
+    renderProperties();
+  } catch(e) { console.log('Load tenant docs:', e); }
+}
+
+/* ── DRAG & DROP on CSV drop zone ── */
+(function setupDragDrop() {
+  const ready = () => {
+    const zone = document.getElementById('csvDropZone');
+    if(!zone) return;
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault(); zone.classList.remove('drag-over');
+      const files = e.dataTransfer.files;
+      if(files[0]) { document.getElementById('csvFileInput').files = files; handleCSVImport(document.getElementById('csvFileInput')); }
+    });
+  };
+  if(document.readyState === 'complete') ready();
+  else window.addEventListener('DOMContentLoaded', ready);
+})();
+
 </script>
 </body>
 </html>
