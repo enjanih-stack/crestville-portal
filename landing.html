@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Crestville Properties — Find Your Home</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<script type="module">
+/* ── Firebase initialisation — shared across the whole page ── */
+import { initializeApp }                    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider,
+         signInWithEmailAndPassword,
+         createUserWithEmailAndPassword,
+         sendEmailVerification,
+         signInWithPopup, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, setDoc, getDoc }  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const _cfg = {
+  apiKey:            "AIzaSyAiQ7q1qbwx1i_qjVFaTSJIeb9yneMT21U",
+  authDomain:        "solarappform.firebaseapp.com",
+  projectId:         "solarappform",
+  storageBucket:     "solarappform.firebasestorage.app",
+  messagingSenderId: "298700249528",
+  appId:             "1:298700249528:web:85f6a70780da9479f1174d"
+};
+const _app  = initializeApp(_cfg);
+const _auth = getAuth(_app);
+const _db   = getFirestore(_app);
+const _gp   = new GoogleAuthProvider();
+
+const ADMINS = ['enjanih@gmail.com','crestechnologies@outlook.com','crestiton@gmail.com'];
+
+/* Expose to non-module script */
+window._auth = _auth; window._db = _db; window._gp = _gp;
+window._fbFns = { signInWithEmailAndPassword, createUserWithEmailAndPassword,
+                  sendEmailVerification, signInWithPopup, doc, setDoc, getDoc, ADMINS };
+window._fbReady = true;
+window.dispatchEvent(new Event('fbReady'));
+
+/* If already logged in — redirect to portal immediately */
+onAuthStateChanged(_auth, user => {
+  if (user) {
+    const isAdmin = ADMINS.includes((user.email||'').toLowerCase());
+    // Only auto-redirect if they are on the landing page without a modal open
+    if (!document.getElementById('existingOverlay').classList.contains('open') &&
+        !document.getElementById('flowOverlay').classList.contains('open') &&
+        !document.getElementById('adminOverlay').classList.contains('open')) {
+      // Don't auto-redirect — let them stay on landing page; just show a "Go to portal" toast
+    }
+    window._currentUser  = user;
+    window._isAdmin = isAdmin;
+  }
+});
+</script>
+<style>
+:root{--gold:#c9960c;--gl:#e8b422;--ink:#0f0e0c;--dim:#8a7a60;--cream:#faf8f4;--bg:#f0ebe1;--rule:#d4ccbe;--red:#8c1f1f;--green:#1a5c2e;--blue:#1e3a5f;--card:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--ink);font-family:'DM Sans',sans-serif;color:#e8dfc8;overflow-x:hidden}
+
+/* LOADER */
+#pgLoader{position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s ease}
+#pgLoader.hide{opacity:0;pointer-events:none}
+.ld-ring{width:68px;height:68px;border-radius:50%;border:2px solid #2a2620;border-top-color:var(--gold);animation:spin 1s linear infinite;position:relative;margin-bottom:20px}
+.ld-logo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.ld-logo img{width:44px;height:44px;border-radius:50%;object-fit:cover}
+.ld-text{font-family:'Cormorant Garamond',serif;color:#fff;font-size:1.1rem;letter-spacing:.1em;text-align:center}
+.ld-sub{color:var(--gold);font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;margin-top:5px;text-align:center}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+#pgToast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#0f0e0c;color:#fff;padding:11px 22px;border-radius:5px;font-size:.82rem;z-index:9000;transition:transform .35s cubic-bezier(.34,1.56,.64,1);border-top:3px solid var(--gold);max-width:92vw;text-align:center;pointer-events:none;white-space:nowrap}
+#pgToast.show{transform:translateX(-50%) translateY(0)}
+
+/* NAVBAR */
+#navbar{position:fixed;top:0;left:0;right:0;z-index:500;height:66px;background:rgba(10,9,8,.95);border-bottom:1px solid rgba(201,150,12,.2);backdrop-filter:blur(16px);transition:box-shadow .3s}
+#navbar.solid{box-shadow:0 4px 24px rgba(0,0,0,.4)}
+.nb{max-width:1180px;margin:0 auto;padding:0 24px;height:100%;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.nb-brand{display:flex;align-items:center;gap:12px;text-decoration:none;cursor:pointer}
+.nb-logo{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--gold);object-fit:cover;flex-shrink:0}
+.nb-name{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:#fff}
+.nb-sub{font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;opacity:.8}
+.nb-links{display:flex;gap:4px}
+.nb-lnk{background:none;border:none;color:#9a8a6a;font-size:.82rem;font-weight:500;padding:7px 14px;border-radius:5px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.nb-lnk:hover{color:#fff;background:rgba(255,255,255,.07)}
+.nb-right{display:flex;align-items:center;gap:8px}
+.nb-admin{background:none;border:1px solid rgba(255,255,255,.12);color:#9a8a6a;font-size:.8rem;padding:7px 14px;border-radius:5px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.nb-admin:hover{color:#fff;border-color:rgba(255,255,255,.3)}
+.nb-tenant{background:var(--gold);color:#fff;border:none;border-radius:5px;padding:8px 18px;font-size:.82rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;display:inline-flex;align-items:center;gap:6px;letter-spacing:.02em}
+.nb-tenant:hover{background:var(--gl);transform:translateY(-1px)}
+.nb-ham{display:none;background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;padding:4px 8px;line-height:1}
+
+/* MOBILE NAV */
+#mobileMenu{display:none;position:fixed;top:66px;left:0;right:0;background:#0a0908;border-bottom:1px solid rgba(201,150,12,.2);padding:12px;z-index:490;flex-direction:column;gap:2px}
+#mobileMenu.open{display:flex}
+.mm-item{background:none;border:none;color:#9a8a6a;font-size:.88rem;padding:11px 16px;text-align:left;cursor:pointer;font-family:'DM Sans',sans-serif;border-radius:6px;width:100%;text-decoration:none;display:block}
+.mm-item:hover{background:rgba(255,255,255,.05);color:#fff}
+.mm-divider{height:1px;background:rgba(255,255,255,.07);margin:6px 0}
+
+/* HERO */
+#hero{min-height:100vh;padding-top:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;background:linear-gradient(135deg,#0a0908 0%,#141210 50%,#0d1218 100%)}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(201,150,12,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(201,150,12,.04) 1px,transparent 1px);background-size:60px 60px}
+.hero-glow1{position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(201,150,12,.07),transparent 70%);top:30%;left:20%;pointer-events:none}
+.hero-glow2{position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(30,58,95,.1),transparent 70%);bottom:20%;right:10%;pointer-events:none}
+.hero-inner{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:48px 24px;text-align:center}
+.hero-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(201,150,12,.12);border:1px solid rgba(201,150,12,.25);border-radius:20px;padding:5px 16px;font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:24px}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.4rem,6.5vw,4.2rem);font-weight:700;color:#fff;line-height:1.1;margin-bottom:18px;letter-spacing:-.01em}
+.hero-title .ht-gold{color:var(--gold)}
+.hero-desc{font-size:clamp(.9rem,2vw,1.05rem);color:#9a8a6a;line-height:1.8;max-width:520px;margin:0 auto 40px}
+
+/* BIG CTA BUTTONS */
+.hero-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:60px}
+.btn-new{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#7a5800,var(--gold),var(--gl),var(--gold),#7a5800);background-size:300%;color:#fff;border:none;border-radius:10px;padding:18px 36px;font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;letter-spacing:.04em;cursor:pointer;transition:all .3s;box-shadow:0 6px 28px rgba(201,150,12,.35);animation:sheen 4s linear infinite}
+@keyframes sheen{0%{background-position:0%}100%{background-position:300%}}
+.btn-new:hover{transform:translateY(-3px);box-shadow:0 10px 40px rgba(201,150,12,.45)}
+.btn-exist{display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);color:#e8dfc8;border:1.5px solid rgba(255,255,255,.15);border-radius:10px;padding:18px 36px;font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:600;letter-spacing:.04em;cursor:pointer;transition:all .25s;backdrop-filter:blur(8px)}
+.btn-exist:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,150,12,.08);transform:translateY(-3px)}
+
+/* STATS */
+.hero-stats{display:flex;justify-content:center;flex-wrap:wrap;gap:0;border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;max-width:600px;margin:0 auto;background:rgba(255,255,255,.03);backdrop-filter:blur(8px)}
+.hs-item{flex:1;min-width:130px;padding:18px 20px;text-align:center;border-right:1px solid rgba(255,255,255,.08)}
+.hs-item:last-child{border-right:none}
+.hs-num{font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:700;color:var(--gold);line-height:1}
+.hs-lbl{font-size:.65rem;color:#7a6e62;letter-spacing:.1em;text-transform:uppercase;margin-top:4px}
+.scroll-hint{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);color:#5a4e44;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:6px;animation:bob 2s ease-in-out infinite}
+.scroll-arrow{width:20px;height:20px;border-right:2px solid #5a4e44;border-bottom:2px solid #5a4e44;transform:rotate(45deg)}
+@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(6px)}}
+
+/* FILTER + CAROUSEL SECTION */
+#properties{background:var(--cream)}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;padding:20px 24px;justify-content:center;border-bottom:1px solid var(--rule);background:var(--cream)}
+.fc{padding:7px 18px;border-radius:20px;border:1px solid var(--rule);background:var(--card);color:var(--dim);font-size:.78rem;font-weight:500;cursor:pointer;transition:all .18s;font-family:'DM Sans',sans-serif}
+.fc:hover,.fc.active{background:var(--gold);color:#fff;border-color:var(--gold)}
+
+.sec-hd{padding:56px 24px 36px;text-align:center;max-width:700px;margin:0 auto}
+.sec-eye{font-size:.65rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,4vw,2.6rem);font-weight:700;color:var(--ink);line-height:1.15;margin-bottom:10px}
+.sec-sub{font-size:.9rem;color:var(--dim);line-height:1.75}
+
+/* CAROUSEL */
+.car-wrap{overflow:hidden;position:relative;padding-bottom:8px}
+.car-track{display:flex;gap:22px;padding:8px 40px 16px;transition:transform .5s cubic-bezier(.4,0,.2,1)}
+.car-card{flex-shrink:0;width:320px;background:var(--card);border-radius:14px;border:1px solid var(--rule);box-shadow:0 2px 16px rgba(0,0,0,.07);overflow:hidden;cursor:pointer;transition:all .25s}
+.car-card:hover{transform:translateY(-6px);box-shadow:0 12px 40px rgba(0,0,0,.13)}
+.ccard-top{height:190px;position:relative;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f0e0c,#1a1612)}
+.ccard-top-pattern{position:absolute;inset:0;opacity:.05;background-image:repeating-linear-gradient(45deg,var(--gold) 0,var(--gold) 1px,transparent 0,transparent 20px);background-size:20px 20px}
+.ccard-icon{font-size:4rem;position:relative;z-index:1}
+.ccard-avail{position:absolute;top:10px;right:10px;background:rgba(26,92,46,.9);color:#fff;font-size:.62rem;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.04em}
+.ccard-city{position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,.65);color:var(--gold);font-size:.62rem;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.08em;text-transform:uppercase}
+.ccard-body{padding:16px 18px}
+.ccard-type{font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
+.ccard-name{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:3px}
+.ccard-loc{font-size:.73rem;color:var(--dim);margin-bottom:10px}
+.ccard-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+.chip{background:var(--bg);border:1px solid var(--rule);border-radius:20px;padding:2px 8px;font-size:.64rem;color:var(--dim)}
+.ccard-foot{display:flex;align-items:center;justify-content:space-between;padding-top:11px;border-top:1px solid var(--rule)}
+.ccard-rent{font-family:'DM Mono',monospace;font-size:.88rem;font-weight:600;color:var(--green)}
+.ccard-apply{background:var(--gold);color:#fff;border:none;border-radius:5px;padding:7px 15px;font-size:.77rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s}
+.ccard-apply:hover{background:var(--gl)}
+
+/* Carousel controls */
+.car-ctrl{display:flex;align-items:center;justify-content:center;gap:16px;padding:16px 0 40px}
+.car-btn{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--rule);background:var(--card);color:var(--ink);font-size:.9rem;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center}
+.car-btn:hover{background:var(--gold);color:#fff;border-color:var(--gold)}
+.car-dots{display:flex;gap:6px}
+.car-dot{width:8px;height:8px;border-radius:50%;background:var(--rule);cursor:pointer;transition:all .25s;border:none;padding:0}
+.car-dot.on{background:var(--gold);width:22px;border-radius:4px}
+
+/* HOW IT WORKS */
+#howItWorks{background:#0a0908;padding:72px 24px;position:relative;overflow:hidden}
+#howItWorks::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 25% 50%,rgba(201,150,12,.05),transparent 55%)}
+.hiw-grid{max-width:1100px;margin:28px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;position:relative;z-index:1}
+.hiw-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:26px 20px;text-align:center;transition:all .25s}
+.hiw-card:hover{background:rgba(201,150,12,.06);border-color:rgba(201,150,12,.2);transform:translateY(-4px)}
+.hiw-num{width:38px;height:38px;border-radius:50%;background:rgba(201,150,12,.1);border:1.5px solid rgba(201,150,12,.3);color:var(--gold);font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.hiw-ico{font-size:1.7rem;display:block;margin-bottom:9px}
+.hiw-name{font-family:'Cormorant Garamond',serif;font-size:.98rem;font-weight:700;color:#fff;margin-bottom:7px}
+.hiw-desc{font-size:.77rem;color:#7a6e62;line-height:1.7}
+
+/* CTA BAND */
+#ctaBand{padding:80px 24px;background:linear-gradient(135deg,#faf3e0,#fff8ec,#faf3e0)}
+.ctab-inner{max-width:760px;margin:0 auto;text-align:center}
+.ctab-inner h2{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,4.5vw,2.8rem);font-weight:700;color:var(--ink);margin-bottom:12px}
+.ctab-inner p{font-size:.9rem;color:var(--dim);margin-bottom:32px;line-height:1.75}
+.ctab-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.ctab-primary{background:var(--ink);color:var(--gold);border:2px solid var(--gold);border-radius:8px;padding:14px 30px;font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .22s;display:inline-flex;align-items:center;gap:8px}
+.ctab-primary:hover{background:var(--gold);color:#fff;transform:translateY(-2px)}
+.ctab-secondary{background:transparent;color:var(--ink);border:2px solid var(--rule);border-radius:8px;padding:14px 28px;font-family:'Cormorant Garamond',serif;font-size:.98rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:all .22s;display:inline-flex;align-items:center;gap:8px}
+.ctab-secondary:hover{border-color:var(--ink);transform:translateY(-2px)}
+
+/* FOOTER */
+footer{background:#060504;padding:48px 24px 24px;border-top:1px solid rgba(201,150,12,.15)}
+.ft-grid{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:40px;margin-bottom:32px}
+.ft-logo{width:46px;height:46px;border-radius:50%;border:1.5px solid var(--gold);object-fit:cover;margin-bottom:12px}
+.ft-brand{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:#fff}
+.ft-brand-sub{font-size:.6rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px}
+.ft-desc{font-size:.77rem;color:#7a6e62;line-height:1.75}
+.ft-title{font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+.ft-lnk{display:block;font-size:.79rem;color:#9a8a6a;text-decoration:none;margin-bottom:8px;background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:left;padding:0;transition:color .15s;width:100%}
+.ft-lnk:hover{color:#e8dfc8}
+.ft-bottom{max-width:1100px;margin:0 auto;padding-top:20px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;font-size:.7rem;color:#5a4e44;flex-wrap:wrap;gap:8px}
+
+/* ─── MODALS ─── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:700;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(5px)}
+.overlay{display:none}
+.overlay.open{display:flex}
+.modal{background:var(--cream);border-radius:14px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.45)}
+.modal-hd{background:var(--ink);padding:16px 20px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between}
+.modal-hd h3{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:#fff}
+.modal-x{background:none;border:none;color:#9a8a6a;font-size:1.3rem;cursor:pointer;line-height:1}
+.modal-x:hover{color:#fff}
+.modal-stripe{height:3px;background:linear-gradient(90deg,var(--gold),var(--gl),var(--gold))}
+.modal-bd{padding:22px}
+.atabs{display:flex;background:var(--bg);border-radius:7px;padding:3px;margin-bottom:18px}
+.atab{flex:1;padding:8px;border:none;background:none;border-radius:5px;font-size:.82rem;font-weight:500;cursor:pointer;color:var(--dim);font-family:'DM Sans',sans-serif;transition:all .2s}
+.atab.on{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.apanel{display:none}.apanel.on{display:block}
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:13px}
+.fg label{font-size:.6rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+.fg input,.fg select{width:100%;padding:10px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-size:.9rem;font-family:'DM Sans',sans-serif;background:var(--card);color:var(--ink);transition:all .2s}
+.fg input:focus,.fg select:focus{outline:none;border-bottom-color:var(--gl);background:#fffdf5}
+.abtn{width:100%;padding:12px;background:linear-gradient(135deg,#9a7010,var(--gold),#9a7010);background-size:200%;color:#fff;border:none;border-radius:6px;font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .2s;margin-top:6px}
+.abtn:hover{background-position:100%}
+.adiv{display:flex;align-items:center;gap:10px;margin:14px 0;font-size:.72rem;color:var(--dim)}
+.adiv::before,.adiv::after{content:'';flex:1;height:1px;background:var(--rule)}
+.gbtn{width:100%;padding:11px;background:var(--card);border:1px solid var(--rule);border-radius:6px;font-size:.86rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-family:'DM Sans',sans-serif;color:var(--ink);transition:all .2s}
+.gbtn:hover{background:var(--cream);border-color:var(--gold)}
+.aerr{font-size:.76rem;color:var(--red);margin-top:6px;text-align:center;min-height:16px}
+
+/* FLOW MODAL */
+.flow-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:700;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(5px)}
+.flow-overlay.open{display:flex}
+.flow-card{background:var(--cream);border-radius:14px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.45)}
+.flow-hd{background:var(--ink);padding:16px 20px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2}
+.flow-hd h3{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:#fff}
+.flow-bd{padding:22px}
+
+/* STEP INDICATOR */
+.steps{display:flex;align-items:center;justify-content:center;margin-bottom:22px}
+.step-dot{width:30px;height:30px;border-radius:50%;border:2px solid var(--rule);background:var(--card);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--dim);transition:all .3s;flex-shrink:0}
+.step-dot.done{background:var(--green);border-color:var(--green);color:#fff}
+.step-dot.active{background:var(--gold);border-color:var(--gold);color:#fff}
+.step-lbl{font-size:.62rem;color:var(--dim);text-align:center;margin-top:3px;white-space:nowrap;font-weight:500}
+.step-wrap{display:flex;flex-direction:column;align-items:center}
+.step-wrap.active .step-lbl{color:var(--gold);font-weight:700}
+.step-line{flex:1;height:2px;background:var(--rule);margin:0 6px;margin-bottom:16px;min-width:24px;transition:background .3s}
+.step-line.done{background:var(--green)}
+
+/* FLOW STEPS */
+.fstep{display:none}.fstep.on{display:block}
+
+/* PROPERTY CHOICE */
+.prop-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0;max-height:300px;overflow-y:auto;padding-right:4px}
+.prop-item{border:1.5px solid var(--rule);border-radius:8px;padding:11px 13px;cursor:pointer;transition:all .2s;background:var(--card)}
+.prop-item:hover{border-color:var(--gold);background:#fffbf0}
+.prop-item.sel{border-color:var(--gold);background:#fffbf0;box-shadow:0 0 0 3px rgba(201,150,12,.12)}
+.pi-name{font-size:.84rem;font-weight:600;color:var(--ink);margin-bottom:2px}
+.pi-loc{font-size:.68rem;color:var(--dim)}
+.pi-rent{font-family:'DM Mono',monospace;font-size:.74rem;color:var(--green);margin-top:4px;font-weight:600}
+
+/* DOC UPLOADS */
+.doc-items{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.doc-item{background:var(--card);border:1px solid var(--rule);border-radius:7px;padding:11px 14px;display:flex;align-items:center;gap:11px;position:relative;cursor:pointer;transition:all .2s}
+.doc-item:hover{border-color:var(--gold);background:#fffbf0}
+.doc-item input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.di-icon{font-size:1.3rem;flex-shrink:0}
+.di-body{flex:1}
+.di-name{font-size:.82rem;font-weight:600;color:var(--ink)}
+.di-hint{font-size:.68rem;color:var(--dim);margin-top:1px}
+.di-status{font-size:.72rem;flex-shrink:0}
+.di-status.ok{color:var(--green);font-weight:700}
+
+/* FORM GRID */
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.span2{grid-column:1/-1}
+
+/* FLOW NAV */
+.fnav{display:flex;gap:10px;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--rule);margin-top:18px}
+.fbtn-back{background:transparent;color:var(--dim);border:1px solid var(--rule);border-radius:6px;padding:10px 18px;font-size:.84rem;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s}
+.fbtn-back:hover{border-color:var(--gold);color:var(--ink)}
+.fbtn-next{background:var(--gold);color:#fff;border:none;border-radius:6px;padding:10px 22px;font-size:.84rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;display:inline-flex;align-items:center;gap:6px}
+.fbtn-next:hover{background:var(--gl);transform:translateY(-1px)}
+
+/* SUMMARY BOX */
+.summary-box{background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:14px 16px;margin:14px 0}
+.sb-row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px dashed var(--rule);font-size:.82rem}
+.sb-row:last-child{border-bottom:none}
+.sb-label{color:var(--dim)}
+.sb-value{font-weight:600;color:var(--ink);text-align:right;max-width:220px}
+
+/* RESPONSIVE */
+@media(max-width:800px){
+  .ft-grid{grid-template-columns:1fr 1fr}
+  .ft-grid>div:first-child{grid-column:1/-1}
+  .nb-links{display:none}
+  .nb-ham{display:block}
+  .car-card{width:290px}
+  .prop-grid{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .hiw-grid{grid-template-columns:1fr 1fr}
+  .hs-item{min-width:50%}
+  .btn-new,.btn-exist{padding:15px 22px;font-size:.98rem;width:100%;justify-content:center}
+  .hero-btns{flex-direction:column;align-items:center;gap:10px}
+  .car-card{width:270px}
+  .fg2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="pgLoader">
+  <div class="ld-ring">
+    <div class="ld-logo"><img src="data:image/jpeg;base64,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" alt=""/></div>
+  </div>
+  <div class="ld-text">Crestville Properties</div>
+  <div class="ld-sub">by Crestechnologies IS Ltd</div>
+</div>
+
+<!-- TOAST -->
+<div id="pgToast"></div>
+
+<!-- NAVBAR -->
+<nav id="navbar">
+  <div class="nb">
+    <div class="nb-brand" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+      <img class="nb-logo" src="data:image/jpeg;base64,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" alt="Crestville Properties"/>
+      <div>
+        <div class="nb-name">Crestville Properties</div>
+        <div class="nb-sub">Crestechnologies IS Ltd</div>
+      </div>
+    </div>
+    <div class="nb-links">
+      <button class="nb-lnk" onclick="jumpTo('properties')">Properties</button>
+      <button class="nb-lnk" onclick="jumpTo('howItWorks')">How It Works</button>
+      <button class="nb-lnk" onclick="jumpTo('footer')">Contact</button>
+    </div>
+    <div class="nb-right">
+      <button class="nb-admin" onclick="openAdmin()">🏛 Admin Login</button>
+      <button class="nb-tenant" onclick="openExisting()">🔑 Existing Tenant</button>
+      <button class="nb-ham" onclick="toggleMM()">☰</button>
+    </div>
+  </div>
+</nav>
+
+<!-- MOBILE MENU -->
+<div id="mobileMenu">
+  <button class="mm-item" onclick="jumpTo('properties');toggleMM()">Properties</button>
+  <button class="mm-item" onclick="jumpTo('howItWorks');toggleMM()">How It Works</button>
+  <button class="mm-item" onclick="jumpTo('footer');toggleMM()">Contact</button>
+  <div class="mm-divider"></div>
+  <button class="mm-item" onclick="openNew()">🏠 New Tenant Application</button>
+  <button class="mm-item" onclick="openExisting();toggleMM()">🔑 Existing Tenant Login</button>
+  <button class="mm-item" onclick="openAdmin();toggleMM()">🏛 Admin Login</button>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow1"></div>
+  <div class="hero-glow2"></div>
+  <div class="hero-inner">
+    <div class="hero-pill">🏆 Crestville Properties · Est. 2015</div>
+    <h1 class="hero-title">Find Your Perfect<br><span class="ht-gold">Home in Nigeria</span></h1>
+    <p class="hero-desc">Premium residential and commercial properties across Ojodu, Ibadan and Enugu. Transparent process · Professional management · Community living.</p>
+    <div class="hero-btns">
+      <button class="btn-new" onclick="openNew()">
+        🏠 New / Prospective Tenant
+      </button>
+      <button class="btn-exist" onclick="openExisting()">
+        🔑 Existing Tenant Login
+      </button>
+    </div>
+    <div class="hero-stats">
+      <div class="hs-item"><div class="hs-num">24</div><div class="hs-lbl">Total Units</div></div>
+      <div class="hs-item"><div class="hs-num" id="statVacant">—</div><div class="hs-lbl">Available Now</div></div>
+      <div class="hs-item"><div class="hs-num">3</div><div class="hs-lbl">Locations</div></div>
+      <div class="hs-item"><div class="hs-num">10+</div><div class="hs-lbl">Yrs Experience</div></div>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</section>
+
+<!-- PROPERTIES SECTION -->
+<div id="properties">
+  <div class="filter-row">
+    <button class="fc active" onclick="setFilter('all',this)">All</button>
+    <button class="fc" onclick="setFilter('Ojodu',this)">📍 Ojodu</button>
+    <button class="fc" onclick="setFilter('Ibadan',this)">📍 Ibadan</button>
+    <button class="fc" onclick="setFilter('Enugu',this)">📍 Enugu</button>
+    <button class="fc" onclick="setFilter('2 Bedroom Flat',this)">🏠 2 Bed</button>
+    <button class="fc" onclick="setFilter('3 Bedroom Flat',this)">🏡 3 Bed</button>
+    <button class="fc" onclick="setFilter('Commercial',this)">🏪 Commercial</button>
+  </div>
+
+  <div style="background:var(--cream)">
+    <div class="sec-hd">
+      <div class="sec-eye">Available Properties</div>
+      <h2 class="sec-title">Quality Homes, Transparent Process</h2>
+      <p class="sec-sub">Professionally managed units with 24hr security, borehole water, and responsive maintenance. Click any property to apply.</p>
+    </div>
+    <div class="car-wrap">
+      <div class="car-track" id="carTrack"></div>
+    </div>
+    <div class="car-ctrl">
+      <button class="car-btn" onclick="carPrev()">←</button>
+      <div class="car-dots" id="carDots"></div>
+      <button class="car-btn" onclick="carNext()">→</button>
+    </div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section id="howItWorks">
+  <div class="sec-hd" style="padding:56px 24px 20px">
+    <div class="sec-eye">Simple Process</div>
+    <h2 class="sec-title" style="color:#fff">How It Works</h2>
+    <p class="sec-sub" style="color:#7a6e62">From enquiry to key handover — clear, digital, professional.</p>
+  </div>
+  <div class="hiw-grid">
+    <div class="hiw-card"><span class="hiw-num">1</span><span class="hiw-ico">🔍</span><div class="hiw-name">Browse & Choose</div><div class="hiw-desc">View all available units with amenities, location, and expected availability. Filter by city or type.</div></div>
+    <div class="hiw-card"><span class="hiw-num">2</span><span class="hiw-ico">📋</span><div class="hiw-name">Complete KYT Form</div><div class="hiw-desc">Fill the Know Your Tenant questionnaire. Upload your passport, NIN slip, and supporting documents directly.</div></div>
+    <div class="hiw-card"><span class="hiw-num">3</span><span class="hiw-ico">👥</span><div class="hiw-name">Referees & Guarantors</div><div class="hiw-desc">Enter referee and guarantor emails. They receive a digital consent link with full legal advisory — they sign remotely.</div></div>
+    <div class="hiw-card"><span class="hiw-num">4</span><span class="hiw-ico">📝</span><div class="hiw-name">Sign Agreement</div><div class="hiw-desc">Once approved, the full tenancy agreement is sent digitally. All parties sign — Clause X formally acknowledged.</div></div>
+    <div class="hiw-card"><span class="hiw-num">5</span><span class="hiw-ico">🔑</span><div class="hiw-name">Move In</div><div class="hiw-desc">Meter details recorded, estate dues explained, keys handed over. Your portal account holds all your documents.</div></div>
+  </div>
+</section>
+
+<!-- CTA BAND -->
+<section id="ctaBand">
+  <div class="ctab-inner">
+    <h2>Ready to Find Your Home?</h2>
+    <p>Start your application today. Fully digital — no office visit required for initial screening. Professional, transparent, fast.</p>
+    <div class="ctab-btns">
+      <button class="ctab-primary" onclick="openNew()">🏠 Start Application</button>
+      <button class="ctab-secondary" onclick="openExisting()">🔑 Tenant Login</button>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer id="footer">
+  <div class="ft-grid">
+    <div>
+      <img class="ft-logo" src="data:image/jpeg;base64,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" alt=""/>
+      <div class="ft-brand">Crestechnologies IS Ltd</div>
+      <div class="ft-brand-sub">RC 1643396 · Crestville Properties</div>
+      <div class="ft-desc">Quality residential and commercial property management across Ojodu, Ibadan and Enugu since 2015. Professional, transparent, community-first.</div>
+    </div>
+    <div>
+      <div class="ft-title">Contact Us</div>
+      <button class="ft-lnk" onclick="location.href='mailto:crestechnologies@outlook.com'">✉️ crestechnologies@outlook.com</button>
+      <div class="ft-lnk">📍 Victoria Estate #20, Ojodu, Ogun State</div>
+      <div class="ft-lnk">📍 Ababeji, Ibadan, Oyo State</div>
+      <div class="ft-lnk">📍 Iyana Idaw River Ext., Enugu</div>
+    </div>
+    <div>
+      <div class="ft-title">Quick Links</div>
+      <button class="ft-lnk" onclick="openNew()">🏠 New Tenant Application</button>
+      <button class="ft-lnk" onclick="openExisting()">🔑 Existing Tenant Login</button>
+      <button class="ft-lnk" onclick="openAdmin()">🏛 Admin / Staff Login</button>
+      <a class="ft-lnk" href="https://enjanih-stack.github.io/crestville-portal/CRS_Consent_Portal_v2.html">🛡 Consent Portal</a>
+      <a class="ft-lnk" href="https://enjanih-stack.github.io/crestville-portal/tenancy_deviation_requisition_v2.html">🔄 Deviation Requisition</a>
+    </div>
+  </div>
+  <div class="ft-bottom">
+    <span>© 2026 Crestechnologies IS Ltd — All rights reserved</span>
+    <span style="color:var(--gold)">Powered by Firebase · CRS Portal</span>
+  </div>
+</footer>
+
+<!-- ═══ EXISTING TENANT MODAL ═══ -->
+<div id="existingOverlay" class="overlay">
+  <div class="modal">
+    <div class="modal-hd"><h3>🔑 Existing Tenant Login</h3><button class="modal-x" onclick="closeExisting()">✕</button></div>
+    <div class="modal-stripe"></div>
+    <div class="modal-bd">
+      <div class="atabs">
+        <button class="atab on" onclick="atab('login')">Sign In</button>
+        <button class="atab" onclick="atab('register')">Register</button>
+      </div>
+      <div class="apanel on" id="apLogin">
+        <div class="fg"><label>Email Address</label><input type="email" id="lEmail" placeholder="your@email.com" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+        <div class="fg"><label>Password</label><input type="password" id="lPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+        <div class="aerr" id="lErr"></div>
+        <button class="abtn" onclick="doLogin()">Sign In →</button>
+        <div class="adiv"><span>or</span></div>
+        <button class="gbtn" onclick="doGoogle()">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.2H42V20H24v8h11.3C33.7 32.9 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.6 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.8z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 13 24 13c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.6 29.3 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3.1-11.3-7.5l-6.5 5C9.5 40 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.2H42V20H24v8h11.3c-.9 2.4-2.5 4.5-4.6 5.9l6.2 5.2C42.5 35.8 44 30.2 44 24c0-1.3-.1-2.6-.4-3.8z"/></svg>
+          Continue with Google
+        </button>
+      </div>
+      <div class="apanel" id="apRegister">
+        <div class="fg"><label>Full Name</label><input type="text" id="rName" placeholder="Your full name"/></div>
+        <div class="fg"><label>Email Address</label><input type="email" id="rEmail" placeholder="your@email.com"/></div>
+        <div class="fg"><label>Password (min 6 characters)</label><input type="password" id="rPass" placeholder="••••••••"/></div>
+        <div class="aerr" id="rErr"></div>
+        <button class="abtn" onclick="doRegister()">Create Account →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ NEW TENANT FLOW ═══ -->
+<div id="flowOverlay" class="flow-overlay">
+  <div class="flow-card">
+    <div class="flow-hd">
+      <h3 id="flowTitle">New Tenant Application</h3>
+      <button class="modal-x" onclick="closeNew()">✕</button>
+    </div>
+    <div class="modal-stripe"></div>
+    <div class="flow-bd">
+
+      <!-- STEP BAR -->
+      <div class="steps">
+        <div class="step-wrap active" id="sw1"><div class="step-dot active" id="sd1">1</div><div class="step-lbl">Unit</div></div>
+        <div class="step-line" id="sl1"></div>
+        <div class="step-wrap" id="sw2"><div class="step-dot" id="sd2">2</div><div class="step-lbl">Details</div></div>
+        <div class="step-line" id="sl2"></div>
+        <div class="step-wrap" id="sw3"><div class="step-dot" id="sd3">3</div><div class="step-lbl">Documents</div></div>
+        <div class="step-line" id="sl3"></div>
+        <div class="step-wrap" id="sw4"><div class="step-dot" id="sd4">4</div><div class="step-lbl">Apply</div></div>
+      </div>
+
+      <!-- STEP 1 — CHOOSE UNIT -->
+      <div class="fstep on" id="fs1">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:4px">Which property are you interested in?</div>
+        <div style="font-size:.79rem;color:var(--dim);margin-bottom:12px">Select a unit below. You can change this preference later.</div>
+        <div class="prop-grid" id="propGrid"></div>
+        <div class="fnav">
+          <button class="fbtn-back" onclick="closeNew()">Cancel</button>
+          <button class="fbtn-next" onclick="fNext(2)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- STEP 2 — PERSONAL DETAILS -->
+      <div class="fstep" id="fs2">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:14px">Your personal details</div>
+        <div class="fg2">
+          <div class="fg span2"><label>Full Legal Name *</label><input type="text" id="fName" placeholder="As it appears on your ID"/></div>
+          <div class="fg"><label>Email Address *</label><input type="email" id="fEmail" placeholder="your@email.com"/></div>
+          <div class="fg"><label>Phone (WhatsApp) *</label><input type="tel" id="fPhone" placeholder="+234…"/></div>
+          <div class="fg"><label>Occupation *</label><input type="text" id="fOcc" placeholder="e.g. Civil Engineer"/></div>
+          <div class="fg"><label>Employer / Business</label><input type="text" id="fEmployer" placeholder="Company or business name"/></div>
+          <div class="fg span2"><label>Current Address *</label><input type="text" id="fAddr" placeholder="Full current residential address"/></div>
+          <div class="fg"><label>State of Origin</label><input type="text" id="fState" placeholder="e.g. Lagos State"/></div>
+          <div class="fg"><label>NIN</label><input type="text" id="fNIN" placeholder="National Identification Number"/></div>
+        </div>
+        <div class="fnav">
+          <button class="fbtn-back" onclick="fNext(1)">← Back</button>
+          <button class="fbtn-next" onclick="fNext(3)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3 — DOCUMENTS -->
+      <div class="fstep" id="fs3">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:4px">Upload required documents</div>
+        <div style="font-size:.79rem;color:var(--dim);margin-bottom:14px">Stored securely. You can also complete this step later from your tenant portal.</div>
+        <div class="doc-items">
+          <div class="doc-item" id="di_passport">
+            <input type="file" accept="image/*,.pdf" onchange="docUploaded('passport',this)"/>
+            <span class="di-icon">📷</span>
+            <div class="di-body"><div class="di-name">Passport Photograph *</div><div class="di-hint">JPG/PNG · Recent · White background · Passport size</div></div>
+            <span class="di-status" id="dst_passport">Upload</span>
+          </div>
+          <div class="doc-item" id="di_nin">
+            <input type="file" accept="image/*,.pdf" onchange="docUploaded('nin',this)"/>
+            <span class="di-icon">🪪</span>
+            <div class="di-body"><div class="di-name">NIN Slip / NIMC Card *</div><div class="di-hint">PDF or image of your National Identity document</div></div>
+            <span class="di-status" id="dst_nin">Upload</span>
+          </div>
+          <div class="doc-item" id="di_work">
+            <input type="file" accept="image/*,.pdf,.doc,.docx" onchange="docUploaded('work',this)"/>
+            <span class="di-icon">💼</span>
+            <div class="di-body"><div class="di-name">Employment Letter / CAC Certificate</div><div class="di-hint">Optional — improves approval. Letter of employment or business registration</div></div>
+            <span class="di-status" id="dst_work">Upload</span>
+          </div>
+          <div class="doc-item" id="di_bank">
+            <input type="file" accept="image/*,.pdf" onchange="docUploaded('bank',this)"/>
+            <span class="di-icon">🏦</span>
+            <div class="di-body"><div class="di-name">Bank Statement (3–6 months)</div><div class="di-hint">Optional — demonstrates financial capability</div></div>
+            <span class="di-status" id="dst_bank">Upload</span>
+          </div>
+          <div class="doc-item" id="di_other">
+            <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onchange="docUploaded('other',this)"/>
+            <span class="di-icon">📎</span>
+            <div class="di-body"><div class="di-name">Other Supporting Documents</div><div class="di-hint">Utility bill, guarantor letter, or any other supporting document</div></div>
+            <span class="di-status" id="dst_other">Upload</span>
+          </div>
+        </div>
+        <div class="fnav">
+          <button class="fbtn-back" onclick="fNext(2)">← Back</button>
+          <button class="fbtn-next" onclick="fNext(4)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- STEP 4 — LAUNCH -->
+      <div class="fstep" id="fs4">
+        <div style="text-align:center;padding:12px 0">
+          <div style="font-size:3rem;margin-bottom:12px">🎉</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:700;color:var(--ink);margin-bottom:8px">Ready to start your application!</div>
+          <div style="font-size:.82rem;color:var(--dim);line-height:1.8;margin-bottom:18px">Your details are saved. The KYT form will open pre-filled. After submitting, your referees and guarantors will automatically receive consent links by email and WhatsApp.</div>
+          <div class="summary-box" id="summaryBox"></div>
+          <button class="btn-new" style="font-size:.9rem;padding:13px 24px;width:100%;justify-content:center;margin-bottom:10px;border-radius:7px;animation:none;background:var(--gold)" onclick="launchKYT()">
+            📋 Open KYT Questionnaire →
+          </button>
+          <button class="fbtn-back" style="width:100%;text-align:center;justify-content:center" onclick="closeNew()">
+            Save & Complete Later
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const PROPS = [{"id": "OJ-1A", "label": "2BDR Flat 1A", "location": "11 Jibewa Somorin Close, Ojodu", "city": "Ojodu", "type": "2 Bedroom Flat", "amenities": ["2 Bedrooms", "Living Room", "Kitchen", "2 Bathrooms", "Car Park", "24hr Security"], "availableFrom": "2025-06-01", "rent": 500000}, {"id": "OJ-2A", "label": "2BDR Flat 2A", "location": "11 Jibewa Somorin Close, Ojodu", "city": "Ojodu", "type": "2 Bedroom Flat", "amenities": ["2 Bedrooms", "Living Room", "Kitchen", "Borehole Water", "Car Park"], "availableFrom": "2025-07-01", "rent": 500000}, {"id": "OJ-2B", "label": "3BDR Flat 2B", "location": "11 Jibewa Somorin Close, Ojodu", "city": "Ojodu", "type": "3 Bedroom Flat", "amenities": ["3 Bedrooms", "Dining Room", "Kitchen", "3 Bathrooms", "Car Park", "Generator", "24hr Security"], "availableFrom": "2025-06-01", "rent": 700000}, {"id": "OJ-4B", "label": "3BDR Flat 4B", "location": "11 Jibewa Somorin Close, Ojodu", "city": "Ojodu", "type": "3 Bedroom Flat", "amenities": ["3 Bedrooms", "Living Room", "Kitchen", "3 Bathrooms", "Gated Estate", "Car Park"], "availableFrom": "2025-07-15", "rent": 700000}, {"id": "OJ-SC", "label": "Self Contain 2C", "location": "11 Jibewa Somorin Close, Ojodu", "city": "Ojodu", "type": "Self Contained", "amenities": ["Room", "Bathroom", "Kitchenette", "Security"], "availableFrom": "2025-06-01", "rent": 250000}, {"id": "OJ-SH", "label": "Shop & Office Space", "location": "11 Jibewa Somorin Close, Ojodu", "city": "Ojodu", "type": "Commercial", "amenities": ["Shop Space", "Office Area", "High Footfall", "Good Road Access"], "availableFrom": "2025-06-01", "rent": 600000}, {"id": "IB-2B", "label": "2 Bedroom Flat", "location": "Ababeji Engr's Residence, Ibadan", "city": "Ibadan", "type": "2 Bedroom Flat", "amenities": ["2 Bedrooms", "Living Room", "Kitchen", "Car Park", "Serene Environment"], "availableFrom": "2025-07-01", "rent": 400000}, {"id": "IB-RP", "label": "Room & Parlour", "location": "Ababeji Engr's Residence, Ibadan", "city": "Ibadan", "type": "Room & Parlour", "amenities": ["Room", "Parlour", "Bathroom", "Kitchen"], "availableFrom": "2025-06-01", "rent": 180000}, {"id": "EN-2B", "label": "2BDR Flat", "location": "Plot 7 Iyana Idaw River Ext., Enugu", "city": "Enugu", "type": "2 Bedroom Flat", "amenities": ["2 Bedrooms", "Living Room", "Kitchen", "Easy Access Road"], "availableFrom": "2025-08-01", "rent": 380000}];
+const ADMINS = ['enjanih@gmail.com','crestechnologies@outlook.com','crestiton@gmail.com'];
+let _filter = 'all';
+let _carIdx = 0;
+let _autoTimer = null;
+let _selProp = null;
+let _docs = {};
+
+/* ── UTILS ── */
+let _tt2;
+function showToast(m, d=3000) {
+  const t = document.getElementById('pgToast');
+  t.textContent = m; t.classList.add('show');
+  clearTimeout(_tt2); _tt2 = setTimeout(() => t.classList.remove('show'), d);
+}
+function jumpTo(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function toggleMM() { document.getElementById('mobileMenu').classList.toggle('open'); }
+
+/* ── NAVBAR SCROLL ── */
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('solid', window.scrollY > 50);
+});
+
+/* ── FILTER ── */
+function setFilter(f, btn) {
+  _filter = f;
+  document.querySelectorAll('.fc').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  buildCarousel();
+}
+function getFiltered() {
+  if (_filter === 'all') return PROPS;
+  return PROPS.filter(p => p.city === _filter || p.type === _filter);
+}
+
+/* ── CAROUSEL ── */
+const TYPE_ICONS = {'2 Bedroom Flat':'🏠','3 Bedroom Flat':'🏡','Self Contained':'🏘','Room & Parlour':'🛋','Commercial':'🏪'};
+
+function buildCarousel() {
+  const props = getFiltered();
+  const track = document.getElementById('carTrack');
+  const dots  = document.getElementById('carDots');
+  track.innerHTML = props.map(p => {
+    const d = p.availableFrom ? new Date(p.availableFrom).toLocaleDateString('en-NG',{month:'short',day:'numeric',year:'numeric'}) : 'Available Now';
+    const chips = (p.amenities||[]).slice(0,4).map(a => `<span class="chip">${a}</span>`).join('') + (p.amenities?.length>4 ? `<span class="chip">+${p.amenities.length-4}</span>` : '');
+    return `<div class="car-card" onclick="quickApply('${p.id}')">
+      <div class="ccard-top">
+        <div class="ccard-top-pattern"></div>
+        <span class="ccard-icon">${TYPE_ICONS[p.type]||'🏠'}</span>
+        <span class="ccard-avail">📅 ${d}</span>
+        <span class="ccard-city">📍 ${p.city}</span>
+      </div>
+      <div class="ccard-body">
+        <div class="ccard-type">${p.type}</div>
+        <div class="ccard-name">${p.label}</div>
+        <div class="ccard-loc">📍 ${p.location}</div>
+        <div class="ccard-chips">${chips}</div>
+        <div class="ccard-foot">
+          <div class="ccard-rent">${p.rent ? '₦'+p.rent.toLocaleString()+'/yr' : 'Enquire'}</div>
+          <button class="ccard-apply" onclick="event.stopPropagation();quickApply('${p.id}')">Apply →</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="padding:40px;text-align:center;color:var(--dim);width:100%">No units in this category currently available</div>';
+
+  dots.innerHTML = props.map((_, i) => `<button class="car-dot${i===0?' on':''}" onclick="goSlide(${i})"></button>`).join('');
+  _carIdx = 0;
+  updateCarousel();
+  startAuto();
+  document.getElementById('statVacant').textContent = props.length;
+}
+
+function updateCarousel() {
+  const track = document.getElementById('carTrack');
+  const cards = track.querySelectorAll('.car-card');
+  if (!cards.length) return;
+  const w = cards[0].offsetWidth + 22;
+  track.style.transform = `translateX(-${_carIdx * w}px)`;
+  document.querySelectorAll('.car-dot').forEach((d,i) => d.classList.toggle('on', i === _carIdx));
+}
+function carNext() { const p = getFiltered(); _carIdx = (_carIdx+1) % p.length; updateCarousel(); resetAuto(); }
+function carPrev() { const p = getFiltered(); _carIdx = (_carIdx-1+p.length) % p.length; updateCarousel(); resetAuto(); }
+function goSlide(i) { _carIdx = i; updateCarousel(); resetAuto(); }
+function startAuto() { clearInterval(_autoTimer); _autoTimer = setInterval(carNext, 5000); }
+function resetAuto() { startAuto(); }
+
+function quickApply(id) {
+  _selProp = PROPS.find(p => p.id === id);
+  openNew();
+  buildPropGrid();
+  document.querySelectorAll('.prop-item').forEach(el => el.classList.toggle('sel', el.dataset.id === id));
+}
+
+/* ── EXISTING TENANT ── */
+function openExisting() { document.getElementById('existingOverlay').classList.add('open'); document.body.style.overflow='hidden'; }
+function closeExisting() { document.getElementById('existingOverlay').classList.remove('open'); document.body.style.overflow=''; }
+document.getElementById('existingOverlay').addEventListener('click', e => { if(e.target===document.getElementById('existingOverlay'))closeExisting(); });
+
+function atab(name) {
+  document.querySelectorAll('.atab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.apanel').forEach(p => p.classList.remove('on'));
+  event.currentTarget.classList.add('on');
+  document.getElementById('ap'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('on');
+}
+
+/* ─────────────────────────────────────────
+   AUTH HELPERS — use window._auth set by module
+───────────────────────────────────────── */
+function fmtErr(code) {
+  const m = {
+    'auth/invalid-email':        'Invalid email address.',
+    'auth/user-not-found':       'No account found with this email.',
+    'auth/wrong-password':       'Incorrect password.',
+    'auth/email-already-in-use': 'This email is already registered.',
+    'auth/weak-password':        'Password must be at least 6 characters.',
+    'auth/invalid-credential':   'Invalid email or password.',
+    'auth/too-many-requests':    'Too many attempts — please try again later.',
+    'auth/email-not-verified':   'Please verify your email first.',
+    'auth/popup-closed-by-user': 'Sign-in popup was closed.',
+    'auth/cancelled-popup-request': 'Another sign-in is already in progress.',
+  };
+  return m[code] || 'Sign-in error. Please try again.';
+}
+
+function waitFB(cb) { if(window._fbReady) cb(); else window.addEventListener('fbReady',cb,{once:true}); }
+
+async function _afterAuth(user, errElId) {
+  const fns = window._fbFns;
+  // Check email verification
+  if (!user.emailVerified) {
+    // Send verification if not sent
+    await fns.sendEmailVerification(user).catch(()=>{});
+    showVerifyModal(user.email);
+    return;
+  }
+  const isAdmin = fns.ADMINS.includes((user.email||'').toLowerCase());
+  // Save/update user in Firestore
+  try {
+    const snap = await fns.getDoc(fns.doc(window._db,'users',user.uid));
+    if (!snap.exists()) {
+      await fns.setDoc(fns.doc(window._db,'users',user.uid), {
+        name: user.displayName || user.email.split('@')[0],
+        email: user.email,
+        role: isAdmin ? 'admin' : 'tenant',
+        createdAt: new Date().toISOString(),
+        linkedUnit: null,
+        emailVerified: true
+      });
+    }
+  } catch(e) {}
+  const dest = 'index.html';
+  showToast(isAdmin ? '✓ Admin access granted! Redirecting…' : '✓ Signed in! Redirecting…', 2000);
+  setTimeout(() => window.location.href = dest, 1800);
+}
+
+/* ── EXISTING TENANT LOGIN ── */
+async function doLogin() {
+  const errEl = 'lErr';
+  document.getElementById(errEl).textContent = '';
+  const email = document.getElementById('lEmail').value.trim();
+  const pass  = document.getElementById('lPass').value;
+  if (!email || !pass) { document.getElementById(errEl).textContent = 'Enter email and password.'; return; }
+  waitFB(async () => {
+    try {
+      const cred = await window._fbFns.signInWithEmailAndPassword(window._auth, email, pass);
+      await _afterAuth(cred.user, errEl);
+    } catch(e) { document.getElementById(errEl).textContent = fmtErr(e.code); }
+  });
+}
+
+async function doGoogle() {
+  waitFB(async () => {
+    try {
+      const res = await window._fbFns.signInWithPopup(window._auth, window._gp);
+      await _afterAuth(res.user, 'lErr');
+    } catch(e) {
+      const msg = fmtErr(e.code);
+      document.getElementById('lErr').textContent = msg;
+    }
+  });
+}
+
+async function doRegister() {
+  const errEl = 'rErr';
+  document.getElementById(errEl).textContent = '';
+  const name  = document.getElementById('rName').value.trim();
+  const email = document.getElementById('rEmail').value.trim();
+  const pass  = document.getElementById('rPass').value;
+  if (!name)  { document.getElementById(errEl).textContent = 'Enter your full name.'; return; }
+  if (!email) { document.getElementById(errEl).textContent = 'Enter your email address.'; return; }
+  if (!pass)  { document.getElementById(errEl).textContent = 'Enter a password.'; return; }
+  waitFB(async () => {
+    try {
+      const cred = await window._fbFns.createUserWithEmailAndPassword(window._auth, email, pass);
+      await window._fbFns.sendEmailVerification(cred.user);
+      showVerifyModal(email, true);
+    } catch(e) { document.getElementById(errEl).textContent = fmtErr(e.code); }
+  });
+}
+
+/* ── ADMIN LOGIN ── */
+function openAdmin()  { document.getElementById('adminOverlay').classList.add('open'); document.body.style.overflow='hidden'; }
+function closeAdmin() { document.getElementById('adminOverlay').classList.remove('open'); document.body.style.overflow=''; }
+document.getElementById('adminOverlay').addEventListener('click', e => { if(e.target===document.getElementById('adminOverlay'))closeAdmin(); });
+
+async function doAdminLogin() {
+  const errEl = 'adErr';
+  document.getElementById(errEl).textContent = '';
+  const email = document.getElementById('adEmail').value.trim();
+  const pass  = document.getElementById('adPass').value;
+  if (!email || !pass) { document.getElementById(errEl).textContent = 'Enter email and password.'; return; }
+  const fns = window._fbFns;
+  if (!fns) { document.getElementById(errEl).textContent = 'Loading… please try again.'; return; }
+  const isPreAuth = fns.ADMINS.includes(email.toLowerCase());
+  if (!isPreAuth) {
+    document.getElementById(errEl).textContent = '⛔ This email is not authorised as an admin.';
+    return;
+  }
+  waitFB(async () => {
+    try {
+      const cred = await fns.signInWithEmailAndPassword(window._auth, email, pass);
+      await _afterAuth(cred.user, errEl);
+    } catch(e) { document.getElementById(errEl).textContent = fmtErr(e.code); }
+  });
+}
+
+async function doAdminGoogle() {
+  const errEl = 'adErr';
+  document.getElementById(errEl).textContent = '';
+  waitFB(async () => {
+    try {
+      const res = await window._fbFns.signInWithPopup(window._auth, window._gp);
+      const email = (res.user.email||'').toLowerCase();
+      if (!window._fbFns.ADMINS.includes(email)) {
+        await window._auth.signOut();
+        document.getElementById(errEl).textContent = '⛔ This Google account is not authorised as an admin.';
+        return;
+      }
+      await _afterAuth(res.user, errEl);
+    } catch(e) { document.getElementById(errEl).textContent = fmtErr(e.code); }
+  });
+}
+
+/* ── EMAIL VERIFICATION ── */
+function showVerifyModal(email, isNew=false) {
+  document.getElementById('verifyTitle').textContent = isNew ? '📬 Verify your email to continue' : '📧 Email not yet verified';
+  document.getElementById('verifyMsg').textContent = isNew
+    ? `A verification link has been sent to ${email}. Click the link in the email, then come back and sign in.`
+    : `Your email (${email}) needs to be verified. We've sent a verification link — click it then sign in again.`;
+  document.getElementById('verifyOverlay').classList.add('open');
+}
+function closeVerify() { document.getElementById('verifyOverlay').classList.remove('open'); document.body.style.overflow=''; }
+document.getElementById('verifyOverlay').addEventListener('click', e => { if(e.target===document.getElementById('verifyOverlay'))closeVerify(); });
+
+async function resendVerification() {
+  if (window._auth?.currentUser) {
+    await window._fbFns.sendEmailVerification(window._auth.currentUser).catch(()=>{});
+    showToast('✓ Verification email resent — check your inbox', 3000);
+  }
+}
+
+/* ── NEW TENANT FLOW ── */
+function openNew() {
+  buildPropGrid();
+  document.getElementById('flowOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  goStep(1);
+}
+function closeNew() { document.getElementById('flowOverlay').classList.remove('open'); document.body.style.overflow = ''; }
+document.getElementById('flowOverlay').addEventListener('click', e => { if(e.target===document.getElementById('flowOverlay'))closeNew(); });
+
+function buildPropGrid() {
+  const grid = document.getElementById('propGrid');
+  grid.innerHTML = PROPS.map(p => `
+    <div class="prop-item${_selProp?.id===p.id?' sel':''}" data-id="${p.id}" onclick="selProp('${p.id}')">
+      <div class="pi-name">${p.label}</div>
+      <div class="pi-loc">📍 ${p.city} · ${p.type}</div>
+      <div class="pi-rent">${p.rent?'₦'+p.rent.toLocaleString()+'/yr':'Enquire'}</div>
+    </div>`).join('');
+}
+function selProp(id) {
+  _selProp = PROPS.find(p => p.id === id);
+  document.querySelectorAll('.prop-item').forEach(el => el.classList.toggle('sel', el.dataset.id === id));
+}
+
+function fNext(step) {
+  if (step === 3) {
+    const name  = document.getElementById('fName').value.trim();
+    const email = document.getElementById('fEmail').value.trim();
+    const phone = document.getElementById('fPhone').value.trim();
+    const addr  = document.getElementById('fAddr').value.trim();
+    if (!name||!email||!phone||!addr) { showToast('⚠ Fill all required fields (*)'); return; }
+  }
+  if (step === 2 && !_selProp) { showToast('⚠ Please select a property'); return; }
+  if (step === 4) buildSummary();
+  goStep(step);
+}
+
+function goStep(s) {
+  document.querySelectorAll('.fstep').forEach(el => el.classList.remove('on'));
+  document.getElementById('fs'+s).classList.add('on');
+  const titles = ['','Choose Property','Your Details','Upload Documents','Ready to Apply!'];
+  document.getElementById('flowTitle').textContent = titles[s];
+  for (let i=1; i<=4; i++) {
+    const dot = document.getElementById('sd'+i);
+    const wrap = document.getElementById('sw'+i);
+    if (i < s) { dot.className='step-dot done'; dot.textContent='✓'; }
+    else if (i === s) { dot.className='step-dot active'; dot.textContent=i; wrap.classList.add('active'); }
+    else { dot.className='step-dot'; dot.textContent=i; wrap.classList.remove('active'); }
+    const line = document.getElementById('sl'+i);
+    if (line) line.classList.toggle('done', i < s);
+  }
+}
+
+function docUploaded(key, inp) {
+  if (!inp.files[0]) return;
+  _docs[key] = inp.files[0];
+  const st = document.getElementById('dst_'+key);
+  const di = document.getElementById('di_'+key);
+  if (st) { st.textContent = '✓ '+inp.files[0].name.slice(0,18)+(inp.files[0].name.length>18?'…':''); st.className='di-status ok'; }
+  if (di) { di.style.borderColor='var(--green)'; di.style.background='rgba(26,92,46,.04)'; }
+}
+
+function buildSummary() {
+  const box = document.getElementById('summaryBox');
+  const rows = [
+    ['Property', _selProp ? _selProp.label+' — '+_selProp.city : '—'],
+    ['Annual Rent', _selProp?.rent ? '₦'+_selProp.rent.toLocaleString() : 'Enquire'],
+    ['Applicant', document.getElementById('fName').value||'—'],
+    ['Email', document.getElementById('fEmail').value||'—'],
+    ['Phone', document.getElementById('fPhone').value||'—'],
+    ['Documents', Object.keys(_docs).length + ' uploaded'],
+  ];
+  box.innerHTML = rows.map(([l,v]) => `<div class="sb-row"><span class="sb-label">${l}</span><span class="sb-value">${v}</span></div>`).join('');
+}
+
+function launchKYT() {
+  const payload = {
+    q1_name:        document.getElementById('fName').value,
+    q10_email:      document.getElementById('fEmail').value,
+    q9_phone:       document.getElementById('fPhone').value,
+    q4_occupation:  document.getElementById('fOcc').value,
+    q5_employer:    document.getElementById('fEmployer').value,
+    q2_address:     document.getElementById('fAddr').value,
+    q7_state:       document.getElementById('fState').value,
+    q21_apartments: _selProp ? _selProp.label+' — '+_selProp.location : '',
+    q21_unitType:   _selProp?.type||'',
+    _unitId:        _selProp?.id||'',
+    _fromLanding:   true,
+  };
+  let hash = '';
+  try {
+    const bytes = pako.deflate(JSON.stringify(payload), {level:9});
+    let b = ''; for (let i=0; i<bytes.length; i++) b += String.fromCharCode(bytes[i]);
+    hash = btoa(b).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  } catch(e) { hash = btoa(unescape(encodeURIComponent(JSON.stringify(payload)))); }
+  closeNew();
+  window.open('https://enjanih-stack.github.io/crestville-portal/CRS_PreRental_Questionnaire_v3.html#'+hash, '_blank');
+  showToast('✓ KYT form opened — your details are pre-filled!', 4000);
+}
+
+/* ── BOOT ── */
+document.addEventListener('DOMContentLoaded', () => {
+  buildCarousel();
+  // Hide loader — use requestAnimationFrame to ensure paint has happened
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        document.getElementById('pgLoader').classList.add('hide');
+      }, 800);
+    });
+  });
+});
+</script>
+
+<!-- ═══ ADMIN LOGIN MODAL ═══ -->
+<div id="adminOverlay" class="overlay" style="z-index:750">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hd" style="background:linear-gradient(135deg,#0a0908,#1a1410)">
+      <h3 style="display:flex;align-items:center;gap:9px">
+        <span style="width:28px;height:28px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem">🔑</span>
+        Admin / Staff Portal
+      </h3>
+      <button class="modal-x" onclick="closeAdmin()">✕</button>
+    </div>
+    <div class="modal-stripe"></div>
+    <div class="modal-bd">
+      <div style="background:rgba(201,150,12,.07);border:1px solid rgba(201,150,12,.2);border-radius:7px;padding:10px 13px;margin-bottom:16px;font-size:.79rem;color:#7a5a00;line-height:1.6">
+        🔐 <strong>Restricted access.</strong> Admin accounts must be pre-authorised. A verification email is sent on first login.
+      </div>
+      <div class="fg"><label>Admin Email Address</label><input type="email" id="adEmail" placeholder="e.g. enjanih@gmail.com" onkeydown="if(event.key==='Enter')doAdminLogin()"/></div>
+      <div class="fg"><label>Password</label><input type="password" id="adPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"/></div>
+      <div class="aerr" id="adErr"></div>
+      <button class="abtn" onclick="doAdminLogin()">Access Admin Portal →</button>
+      <div class="adiv"><span>or</span></div>
+      <button class="gbtn" onclick="doAdminGoogle()">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.2H42V20H24v8h11.3C33.7 32.9 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.6 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.8z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 13 24 13c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.6 29.3 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3.1-11.3-7.5l-6.5 5C9.5 40 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.2H42V20H24v8h11.3c-.9 2.4-2.5 4.5-4.6 5.9l6.2 5.2C42.5 35.8 44 30.2 44 24c0-1.3-.1-2.6-.4-3.8z"/></svg>
+        Sign in with Google (Admin)
+      </button>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);font-size:.74rem;color:var(--dim);text-align:center">
+        Not an admin? <button onclick="closeAdmin();openExisting()" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:.74rem;font-family:'DM Sans',sans-serif">Tenant Login →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VERIFY EMAIL NOTICE -->
+<div id="verifyOverlay" class="overlay" style="z-index:800">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hd"><h3>📧 Verify Your Email</h3><button class="modal-x" onclick="closeVerify()">✕</button></div>
+    <div class="modal-stripe"></div>
+    <div class="modal-bd" style="text-align:center;padding:28px 22px">
+      <div style="font-size:3rem;margin-bottom:12px">📬</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;color:var(--ink);margin-bottom:10px" id="verifyTitle">Check your inbox</div>
+      <div style="font-size:.82rem;color:var(--dim);line-height:1.75;margin-bottom:20px" id="verifyMsg">A verification email has been sent. Click the link in the email then sign in again.</div>
+      <button class="abtn" style="margin-bottom:10px" onclick="closeVerify();window.location.reload()">I've Verified — Sign In Again</button>
+      <button class="fbtn-back" style="width:100%;text-align:center" onclick="resendVerification()">Resend verification email</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
