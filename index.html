@@ -33,8 +33,20 @@ window._db = db;
 window._auth = auth;
 window._googleProvider = googleProvider;
 window._firebase = { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInWithPopup, getDocs, collection, addDoc, doc, setDoc, getDoc, updateDoc, deleteDoc, query, where, onSnapshot };
+window._gp = googleProvider; // alias used by role selector
 window._storage = getStorage(app);
 window._storageFn = { ref, uploadBytesResumable, getDownloadURL, listAll, deleteObject };
+window._fbFns = {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendEmailVerification: async (user) => {
+    const { sendEmailVerification } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    return sendEmailVerification(user);
+  },
+  signInWithPopup,
+  doc, setDoc, getDoc,
+  ADMINS: ['enjanih@gmail.com','crestechnologies@outlook.com','crestiton@gmail.com']
+};
 window._firebaseReady = true;
 window.dispatchEvent(new Event('firebaseReady'));
 </script>
@@ -1171,7 +1183,7 @@ let _fbReady = false;
 /* ═══ FIREBASE WAIT ═══════════════════════════════════ */
 function waitForFirebase(cb) {
   const run = () => {
-    if(window._firebaseReady && window._firebase && window._auth) { cb(); return; }
+    if(window._firebaseReady && window._firebase && window._auth && window._googleProvider) { cb(); return; }
     setTimeout(run, 100);
   };
   run();
@@ -1211,10 +1223,18 @@ async function doLogin() {
   }
 }
 async function doGoogle() {
+  const errEl = document.getElementById('loginErr');
+  if (errEl) errEl.textContent = '';
   try {
-    await window._firebase.signInWithPopup(window._auth, window._googleProvider);
+    if (!window._auth || !window._googleProvider) {
+      throw new Error('Firebase not ready — please wait a moment and try again.');
+    }
+    const result = await window._firebase.signInWithPopup(window._auth, window._googleProvider);
+    // onAuthStateChanged will handle the rest (role selector)
   } catch(e) {
-    document.getElementById('loginErr').textContent = friendlyAuthError(e.code);
+    const msg = e.code ? friendlyAuthError(e.code) : (e.message || 'Google sign-in failed. Please try again.');
+    if (errEl) errEl.textContent = msg;
+    console.error('Google sign-in error:', e.code, e.message);
   }
 }
 async function doRegister() {
@@ -1955,6 +1975,28 @@ function openRenewalModal() {
   document.getElementById('renewModal').classList.add('on');
 }
 function closeRenewModal() { document.getElementById('renewModal').classList.remove('on'); }
+
+
+async function doAdminGoogle() {
+  const errEl = document.getElementById('adErr');
+  if (errEl) errEl.textContent = '';
+  try {
+    if (!window._auth || !window._googleProvider) {
+      throw new Error('Firebase not ready');
+    }
+    const result = await window._firebase.signInWithPopup(window._auth, window._googleProvider);
+    const email = (result.user.email || '').toLowerCase();
+    if (!ADMIN_EMAILS.includes(email)) {
+      await window._firebase.signOut(window._auth);
+      if (errEl) errEl.textContent = '⛔ This Google account is not authorised as admin.';
+      return;
+    }
+    // onAuthStateChanged will handle role selector
+  } catch(e) {
+    const msg = e.code ? friendlyAuthError(e.code) : 'Google sign-in failed.';
+    if (errEl) errEl.textContent = msg;
+  }
+}
 
 async function submitRenewalRequest() {
   const rec = window._myRecord;
