@@ -9,47 +9,84 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, query, where, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL, listAll, deleteObject } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAiQ7q1qbwx1i_qjVFaTSJIeb9yneMT21U",
-  authDomain: "solarappform.firebaseapp.com",
-  projectId: "solarappform",
-  storageBucket: "solarappform.firebasestorage.app",
+<!-- Firebase compat SDK — loads synchronously, works on all hosts -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script>
+// Initialise Firebase immediately — compat SDK is synchronous
+const _firebaseCfg = {
+  apiKey:            "AIzaSyAiQ7q1qbwx1i_qjVFaTSJIeb9yneMT21U",
+  authDomain:        "solarappform.firebaseapp.com",
+  projectId:         "solarappform",
+  storageBucket:     "solarappform.firebasestorage.app",
   messagingSenderId: "298700249528",
-  appId: "1:298700249528:web:85f6a70780da9479f1174d"
+  appId:             "1:298700249528:web:85f6a70780da9479f1174d"
 };
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
+if (!firebase.apps.length) firebase.initializeApp(_firebaseCfg);
 
-// Expose to global scope
-window._db = db;
-window._auth = auth;
-window._googleProvider = googleProvider;
-window._firebase = { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInWithPopup, getDocs, collection, addDoc, doc, setDoc, getDoc, updateDoc, deleteDoc, query, where, onSnapshot };
-window._gp = googleProvider; // alias used by role selector
-window._storage = getStorage(app);
-window._storageFn = { ref, uploadBytesResumable, getDownloadURL, listAll, deleteObject };
+const _auth          = firebase.auth();
+const _db            = firebase.firestore();
+const _storage       = firebase.storage();
+const _googleProvider = new firebase.auth.GoogleAuthProvider();
+
+// Expose globally — same API surface as before
+window._auth           = _auth;
+window._db             = _db;
+window._storage        = _storage;
+window._googleProvider = _googleProvider;
+window._gp             = _googleProvider;
+
+// Wrap compat API to match the modular API shape used in the app
+window._firebase = {
+  signInWithEmailAndPassword: (auth, email, pass) => auth.signInWithEmailAndPassword(email, pass),
+  createUserWithEmailAndPassword: (auth, email, pass) => auth.createUserWithEmailAndPassword(email, pass),
+  signInWithPopup: (auth, provider) => auth.signInWithPopup(provider),
+  signOut: (auth) => auth.signOut(),
+  onAuthStateChanged: (auth, cb) => auth.onAuthStateChanged(cb),
+  getDocs: (ref) => ref.get(),
+  collection: (db, name) => db.collection(name),
+  addDoc: (ref, data) => ref.add(data),
+  doc: (db, col, id) => db.collection(col).doc(id),
+  setDoc: (ref, data, opts) => opts?.merge ? ref.set(data, {merge:true}) : ref.set(data),
+  getDoc: (ref) => ref.get(),
+  updateDoc: (ref, data) => ref.update(data),
+  deleteDoc: (ref) => ref.delete(),
+  query: (ref) => ref,
+  where: (f, op, v) => ({ field:f, op, val:v }),
+  onSnapshot: (ref, cb) => ref.onSnapshot(cb),
+};
+
+window._storageFn = {
+  ref: (storage, path) => storage.ref(path),
+  uploadBytesResumable: (ref, file) => ref.put(file),
+  getDownloadURL: (ref) => ref.getDownloadURL(),
+  listAll: (ref) => ref.listAll(),
+  deleteObject: (ref) => ref.delete(),
+};
+
 window._fbFns = {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  sendEmailVerification: async (user) => {
-    const { sendEmailVerification } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
-    return sendEmailVerification(user);
-  },
-  signInWithPopup,
-  doc, setDoc, getDoc,
+  signInWithEmailAndPassword: (auth, email, pass) => auth.signInWithEmailAndPassword(email, pass),
+  createUserWithEmailAndPassword: (auth, email, pass) => auth.createUserWithEmailAndPassword(email, pass),
+  sendEmailVerification: (user) => user.sendEmailVerification(),
+  signInWithPopup: (auth, provider) => auth.signInWithPopup(provider),
+  doc: (db, col, id) => db.collection(col).doc(id),
+  setDoc: (ref, data) => ref.set(data),
+  getDoc: (ref) => ref.get(),
   ADMINS: ['enjanih@gmail.com','crestechnologies@outlook.com','crestiton@gmail.com']
 };
+
+// Resolve auth promise immediately since compat is synchronous
 window._firebaseReady = true;
-// Resolve the auth promise so button handlers can await it
-if (window._authResolve) window._authResolve({ auth, googleProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signOut, onAuthStateChanged });
+if (window._authResolve) window._authResolve({
+  auth: _auth, googleProvider: _googleProvider,
+  signInWithEmailAndPassword: (a,e,p) => a.signInWithEmailAndPassword(e,p),
+  createUserWithEmailAndPassword: (a,e,p) => a.createUserWithEmailAndPassword(e,p),
+  signInWithPopup: (a,p) => a.signInWithPopup(p),
+  signOut: (a) => a.signOut(),
+  onAuthStateChanged: (a,cb) => a.onAuthStateChanged(cb)
+});
 window.dispatchEvent(new Event('firebaseReady'));
 </script>
 
@@ -1171,17 +1208,13 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 /* ── Firebase Auth Promise — resolves when module is loaded ── */
 window._authPromise = new Promise(resolve => { window._authResolve = resolve; });
 
-async function _getAuth() {
-  // If already ready, return immediately
-  if (window._auth && window._googleProvider) {
-    return { auth: window._auth, gp: window._googleProvider, fb: window._firebase };
-  }
-  // Wait for module to load (max 8 seconds)
-  const result = await Promise.race([
-    window._authPromise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000))
-  ]);
-  return { auth: result.auth, gp: result.googleProvider, fb: window._firebase };
+function _getAuth() {
+  // Compat SDK is synchronous — always ready immediately
+  return Promise.resolve({
+    auth: window._auth,
+    gp:   window._googleProvider,
+    fb:   window._firebase
+  });
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1553,7 +1586,7 @@ function initAuth() {
       currentUser = user;
       try {
         const snap = await window._firebase.getDoc(window._firebase.doc(window._db,'users',user.uid));
-        const userData = snap.exists() ? snap.data() : {};
+        const userData = snap.exists ? snap.data() : {};
         // Always show role selector after login
         await pullFromCloud(true); // load data first so verify works
         showRoleSelector(user, userData);
@@ -2804,7 +2837,7 @@ async function handleDocUpload(input) {
               if(pctEl) pctEl.textContent = pct+'%';
             },
             reject,
-            async () => { resolve(await window._storageFn.getDownloadURL(task.snapshot.ref)); }
+            async () => { resolve(await task.snapshot.ref.getDownloadURL()); }
           );
         });
       } else { throw new Error('Storage not ready'); }
