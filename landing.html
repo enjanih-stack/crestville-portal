@@ -7,51 +7,46 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 <script type="module">
-/* ── Firebase initialisation — shared across the whole page ── */
-import { initializeApp }                    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+/* ── Firebase — initialise AFTER DOM is ready ── */
+import { initializeApp }       from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider,
-         signInWithEmailAndPassword,
-         createUserWithEmailAndPassword,
-         sendEmailVerification,
-         signInWithPopup, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, doc, setDoc, getDoc }  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+         signInWithEmailAndPassword, createUserWithEmailAndPassword,
+         sendEmailVerification, signInWithPopup,
+         onAuthStateChanged }  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-const _cfg = {
-  apiKey:            "AIzaSyAiQ7q1qbwx1i_qjVFaTSJIeb9yneMT21U",
-  authDomain:        "solarappform.firebaseapp.com",
-  projectId:         "solarappform",
-  storageBucket:     "solarappform.firebasestorage.app",
-  messagingSenderId: "298700249528",
-  appId:             "1:298700249528:web:85f6a70780da9479f1174d"
-};
-const _app  = initializeApp(_cfg);
-const _auth = getAuth(_app);
-const _db   = getFirestore(_app);
-const _gp   = new GoogleAuthProvider();
+function initFirebase() {
+  const _cfg = {
+    apiKey:            "AIzaSyAiQ7q1qbwx1i_qjVFaTSJIeb9yneMT21U",
+    authDomain:        "solarappform.firebaseapp.com",
+    projectId:         "solarappform",
+    storageBucket:     "solarappform.firebasestorage.app",
+    messagingSenderId: "298700249528",
+    appId:             "1:298700249528:web:85f6a70780da9479f1174d"
+  };
+  const _app  = initializeApp(_cfg);
+  const _auth = getAuth(_app);
+  const _db   = getFirestore(_app);
+  const _gp   = new GoogleAuthProvider();
+  const ADMINS = ['enjanih@gmail.com','crestechnologies@outlook.com','crestiton@gmail.com'];
 
-const ADMINS = ['enjanih@gmail.com','crestechnologies@outlook.com','crestiton@gmail.com'];
+  window._auth  = _auth;
+  window._db    = _db;
+  window._gp    = _gp;
+  window._fbFns = {
+    signInWithEmailAndPassword, createUserWithEmailAndPassword,
+    sendEmailVerification, signInWithPopup, doc, setDoc, getDoc, ADMINS
+  };
+  window._fbReady = true;
+  window.dispatchEvent(new Event('fbReady'));
+}
 
-/* Expose to non-module script */
-window._auth = _auth; window._db = _db; window._gp = _gp;
-window._fbFns = { signInWithEmailAndPassword, createUserWithEmailAndPassword,
-                  sendEmailVerification, signInWithPopup, doc, setDoc, getDoc, ADMINS };
-window._fbReady = true;
-window.dispatchEvent(new Event('fbReady'));
-
-/* If already logged in — redirect to portal immediately */
-onAuthStateChanged(_auth, user => {
-  if (user) {
-    const isAdmin = ADMINS.includes((user.email||'').toLowerCase());
-    // Only auto-redirect if they are on the landing page without a modal open
-    if (!document.getElementById('existingOverlay').classList.contains('open') &&
-        !document.getElementById('flowOverlay').classList.contains('open') &&
-        !document.getElementById('adminOverlay').classList.contains('open')) {
-      // Don't auto-redirect — let them stay on landing page; just show a "Go to portal" toast
-    }
-    window._currentUser  = user;
-    window._isAdmin = isAdmin;
-  }
-});
+// Wait for DOM before initialising Firebase
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initFirebase);
+} else {
+  initFirebase();
+}
 </script>
 <style>
 :root{--gold:#c9960c;--gl:#e8b422;--ink:#0f0e0c;--dim:#8a7a60;--cream:#faf8f4;--bg:#f0ebe1;--rule:#d4ccbe;--red:#8c1f1f;--green:#1a5c2e;--blue:#1e3a5f;--card:#fff}
@@ -60,7 +55,8 @@ html{scroll-behavior:smooth}
 body{background:var(--ink);font-family:'DM Sans',sans-serif;color:#e8dfc8;overflow-x:hidden}
 
 /* LOADER */
-#pgLoader{position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s ease}
+#pgLoader{position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s ease;animation:loaderFail 3.5s forwards}
+@keyframes loaderFail{0%,85%{opacity:1;pointer-events:auto}100%{opacity:0;pointer-events:none}}
 #pgLoader.hide{opacity:0;pointer-events:none}
 .ld-ring{width:68px;height:68px;border-radius:50%;border:2px solid #2a2620;border-top-color:var(--gold);animation:spin 1s linear infinite;position:relative;margin-bottom:20px}
 .ld-logo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
@@ -774,7 +770,7 @@ async function _afterAuth(user, errElId) {
       });
     }
   } catch(e) {}
-  const dest = 'index.html';
+  const dest = 'https://enjanih-stack.github.io/crestville-portal/index.html';
   showToast(isAdmin ? '✓ Admin access granted! Redirecting…' : '✓ Signed in! Redirecting…', 2000);
   setTimeout(() => window.location.href = dest, 1800);
 }
@@ -987,15 +983,17 @@ function launchKYT() {
 
 /* ── BOOT ── */
 document.addEventListener('DOMContentLoaded', () => {
-  buildCarousel();
-  // Hide loader — use requestAnimationFrame to ensure paint has happened
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        document.getElementById('pgLoader').classList.add('hide');
-      }, 800);
-    });
-  });
+  // Build page content first
+  try { buildCarousel(); } catch(e) { console.warn('carousel:', e); }
+  // Hide loader — simple timeout, CSS animation is a failsafe backup
+  setTimeout(() => {
+    const loader = document.getElementById('pgLoader');
+    if (loader) {
+      loader.style.opacity = '0';
+      loader.style.pointerEvents = 'none';
+      setTimeout(() => loader.style.display = 'none', 900);
+    }
+  }, 1000);
 });
 </script>
 
