@@ -9,14 +9,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-<!-- Firebase compat SDK via jsDelivr (GitHub Pages compatible) -->
+<!-- Firebase compat — synchronous, works on all hosts -->
 <script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-auth-compat.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-firestore-compat.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-storage-compat.min.js"></script>
 <script>
-// Initialise Firebase immediately — compat SDK is synchronous
-const _firebaseCfg = {
+const _cfg = {
   apiKey:            "AIzaSyAiQ7q1qbwx1i_qjVFaTSJIeb9yneMT21U",
   authDomain:        "solarappform.firebaseapp.com",
   projectId:         "solarappform",
@@ -24,73 +23,44 @@ const _firebaseCfg = {
   messagingSenderId: "298700249528",
   appId:             "1:298700249528:web:85f6a70780da9479f1174d"
 };
-if (typeof firebase === 'undefined') {
-  console.error('Firebase CDN failed to load');
-} else {
-  if (!firebase.apps.length) firebase.initializeApp(_firebaseCfg);
-}
+firebase.initializeApp(_cfg);
 
-const _auth          = firebase.auth();
-const _db            = firebase.firestore();
-const _storage       = firebase.storage();
-const _googleProvider = new firebase.auth.GoogleAuthProvider();
+// Expose as window globals matching what the app expects
+window._auth           = firebase.auth();
+window._db             = firebase.firestore();
+window._storage        = firebase.storage();
+window._googleProvider = new firebase.auth.GoogleAuthProvider();
 
-// Expose globally — same API surface as before
-window._auth           = _auth;
-window._db             = _db;
-window._storage        = _storage;
-window._googleProvider = _googleProvider;
-window._gp             = _googleProvider;
-
-// Wrap compat API to match the modular API shape used in the app
+// Modular-style wrapper so existing code works unchanged
 window._firebase = {
-  signInWithEmailAndPassword: (auth, email, pass) => auth.signInWithEmailAndPassword(email, pass),
-  createUserWithEmailAndPassword: (auth, email, pass) => auth.createUserWithEmailAndPassword(email, pass),
-  signInWithPopup: (auth, provider) => auth.signInWithPopup(provider),
-  signOut: (auth) => auth.signOut(),
-  onAuthStateChanged: (auth, cb) => auth.onAuthStateChanged(cb),
-  getDocs: (ref) => ref.get(),
+  onAuthStateChanged: (a, cb) => a.onAuthStateChanged(cb),
+  signInWithEmailAndPassword: (a, e, p) => a.signInWithEmailAndPassword(e, p),
+  createUserWithEmailAndPassword: (a, e, p) => a.createUserWithEmailAndPassword(e, p),
+  signInWithPopup: (a, prov) => a.signInWithPopup(prov),
+  signOut: (a) => a.signOut(),
+  sendEmailVerification: (u) => u.sendEmailVerification(),
   collection: (db, name) => db.collection(name),
+  getDocs: (ref) => ref.get(),
   addDoc: (ref, data) => ref.add(data),
   doc: (db, col, id) => db.collection(col).doc(id),
-  setDoc: (ref, data, opts) => opts?.merge ? ref.set(data, {merge:true}) : ref.set(data),
+  setDoc: (ref, data, opts) => opts && opts.merge ? ref.set(data, {merge:true}) : ref.set(data),
   getDoc: (ref) => ref.get(),
   updateDoc: (ref, data) => ref.update(data),
   deleteDoc: (ref) => ref.delete(),
-  query: (ref) => ref,
-  where: (f, op, v) => ({ field:f, op, val:v }),
   onSnapshot: (ref, cb) => ref.onSnapshot(cb),
+  query: (ref) => ref,
+  where: () => null,
 };
 
 window._storageFn = {
-  ref: (storage, path) => storage.ref(path),
+  ref: (st, path) => st.ref(path),
   uploadBytesResumable: (ref, file) => ref.put(file),
   getDownloadURL: (ref) => ref.getDownloadURL(),
   listAll: (ref) => ref.listAll(),
   deleteObject: (ref) => ref.delete(),
 };
 
-window._fbFns = {
-  signInWithEmailAndPassword: (auth, email, pass) => auth.signInWithEmailAndPassword(email, pass),
-  createUserWithEmailAndPassword: (auth, email, pass) => auth.createUserWithEmailAndPassword(email, pass),
-  sendEmailVerification: (user) => user.sendEmailVerification(),
-  signInWithPopup: (auth, provider) => auth.signInWithPopup(provider),
-  doc: (db, col, id) => db.collection(col).doc(id),
-  setDoc: (ref, data) => ref.set(data),
-  getDoc: (ref) => ref.get(),
-  ADMINS: ['enjanih@gmail.com','crestechnologies@outlook.com','crestiton@gmail.com']
-};
-
-// Resolve auth promise immediately since compat is synchronous
 window._firebaseReady = true;
-if (window._authResolve) window._authResolve({
-  auth: _auth, googleProvider: _googleProvider,
-  signInWithEmailAndPassword: (a,e,p) => a.signInWithEmailAndPassword(e,p),
-  createUserWithEmailAndPassword: (a,e,p) => a.createUserWithEmailAndPassword(e,p),
-  signInWithPopup: (a,p) => a.signInWithPopup(p),
-  signOut: (a) => a.signOut(),
-  onAuthStateChanged: (a,cb) => a.onAuthStateChanged(cb)
-});
 window.dispatchEvent(new Event('firebaseReady'));
 </script>
 
@@ -695,7 +665,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
     <!-- REGISTER -->
     <div class="auth-panel" id="ap-register">
       <div class="auth-field"><label>Full Name</label><input type="text" id="regName" placeholder="Your full name"/></div>
-      <div class="auth-field"><label>Email Address</label><input type="email" id="regEmail" placeholder="your@email.com"/></div>
+      <div class="auth-field"><label>Email Address</label><input type="email" id="regEmail" placeholder="your@email.com"/>
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--rule);text-align:center;font-size:.72rem;color:var(--dim)">
+        Premium properties · Transparent process · Professional management<br>
+        <strong style="color:var(--ink)">Ojodu · Ibadan · Enugu</strong>
+      </div>
+    </div>
       <div class="auth-field"><label>Password (min 6 chars)</label><input type="password" id="regPass" placeholder="••••••••"/></div>
       <div class="auth-error" id="regErr"></div>
       <button class="auth-btn" onclick="doRegister()">Create Account →</button>
@@ -1203,19 +1178,6 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 
 <script>
 'use strict';
-
-/* ── Firebase Auth Promise — resolves when module is loaded ── */
-window._authPromise = new Promise(resolve => { window._authResolve = resolve; });
-
-function _getAuth() {
-  // Compat SDK is synchronous — always ready immediately
-  return Promise.resolve({
-    auth: window._auth,
-    gp:   window._googleProvider,
-    fb:   window._firebase
-  });
-}
-
 /* ═══════════════════════════════════════════════════════
    PROPERTY MASTER LIST
 ═══════════════════════════════════════════════════════ */
@@ -1234,7 +1196,7 @@ let _fbReady = false;
 /* ═══ FIREBASE WAIT ═══════════════════════════════════ */
 function waitForFirebase(cb) {
   const run = () => {
-    if(window._firebaseReady && window._firebase && window._auth && window._googleProvider) { cb(); return; }
+    if(window._firebaseReady && window._firebase && window._auth) { cb(); return; }
     setTimeout(run, 100);
   };
   run();
@@ -1267,27 +1229,23 @@ async function doLogin() {
   const errEl = document.getElementById('loginErr');
   const email = document.getElementById('loginEmail').value.trim();
   const pass  = document.getElementById('loginPass').value;
-  if (!email || !pass) { if(errEl) errEl.textContent = 'Enter email and password.'; return; }
-  if (errEl) errEl.textContent = 'Signing in…';
+  if (errEl) errEl.textContent = '';
+  if (!email || !pass) { if(errEl) errEl.textContent='Enter email and password.'; return; }
   try {
     await firebase.auth().signInWithEmailAndPassword(email, pass);
-    if (errEl) errEl.textContent = '';
   } catch(e) {
-    console.error('Login error:', e);
+    console.error('Login:', e);
     if (errEl) errEl.textContent = friendlyAuthError(e.code);
   }
 }
 async function doGoogle() {
   const errEl = document.getElementById('loginErr');
-  if (errEl) errEl.textContent = 'Connecting to Google…';
+  if (errEl) errEl.textContent = '';
   try {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    await firebase.auth().signInWithPopup(provider);
-    if (errEl) errEl.textContent = '';
+    await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
   } catch(e) {
-    console.error('Google sign-in error:', e.code, e.message);
-    const msg = e.code ? friendlyAuthError(e.code) : 'Google sign-in failed. Please try again.';
-    if (errEl) errEl.textContent = msg;
+    console.error('Google:', e);
+    if (errEl) errEl.textContent = friendlyAuthError(e.code);
   }
 }
 async function doRegister() {
@@ -1296,26 +1254,22 @@ async function doRegister() {
   const email = document.getElementById('regEmail').value.trim();
   const pass  = document.getElementById('regPass').value;
   if (errEl) errEl.textContent = '';
-  if (!name)  { if(errEl) errEl.textContent = 'Enter your full name.'; return; }
-  if (!email) { if(errEl) errEl.textContent = 'Enter your email.'; return; }
-  if (!pass || pass.length < 6) { if(errEl) errEl.textContent = 'Password min 6 chars.'; return; }
+  if (!name)  { if(errEl) errEl.textContent='Enter your full name.'; return; }
+  if (!email) { if(errEl) errEl.textContent='Enter your email.'; return; }
+  if (!pass || pass.length < 6) { if(errEl) errEl.textContent='Password min 6 chars.'; return; }
   if (errEl) errEl.textContent = 'Creating account…';
   try {
-    // Use compat SDK directly — no ES module import needed
     const cred = await firebase.auth().createUserWithEmailAndPassword(email, pass);
     await cred.user.sendEmailVerification();
-    // Save user profile to Firestore
-    const isAdmin = ADMIN_EMAILS.includes(email.toLowerCase());
     await firebase.firestore().collection('users').doc(cred.user.uid).set({
       name, email,
-      role: isAdmin ? 'admin' : 'tenant',
-      createdAt: new Date().toISOString(),
-      linkedUnit: null
+      role: ADMIN_EMAILS.includes(email.toLowerCase()) ? 'admin' : 'tenant',
+      createdAt: new Date().toISOString(), linkedUnit: null
     });
     if (errEl) errEl.textContent = '';
     showVerifyModal(email, true);
   } catch(e) {
-    console.error('Register error:', e);
+    console.error('Register:', e);
     if (errEl) errEl.textContent = friendlyAuthError(e.code);
   }
 }
@@ -1521,12 +1475,11 @@ async function continueWithRole() {
   }
 }
 
-async function signOutAndReturn() {
+function signOutAndReturn() {
   document.getElementById('roleSelectorOverlay').classList.remove('on');
-  try {
-    await firebase.auth().signOut();
-  } catch(e) {}
-  window.location.href = BASE_URL + '/landing.html';
+  firebase.auth().signOut().then(() => {
+    window.location.href = BASE_URL + '/landing.html';
+  });
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -2042,48 +1995,6 @@ function openRenewalModal() {
   document.getElementById('renewModal').classList.add('on');
 }
 function closeRenewModal() { document.getElementById('renewModal').classList.remove('on'); }
-
-
-async function doAdminLogin() {
-  const errEl = document.getElementById('adErr');
-  if (errEl) errEl.textContent = '';
-  const email = document.getElementById('adEmail').value.trim();
-  const pass  = document.getElementById('adPass').value;
-  if (!email || !pass) { if(errEl) errEl.textContent = 'Enter email and password.'; return; }
-  if (!ADMIN_EMAILS.includes(email.toLowerCase())) {
-    if(errEl) errEl.textContent = '⛔ This email is not authorised as admin.';
-    return;
-  }
-  if (errEl) errEl.textContent = 'Signing in…';
-  try {
-    await firebase.auth().signInWithEmailAndPassword(email, pass);
-    if (errEl) errEl.textContent = '';
-    // onAuthStateChanged handles the rest
-  } catch(e) {
-    console.error('Admin login error:', e);
-    if (errEl) errEl.textContent = friendlyAuthError(e.code);
-  }
-}
-
-async function doAdminGoogle() {
-  const errEl = document.getElementById('adErr');
-  if (errEl) errEl.textContent = 'Connecting to Google…';
-  try {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    const result = await firebase.auth().signInWithPopup(provider);
-    const email = (result.user.email || '').toLowerCase();
-    if (!ADMIN_EMAILS.includes(email)) {
-      await firebase.auth().signOut();
-      if (errEl) errEl.textContent = '⛔ This Google account is not authorised as admin.';
-      return;
-    }
-    if (errEl) errEl.textContent = '';
-    // onAuthStateChanged handles the rest
-  } catch(e) {
-    console.error('Admin Google error:', e);
-    if (errEl) errEl.textContent = e.code ? friendlyAuthError(e.code) : 'Google sign-in failed.';
-  }
-}
 
 async function submitRenewalRequest() {
   const rec = window._myRecord;
@@ -2844,7 +2755,7 @@ async function handleDocUpload(input) {
               if(pctEl) pctEl.textContent = pct+'%';
             },
             reject,
-            async () => { resolve(await task.snapshot.ref.getDownloadURL()); }
+            async () => { resolve(await window._storageFn.getDownloadURL(task.snapshot.ref)); }
           );
         });
       } else { throw new Error('Storage not ready'); }
