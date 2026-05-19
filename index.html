@@ -9,11 +9,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-<!-- Firebase compat SDK — loads synchronously, works on all hosts -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<!-- Firebase compat SDK via jsDelivr (GitHub Pages compatible) -->
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-auth-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-firestore-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-storage-compat.min.js"></script>
 <script>
 // Initialise Firebase immediately — compat SDK is synchronous
 const _firebaseCfg = {
@@ -24,7 +24,11 @@ const _firebaseCfg = {
   messagingSenderId: "298700249528",
   appId:             "1:298700249528:web:85f6a70780da9479f1174d"
 };
-if (!firebase.apps.length) firebase.initializeApp(_firebaseCfg);
+if (typeof firebase === 'undefined') {
+  console.error('Firebase CDN failed to load');
+} else {
+  if (!firebase.apps.length) firebase.initializeApp(_firebaseCfg);
+}
 
 const _auth          = firebase.auth();
 const _db            = firebase.firestore();
