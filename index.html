@@ -64,6 +64,126 @@ window._firebaseReady = true;
 window.dispatchEvent(new Event('firebaseReady'));
 </script>
 
+<script>
+// ── INTERCEPT FIREBASE ACTION URLs (password reset, email verify) ─────────────
+(function() {
+  const p = new URLSearchParams(window.location.search);
+  const mode = p.get('mode');
+  const oobCode = p.get('oobCode');
+  if (!mode || !oobCode) return;
+
+  if (mode === 'resetPassword') {
+    // Show password reset UI immediately — before anything else renders
+    document.addEventListener('DOMContentLoaded', function() {
+      // Hide loader immediately
+      const loader = document.getElementById('globalLoader');
+      if (loader) { loader.style.display = 'none'; }
+
+      // Show auth screen
+      const vAuth = document.getElementById('vAuth');
+      if (vAuth) vAuth.style.display = 'flex';
+
+      // Build reset password overlay
+      const overlay = document.createElement('div');
+      overlay.id = 'resetOverlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)';
+      overlay.innerHTML = `
+        <div style="background:#faf8f4;border-radius:16px;padding:36px 32px;width:100%;max-width:420px;box-shadow:0 24px 80px rgba(0,0,0,.5)">
+          <div style="text-align:center;margin-bottom:24px">
+            <div style="font-size:2.5rem;margin-bottom:10px">🔑</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:700;color:#0f0e0c;margin-bottom:6px">Set New Password</div>
+            <div style="font-size:.82rem;color:#8a7a60" id="roEmailLabel">Enter your new password below</div>
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="display:block;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8a7a60;margin-bottom:4px">New Password (min 8 characters)</label>
+            <input type="password" id="roNewPass" placeholder="Enter new password"
+              style="width:100%;padding:12px 13px;border:1px solid #d4ccbe;border-bottom:2px solid #c9960c;border-radius:5px 5px 0 0;font-size:.95rem;background:#fff;outline:none"
+              oninput="roStrength()" onkeydown="if(event.key==='Enter')document.getElementById('roConfirm').focus()"/>
+            <div id="roBar" style="height:3px;background:#e0d8c8;border-radius:0 0 2px 2px;transition:all .3s"></div>
+          </div>
+          <div style="margin-bottom:16px">
+            <label style="display:block;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8a7a60;margin-bottom:4px">Confirm Password</label>
+            <input type="password" id="roConfirm" placeholder="Confirm new password"
+              style="width:100%;padding:12px 13px;border:1px solid #d4ccbe;border-bottom:2px solid #c9960c;border-radius:5px 5px 0 0;font-size:.95rem;background:#fff;outline:none"
+              onkeydown="if(event.key==='Enter')roSave()"/>
+          </div>
+          <div id="roMsg" style="font-size:.8rem;text-align:center;margin-bottom:12px;min-height:18px;color:#8c1f1f"></div>
+          <button id="roSaveBtn" onclick="roSave()"
+            style="width:100%;padding:14px;background:linear-gradient(135deg,#7a5800,#c9960c,#e8b422);color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.05em;box-shadow:0 4px 16px rgba(201,150,12,.3)">
+            SAVE NEW PASSWORD
+          </button>
+        </div>`;
+      document.body.appendChild(overlay);
+
+      // Verify the code
+      firebase.auth().verifyPasswordResetCode(oobCode)
+        .then(function(email) {
+          document.getElementById('roEmailLabel').textContent = 'Setting new password for: ' + email;
+        })
+        .catch(function() {
+          document.getElementById('roMsg').textContent = 'This reset link has expired. Please request a new one.';
+          document.getElementById('roMsg').style.color = '#8c1f1f';
+          document.getElementById('roSaveBtn').disabled = true;
+          document.getElementById('roSaveBtn').style.opacity = '0.5';
+        });
+    });
+
+    // Attach global functions
+    window.roStrength = function() {
+      const pw = document.getElementById('roNewPass').value;
+      const bar = document.getElementById('roBar');
+      const score = (pw.length>=8?1:0)+(/[A-Z]/.test(pw)?1:0)+(/[0-9]/.test(pw)?1:0)+(/[^a-zA-Z0-9]/.test(pw)?1:0);
+      const colors = ['#e57373','#ffb74d','#aed581','#66bb6a'];
+      bar.style.width = (score * 25) + '%';
+      bar.style.background = colors[score-1] || '#e0d8c8';
+    };
+
+    window.roSave = async function() {
+      const newPass = document.getElementById('roNewPass').value;
+      const confirm = document.getElementById('roConfirm').value;
+      const msgEl   = document.getElementById('roMsg');
+      const btn     = document.getElementById('roSaveBtn');
+      msgEl.style.color = '#8c1f1f';
+
+      if (newPass.length < 8) { msgEl.textContent = 'Password must be at least 8 characters.'; return; }
+      if (newPass !== confirm) { msgEl.textContent = 'Passwords do not match.'; return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+      try {
+        await firebase.auth().confirmPasswordReset(oobCode, newPass);
+        // Auto sign in with new password
+        const email = document.getElementById('roEmailLabel').textContent.replace('Setting new password for: ','');
+        msgEl.style.color = '#1a5c2e';
+        msgEl.textContent = '✅ Password saved! Signing you in…';
+        btn.textContent = '✅ Done!';
+        // Sign in automatically
+        try {
+          await firebase.auth().signInWithEmailAndPassword(email, newPass);
+          // onAuthStateChanged will handle redirect
+        } catch(e) {
+          msgEl.textContent = '✅ Password saved! Now sign in with your new password.';
+          setTimeout(function() {
+            document.getElementById('resetOverlay').remove();
+            window.history.replaceState(null,'',window.location.pathname);
+          }, 2000);
+        }
+      } catch(e) {
+        const msgs = {
+          'auth/expired-action-code': 'Reset link expired. Request a new one.',
+          'auth/invalid-action-code': 'Invalid reset link. Request a new one.',
+          'auth/weak-password': 'Password too weak. Use letters, numbers and symbols.',
+        };
+        msgEl.textContent = msgs[e.code] || ('Error: ' + e.code);
+        btn.disabled = false;
+        btn.textContent = 'SAVE NEW PASSWORD';
+      }
+    };
+  }
+})();
+</script>
+
+
 <style>
 :root {
   --ink: #0f0e0c;
