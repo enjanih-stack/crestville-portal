@@ -1654,10 +1654,13 @@ async function _bootApp(user, userData, adminMode) {
   document.querySelectorAll('.admin-only').forEach(el => { el.style.display = adminMode ? '' : 'none'; });
   document.querySelectorAll('.tenant-only').forEach(el => { el.style.display = adminMode ? 'none' : ''; });
 
+  // Show app IMMEDIATELY — never block on network
   showApp();
-  await pullFromCloud(true);
   renderAll();
   restoreAutoSave();
+
+  // Pull cloud data in background — does NOT block the UI
+  pullFromCloud(true).catch(e => console.warn('pullFromCloud:', e));
 
   if (!adminMode) {
     loadMyProperty(userData);
@@ -2255,7 +2258,11 @@ async function syncToCloud() {
 }
 async function pullFromCloud(silent=false) {
   try {
-    const res = await fetch(CLOUD_URL);
+    // Timeout after 8 seconds — never block the UI
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(CLOUD_URL, { signal: controller.signal });
+    clearTimeout(timer);
     const data = await res.json();
     if(data && data.length > 0) {
       // Merge cloud data into local (cloud wins on conflicts by id)
