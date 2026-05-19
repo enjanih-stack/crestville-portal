@@ -1577,15 +1577,36 @@ function initAuth() {
     try { document.getElementById('globalLoader').classList.add('out'); } catch(e){}
     if (user) {
       currentUser = user;
-      // Show role selector immediately — don't block on cloud data
+      const email = (user.email||'').toLowerCase();
+      const adminMode = ADMIN_EMAILS.includes(email);
+      
+      // Get user data
       let userData = {};
       try {
         const snap = await firebase.firestore().collection('users').doc(user.uid).get();
         userData = snap.exists ? snap.data() : {};
-      } catch(e) { console.warn('Firestore user read:', e); }
-      // Load cloud data in background — don't await
-      pullFromCloud(true).catch(e => console.warn('Cloud pull:', e));
-      showRoleSelector(user, userData);
+        // Save user if new
+        if (!snap.exists) {
+          await firebase.firestore().collection('users').doc(user.uid).set({
+            name: user.displayName || email.split('@')[0],
+            email: user.email,
+            role: adminMode ? 'admin' : 'tenant',
+            createdAt: new Date().toISOString(),
+            linkedUnit: null,
+            emailVerified: user.emailVerified
+          });
+        }
+      } catch(e) { console.warn('Firestore:', e); }
+
+      isAdmin = adminMode || userData.role === 'admin';
+
+      // Boot the app directly — show role selector only if admin
+      if (isAdmin) {
+        showRoleSelector(user, userData);
+      } else {
+        // Regular tenant — boot directly as existing tenant
+        await _bootApp(user, userData, false);
+      }
     } else {
       currentUser = null; isAdmin = false;
       showAuthScreen();

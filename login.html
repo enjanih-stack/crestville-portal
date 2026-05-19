@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CRS Admin Login</title>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-auth-compat.min.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyAiQ7q1qbwx1i_qjVFaTSJIeb9yneMT21U",
+  authDomain:"solarappform.firebaseapp.com",
+  projectId:"solarappform",
+  storageBucket:"solarappform.firebasestorage.app",
+  messagingSenderId:"298700249528",
+  appId:"1:298700249528:web:85f6a70780da9479f1174d"
+});
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0a0908;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:#faf8f4;border-radius:16px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.logo-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #e0d8c8}
+.logo{width:52px;height:52px;border-radius:50%;border:2px solid #c9960c;object-fit:cover}
+.brand{font-size:1.05rem;font-weight:700;color:#0f0e0c;line-height:1.2}
+.brand-sub{font-size:.58rem;color:#c9960c;letter-spacing:.12em;text-transform:uppercase}
+.hero{text-align:center;margin-bottom:22px}
+.hero-eye{font-size:.6rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#c9960c;margin-bottom:6px}
+.hero-h{font-size:1.3rem;font-weight:700;color:#0f0e0c;margin-bottom:4px}
+.hero-h span{color:#c9960c}
+.hero-sub{font-size:.78rem;color:#8a7a60}
+label{display:block;font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8a7a60;margin-bottom:4px;margin-top:14px}
+input{width:100%;padding:11px 13px;border:1px solid #d4ccbe;border-bottom:2px solid #c9960c;border-radius:5px 5px 0 0;font-size:.92rem;background:#fff;color:#0f0e0c;outline:none;font-family:inherit}
+input:focus{background:#fffdf5;border-bottom-color:#e8b422}
+.msg{font-size:.79rem;margin:10px 0 4px;text-align:center;min-height:20px;line-height:1.5;padding:0 4px}
+.msg.err{color:#8c1f1f}
+.msg.ok{color:#1a5c2e;background:#f0f7f0;border:1px solid #c8dcc8;border-radius:5px;padding:9px 12px}
+.btn{width:100%;padding:13px;border:none;border-radius:7px;font-size:.95rem;font-weight:700;cursor:pointer;margin-top:10px;letter-spacing:.06em;font-family:inherit;transition:all .2s}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn-gold{background:linear-gradient(135deg,#7a5800,#c9960c,#e8b422,#c9960c);color:#fff;box-shadow:0 4px 16px rgba(201,150,12,.3)}
+.btn-gold:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 24px rgba(201,150,12,.4)}
+.btn-google{background:#fff;border:1.5px solid #d4ccbe;color:#0f0e0c;display:flex;align-items:center;justify-content:center;gap:10px;font-size:.86rem}
+.btn-google:hover{background:#f5f5f5;border-color:#c9960c}
+.divider{display:flex;align-items:center;gap:10px;margin:16px 0 4px;font-size:.7rem;color:#8a7a60}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:#d4ccbe}
+.reset-row{text-align:center;margin-top:12px;padding-top:12px;border-top:1px solid #e0d8c8}
+.reset-btn{background:none;border:none;color:#c9960c;cursor:pointer;font-size:.75rem;text-decoration:underline;font-family:inherit}
+.footer{text-align:center;margin-top:16px;font-size:.68rem;color:#9a8a6a}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo-row">
+    <img class="logo" src="data:image/jpeg;base64,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" alt="CRS"/>
+    <div>
+      <div class="brand">Crestechnologies IS Ltd</div>
+      <div class="brand-sub">Property Management Portal</div>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-eye">Crestville Properties &middot; Est. 2015</div>
+    <div class="hero-h">Find Your Perfect<br><span>Home in Nigeria</span></div>
+    <div class="hero-sub">Sign in to access your portal</div>
+  </div>
+
+  <label>Email Address</label>
+  <input type="email" id="em" placeholder="your@email.com" autocomplete="email"/>
+
+  <label>Password</label>
+  <input type="password" id="pw" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+    autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"/>
+
+  <div class="msg" id="msg"></div>
+
+  <button class="btn btn-gold" id="loginBtn" onclick="login()">SIGN IN &rarr;</button>
+
+  <div class="divider"><span>or</span></div>
+
+  <button class="btn btn-google" onclick="glogin()">
+    <svg width="18" height="18" viewBox="0 0 48 48">
+      <path fill="#FFC107" d="M43.6 20.2H42V20H24v8h11.3C33.7 32.9 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.6 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.8z"/>
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 13 24 13c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.6 29.3 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/>
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3.1-11.3-7.5l-6.5 5C9.5 40 16.3 44 24 44z"/>
+      <path fill="#1976D2" d="M43.6 20.2H42V20H24v8h11.3c-.9 2.4-2.5 4.5-4.6 5.9l6.2 5.2C42.5 35.8 44 30.2 44 24c0-1.3-.1-2.6-.4-3.8z"/>
+    </svg>
+    Continue with Google
+  </button>
+
+  <div class="reset-row">
+    <button class="reset-btn" onclick="resetPw()">Forgot password? Send reset email to my inbox</button>
+  </div>
+
+  <div class="footer">Ojodu &middot; Ibadan &middot; Enugu &nbsp;&bull;&nbsp; RC 1643396</div>
+</div>
+
+<script>
+const PORTAL = 'https://enjanih-stack.github.io/crestville-portal/index.html';
+const msgEl  = document.getElementById('msg');
+const loginBtn = document.getElementById('loginBtn');
+
+// If already signed in, go straight to portal
+firebase.auth().onAuthStateChanged(user => {
+  if (user) {
+    setOk('Signed in as ' + user.email + ' — redirecting…');
+    setTimeout(() => { window.location.href = PORTAL; }, 1200);
+  }
+});
+
+function setMsg(text, type) {
+  msgEl.textContent = text;
+  msgEl.className = 'msg ' + (type || '');
+}
+function setErr(t) { setMsg(t, 'err'); }
+function setOk(t)  { setMsg(t, 'ok'); }
+
+const CODES = {
+  'auth/wrong-password':              'Wrong password — use Forgot Password below.',
+  'auth/invalid-credential':          'Incorrect email or password — try Forgot Password.',
+  'auth/user-not-found':              'No account found with this email.',
+  'auth/too-many-requests':           'Too many attempts — please wait a few minutes.',
+  'auth/popup-blocked':               'Popup blocked — please allow popups for this site.',
+  'auth/popup-closed-by-user':        'Google sign-in cancelled. Try again.',
+  'auth/network-request-failed':      'Network error — check your connection.',
+  'auth/email-already-in-use':        'Email already registered — use Sign In.',
+  'auth/weak-password':               'Password must be at least 6 characters.',
+  'auth/account-exists-with-different-credential': 'Account exists with a different sign-in method.',
+};
+function fmtErr(code) {
+  console.error('Auth error:', code);
+  return CODES[code] || ('Error: ' + (code || 'unknown'));
+}
+
+async function login() {
+  const em = document.getElementById('em').value.trim();
+  const pw = document.getElementById('pw').value;
+  setMsg('');
+  if (!em) { setErr('Please enter your email address.'); return; }
+  if (!pw) { setErr('Please enter your password.'); return; }
+  loginBtn.disabled = true;
+  setMsg('Signing in…');
+  try {
+    await firebase.auth().signInWithEmailAndPassword(em, pw);
+    // onAuthStateChanged will handle redirect
+  } catch(e) {
+    setErr(fmtErr(e.code));
+    loginBtn.disabled = false;
+  }
+}
+
+async function glogin() {
+  setMsg('Opening Google sign-in…');
+  try {
+    const p = new firebase.auth.GoogleAuthProvider();
+    p.setCustomParameters({ prompt: 'select_account' });
+    await firebase.auth().signInWithPopup(p);
+    // onAuthStateChanged handles redirect
+  } catch(e) {
+    setErr(fmtErr(e.code));
+  }
+}
+
+async function resetPw() {
+  const em = document.getElementById('em').value.trim();
+  if (!em) { setErr('Enter your email address above, then click this button.'); return; }
+  try {
+    await firebase.auth().sendPasswordResetEmail(em);
+    setOk('Reset email sent to ' + em + '. Check your inbox, click the link, enter a new password, then come back and sign in.');
+  } catch(e) {
+    setErr(fmtErr(e.code));
+  }
+}
+</script>
+</body>
+</html>
