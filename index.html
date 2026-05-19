@@ -2459,37 +2459,7 @@ async function checkAndSendRenewalEmails() {
   </div>
 
 </div>
-
-<!-- ═══ ROLE SELECTOR (shown after login) ═══ -->
-<div id="roleSelectorOverlay">
-  <div class="role-card-wrap">
-    <div class="rc-head">
-      <h3 id="rcTitle">Welcome! How would you like to continue?</h3>
-      <p id="rcSub">Signed in as <span id="rcEmail"></span></p>
-    </div>
-    <div class="rc-body">
-      <div class="role-options" id="roleOptions">
-        <!-- Populated by JS based on user type -->
-      </div>
-
-      <!-- EXISTING TENANT VERIFICATION PANEL -->
-      <div id="etVerifyPanel">
-        <div style="font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">Verify your identity</div>
-        <div class="fg" style="margin-bottom:10px"><label>Full Legal Name *</label><input type="text" id="etFullName" placeholder="As it appears on your tenancy agreement"/></div>
-        <div class="fg" style="margin-bottom:10px"><label>Current Apartment / Unit *</label><input type="text" id="etUnit" placeholder="e.g. 2BDR Flat 1A, Ojodu"/></div>
-        <div class="fg" style="margin-bottom:10px"><label>Residential Address *</label><input type="text" id="etAddress" placeholder="Estate address as on your agreement"/></div>
-        <div class="verify-err" id="etVerifyErr"></div>
-      </div>
-
-      <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--rule);margin-top:4px">
-        <button class="btn btn-outline" onclick="signOutAndReturn()">← Sign Out</button>
-        <button class="btn btn-gold" id="rcContinueBtn" onclick="continueWithRole()">Continue →</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-</body></html>`;
+`;
 
     const subject = `[Crestville] ${urgencyLabel} — ${unitLabel}`;
 
@@ -3032,5 +3002,30 @@ async function loadAllTenantDocs() {
 })();
 
 </script>
+
+<!-- ═══ ROLE SELECTOR ═══ -->
+<div id="roleSelectorOverlay">
+  <div class="role-card-wrap">
+    <div class="rc-head">
+      <h3 id="rcTitle">Welcome! How would you like to continue?</h3>
+      <p id="rcSub">Signed in as <span id="rcEmail"></span></p>
+    </div>
+    <div class="rc-body">
+      <div class="role-options" id="roleOptions"></div>
+      <div id="etVerifyPanel">
+        <div style="font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">Verify your identity</div>
+        <div class="fg" style="margin-bottom:10px"><label>Full Legal Name *</label><input type="text" id="etFullName" placeholder="As it appears on your tenancy agreement"/></div>
+        <div class="fg" style="margin-bottom:10px"><label>Apartment / Unit *</label><input type="text" id="etUnit" placeholder="e.g. 2BDR Flat 1A, Ojodu"/></div>
+        <div class="fg" style="margin-bottom:10px"><label>Residential Address</label><input type="text" id="etAddress" placeholder="Estate address as on your agreement"/></div>
+        <div class="verify-err" id="etVerifyErr"></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--rule);margin-top:4px">
+        <button class="btn btn-outline" onclick="signOutAndReturn()">← Sign Out</button>
+        <button class="btn btn-gold" onclick="continueWithRole()">Continue →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
