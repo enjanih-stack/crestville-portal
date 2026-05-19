@@ -655,6 +655,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       <div class="auth-field"><label>Email Address</label><input type="email" id="loginEmail" placeholder="your@email.com" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <div class="auth-field"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <div class="auth-error" id="loginErr"></div>
+      <div id="loginHelp" style="display:none;font-size:.72rem;text-align:center;margin-top:4px">
+        <button onclick="sendPasswordReset()" style="background:none;border:none;color:var(--gold);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.72rem;text-decoration:underline">Forgot password? Send reset email</button>
+      </div>
       <button class="auth-btn" onclick="doLogin()">Sign In →</button>
       <div class="auth-divider"><span>or</span></div>
       <button class="google-btn" onclick="doGoogle()">
@@ -1195,11 +1198,8 @@ let _fbReady = false;
 
 /* ═══ FIREBASE WAIT ═══════════════════════════════════ */
 function waitForFirebase(cb) {
-  const run = () => {
-    if(window._firebaseReady && window._firebase && window._auth) { cb(); return; }
-    setTimeout(run, 100);
-  };
-  run();
+  // Compat SDK is synchronous - call immediately
+  cb();
 }
 
 /* ═══ TOAST ═══════════════════════════════════════════ */
@@ -1229,23 +1229,51 @@ async function doLogin() {
   const errEl = document.getElementById('loginErr');
   const email = document.getElementById('loginEmail').value.trim();
   const pass  = document.getElementById('loginPass').value;
-  if (errEl) errEl.textContent = '';
-  if (!email || !pass) { if(errEl) errEl.textContent='Enter email and password.'; return; }
+  if (errEl) { errEl.textContent = ''; errEl.style.color = 'var(--red)'; }
+  if (!email) { if(errEl) errEl.textContent = 'Enter your email address.'; return; }
+  if (!pass)  { if(errEl) errEl.textContent = 'Enter your password.'; return; }
+  if (errEl) { errEl.textContent = 'Signing in…'; errEl.style.color = 'var(--dim)'; }
+  const btn = document.querySelector('.auth-btn');
+  if (btn) btn.disabled = true;
   try {
     await firebase.auth().signInWithEmailAndPassword(email, pass);
+    if (errEl) errEl.textContent = '';
   } catch(e) {
-    console.error('Login:', e);
-    if (errEl) errEl.textContent = friendlyAuthError(e.code);
+    console.error('Login error:', e.code, e.message);
+    if (errEl) { errEl.textContent = friendlyAuthError(e.code); errEl.style.color = 'var(--red)'; }
+    const help = document.getElementById('loginHelp'); if(help) help.style.display='block';
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
+
+async function sendPasswordReset() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const errEl = document.getElementById('loginErr');
+  if (!email) {
+    if(errEl) { errEl.textContent = 'Enter your email above first.'; errEl.style.color='var(--red)'; }
+    return;
+  }
+  try {
+    await firebase.auth().sendPasswordResetEmail(email);
+    if(errEl) { errEl.textContent = '✓ Reset email sent to '+email+' — check your inbox.'; errEl.style.color='var(--green)'; }
+    const help = document.getElementById('loginHelp'); if(help) help.style.display='none';
+  } catch(e) {
+    if(errEl) { errEl.textContent = friendlyAuthError(e.code); errEl.style.color='var(--red)'; }
+  }
+}
+
 async function doGoogle() {
   const errEl = document.getElementById('loginErr');
-  if (errEl) errEl.textContent = '';
+  if (errEl) { errEl.textContent = 'Opening Google sign-in…'; errEl.style.color='var(--dim)'; }
   try {
-    await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    await firebase.auth().signInWithPopup(provider);
+    if (errEl) errEl.textContent = '';
   } catch(e) {
-    console.error('Google:', e);
-    if (errEl) errEl.textContent = friendlyAuthError(e.code);
+    console.error('Google sign-in error:', e.code, e.message);
+    if (errEl) { errEl.textContent = friendlyAuthError(e.code); errEl.style.color='var(--red)'; }
   }
 }
 async function doRegister() {
@@ -1278,16 +1306,23 @@ async function doLogout() {
   await firebase.auth().signOut();
 }
 function friendlyAuthError(code) {
-  const map = {
-    'auth/invalid-email': 'Invalid email address.',
-    'auth/user-not-found': 'No account found with this email.',
-    'auth/wrong-password': 'Incorrect password.',
-    'auth/email-already-in-use': 'This email is already registered.',
-    'auth/weak-password': 'Password must be at least 6 characters.',
-    'auth/invalid-credential': 'Invalid email or password.',
-    'auth/too-many-requests': 'Too many attempts. Please try again later.',
+  const m = {
+    'auth/invalid-email':               'Invalid email address.',
+    'auth/user-not-found':              'No account found. Register first or check email.',
+    'auth/wrong-password':              'Incorrect password. Try again or reset below.',
+    'auth/email-already-in-use':        'Email already registered — use Sign In tab.',
+    'auth/weak-password':               'Password must be at least 6 characters.',
+    'auth/invalid-credential':          'Incorrect email or password.',
+    'auth/too-many-requests':           'Too many attempts — wait a few minutes.',
+    'auth/email-not-verified':          'Please verify your email — check your inbox.',
+    'auth/popup-closed-by-user':        'Google sign-in was closed. Try again.',
+    'auth/popup-blocked':               'Popup blocked — allow popups for this site.',
+    'auth/network-request-failed':      'Network error — check your connection.',
+    'auth/operation-not-allowed':       'This sign-in method is not enabled.',
+    'auth/cancelled-popup-request':     'Only one sign-in at a time — try again.',
   };
-  return map[code] || 'Authentication error. Please try again.';
+  console.error('Firebase auth error:', code);
+  return m[code] || ('Error (' + code + ') — please try again.');
 }
 
 /* ═══ AUTH STATE CHANGE ═══════════════════════════════ */
@@ -1539,19 +1574,18 @@ async function _bootApp(user, userData, adminMode) {
 ══════════════════════════════════════════════════════════ */
 function initAuth() {
   firebase.auth().onAuthStateChanged(async user => {
-    document.getElementById('globalLoader').classList.add('out');
+    try { document.getElementById('globalLoader').classList.add('out'); } catch(e){}
     if (user) {
       currentUser = user;
+      // Show role selector immediately — don't block on cloud data
+      let userData = {};
       try {
         const snap = await firebase.firestore().collection('users').doc(user.uid).get();
-        const userData = snap.exists ? snap.data() : {};
-        // Always show role selector after login
-        await pullFromCloud(true); // load data first so verify works
-        showRoleSelector(user, userData);
-      } catch(e) {
-        // Fallback — show role selector with minimal data
-        showRoleSelector(user, {});
-      }
+        userData = snap.exists ? snap.data() : {};
+      } catch(e) { console.warn('Firestore user read:', e); }
+      // Load cloud data in background — don't await
+      pullFromCloud(true).catch(e => console.warn('Cloud pull:', e));
+      showRoleSelector(user, userData);
     } else {
       currentUser = null; isAdmin = false;
       showAuthScreen();
@@ -2358,14 +2392,19 @@ window.sendCRSEmail = async (to, subject, html) => {
 };
 
 /* ═══ BOOT ════════════════════════════════════════════ */
-waitForFirebase(() => {
+// Compat SDK is ready immediately - init directly
+try {
   initAuth();
-});
-// Failsafe — hide loader after 4s no matter what
+} catch(e) {
+  console.error('initAuth error:', e);
+  // Show auth screen on any error
+  document.getElementById('vAuth').style.display = 'flex';
+}
+// Hide loader after 3s no matter what
 setTimeout(() => {
   const l = document.getElementById('globalLoader');
   if(l) { l.style.opacity='0'; l.style.pointerEvents='none'; }
-}, 4000);
+}, 3000);
 
 
 /* ════════════════════════════════════════════════════
