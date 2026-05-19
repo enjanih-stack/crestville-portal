@@ -691,12 +691,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
     <!-- REGISTER -->
     <div class="auth-panel" id="ap-register">
       <div class="auth-field"><label>Full Name</label><input type="text" id="regName" placeholder="Your full name"/></div>
-      <div class="auth-field"><label>Email Address</label><input type="email" id="regEmail" placeholder="your@email.com"/>
-      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--rule);text-align:center;font-size:.72rem;color:var(--dim)">
-        Premium properties · Transparent process · Professional management<br>
-        <strong style="color:var(--ink)">Ojodu · Ibadan · Enugu</strong>
-      </div>
-    </div>
+      <div class="auth-field"><label>Email Address</label><input type="email" id="regEmail" placeholder="your@email.com"/></div>
       <div class="auth-field"><label>Password (min 6 chars)</label><input type="password" id="regPass" placeholder="••••••••"/></div>
       <div class="auth-error" id="regErr"></div>
       <button class="auth-btn" onclick="doRegister()">Create Account →</button>
@@ -1271,24 +1266,24 @@ async function doLogin() {
   if (!email || !pass) { if(errEl) errEl.textContent = 'Enter email and password.'; return; }
   if (errEl) errEl.textContent = 'Signing in…';
   try {
-    const { auth, fb } = await _getAuth();
+    await firebase.auth().signInWithEmailAndPassword(email, pass);
     if (errEl) errEl.textContent = '';
-    await fb.signInWithEmailAndPassword(auth, email, pass);
   } catch(e) {
+    console.error('Login error:', e);
     if (errEl) errEl.textContent = friendlyAuthError(e.code);
   }
 }
 async function doGoogle() {
   const errEl = document.getElementById('loginErr');
-  if (errEl) errEl.textContent = 'Connecting…';
+  if (errEl) errEl.textContent = 'Connecting to Google…';
   try {
-    const { auth, gp, fb } = await _getAuth();
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await firebase.auth().signInWithPopup(provider);
     if (errEl) errEl.textContent = '';
-    await fb.signInWithPopup(auth, gp);
   } catch(e) {
-    const msg = e.code ? friendlyAuthError(e.code) : 'Google sign-in failed. Try refreshing the page.';
+    console.error('Google sign-in error:', e.code, e.message);
+    const msg = e.code ? friendlyAuthError(e.code) : 'Google sign-in failed. Please try again.';
     if (errEl) errEl.textContent = msg;
-    console.error('doGoogle error:', e);
   }
 }
 async function doRegister() {
@@ -1302,19 +1297,27 @@ async function doRegister() {
   if (!pass || pass.length < 6) { if(errEl) errEl.textContent = 'Password min 6 chars.'; return; }
   if (errEl) errEl.textContent = 'Creating account…';
   try {
-    const { auth, fb } = await _getAuth();
-    const { sendEmailVerification } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
-    const cred = await fb.createUserWithEmailAndPassword(auth, email, pass);
-    await sendEmailVerification(cred.user);
+    // Use compat SDK directly — no ES module import needed
+    const cred = await firebase.auth().createUserWithEmailAndPassword(email, pass);
+    await cred.user.sendEmailVerification();
+    // Save user profile to Firestore
+    const isAdmin = ADMIN_EMAILS.includes(email.toLowerCase());
+    await firebase.firestore().collection('users').doc(cred.user.uid).set({
+      name, email,
+      role: isAdmin ? 'admin' : 'tenant',
+      createdAt: new Date().toISOString(),
+      linkedUnit: null
+    });
     if (errEl) errEl.textContent = '';
     showVerifyModal(email, true);
   } catch(e) {
+    console.error('Register error:', e);
     if (errEl) errEl.textContent = friendlyAuthError(e.code);
   }
 }
 
 async function doLogout() {
-  await window._firebase.signOut(window._auth);
+  await firebase.auth().signOut();
 }
 function friendlyAuthError(code) {
   const map = {
@@ -1517,8 +1520,7 @@ async function continueWithRole() {
 async function signOutAndReturn() {
   document.getElementById('roleSelectorOverlay').classList.remove('on');
   try {
-    const { auth, fb } = await _getAuth();
-    await fb.signOut(auth);
+    await firebase.auth().signOut();
   } catch(e) {}
   window.location.href = BASE_URL + '/landing.html';
 }
@@ -1579,13 +1581,12 @@ async function _bootApp(user, userData, adminMode) {
    MAIN AUTH INIT
 ══════════════════════════════════════════════════════════ */
 function initAuth() {
-  // initAuth is called after waitForFirebase confirms _auth is ready
-  window._firebase.onAuthStateChanged(window._auth, async user => {
+  firebase.auth().onAuthStateChanged(async user => {
     document.getElementById('globalLoader').classList.add('out');
     if (user) {
       currentUser = user;
       try {
-        const snap = await window._firebase.getDoc(window._firebase.doc(window._db,'users',user.uid));
+        const snap = await firebase.firestore().collection('users').doc(user.uid).get();
         const userData = snap.exists ? snap.data() : {};
         // Always show role selector after login
         await pullFromCloud(true); // load data first so verify works
@@ -2051,29 +2052,31 @@ async function doAdminLogin() {
   }
   if (errEl) errEl.textContent = 'Signing in…';
   try {
-    const { auth, fb } = await _getAuth();
+    await firebase.auth().signInWithEmailAndPassword(email, pass);
     if (errEl) errEl.textContent = '';
-    const cred = await fb.signInWithEmailAndPassword(auth, email, pass);
-    await _afterAuth(cred.user, 'adErr');
+    // onAuthStateChanged handles the rest
   } catch(e) {
+    console.error('Admin login error:', e);
     if (errEl) errEl.textContent = friendlyAuthError(e.code);
   }
 }
 
 async function doAdminGoogle() {
   const errEl = document.getElementById('adErr');
-  if (errEl) errEl.textContent = 'Connecting…';
+  if (errEl) errEl.textContent = 'Connecting to Google…';
   try {
-    const { auth, gp, fb } = await _getAuth();
-    if (errEl) errEl.textContent = '';
-    const result = await fb.signInWithPopup(auth, gp);
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const result = await firebase.auth().signInWithPopup(provider);
     const email = (result.user.email || '').toLowerCase();
     if (!ADMIN_EMAILS.includes(email)) {
-      await fb.signOut(auth);
+      await firebase.auth().signOut();
       if (errEl) errEl.textContent = '⛔ This Google account is not authorised as admin.';
       return;
     }
+    if (errEl) errEl.textContent = '';
+    // onAuthStateChanged handles the rest
   } catch(e) {
+    console.error('Admin Google error:', e);
     if (errEl) errEl.textContent = e.code ? friendlyAuthError(e.code) : 'Google sign-in failed.';
   }
 }
@@ -2432,7 +2435,7 @@ async function sendAllRenewalReminders() {
 
 window.sendCRSEmail = async (to, subject, html) => {
   try {
-    await window._firebase.addDoc(window._firebase.collection(window._db,'mail'), {
+    await firebase.firestore().collection('mail').add({
       to: Array.isArray(to)?to:[to], message:{subject,html}
     });
     return true;
