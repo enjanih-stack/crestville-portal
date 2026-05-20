@@ -2567,6 +2567,18 @@ function showPropTab(id, btn) {
 
 /* ── RENDER PROPERTIES (enhanced) ── */
 function renderProperties() {
+  // Merge saved extras (amenities, images, vacancy) into PROPERTIES before rendering
+  try {
+    const extras = getPropExtras ? getPropExtras() : {};
+    PROPERTIES.forEach(function(p) {
+      const ex = extras[p.id];
+      if (ex) {
+        if (ex.amenities && ex.amenities.length) p.amenities = ex.amenities;
+        if (ex.availableFrom) p.availableFrom = ex.availableFrom;
+      }
+    });
+  } catch(e) {}
+
   const search = (document.getElementById('propSearch')?.value||'').toLowerCase();
   const city = document.getElementById('propCityFilter')?.value||'';
   const status = document.getElementById('propStatusFilter')?.value||'';
@@ -3267,7 +3279,7 @@ function addAmenityToEdit() {
 
 
 function addPresetByData(el) {
-  var a = el.getAttribute('data-amenity');
+  var a = el.getAttribute('data-val');
   if (a) addPresetAmenity(a);
 }
 function addPresetAmenity(a) {
@@ -3434,21 +3446,8 @@ function showPropTab(id, btn) {
   if (id === 'tabAmenities') renderGlobalAmenityList();
 }
 
-// Patch renderProperties to use extras (amenities, images, vacancy)
-const _origRenderProperties = renderProperties;
-function renderProperties() {
-  const extras = getPropExtras();
-  // Merge extras into PROPERTIES temporarily
-  PROPERTIES.forEach(p => {
-    const ex = extras[p.id];
-    if (ex) {
-      if (ex.amenities) p.amenities = ex.amenities;
-      if (ex.availableFrom) p.availableFrom = ex.availableFrom;
-      if (ex.rent && !rentLogs.find(r => r.unitId === p.id)) p._rent = ex.rent;
-    }
-  });
-  _origRenderProperties();
-}
+// Merge property extras into PROPERTIES array before each render
+// Called by the real renderProperties which already exists above
 
 // Enrich property cards with images after render
 function enrichPropertyCardsWithImages() {
