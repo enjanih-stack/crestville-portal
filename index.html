@@ -774,6 +774,21 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .amenity-edit-form{background:var(--bg);border:1px solid var(--gold);border-radius:10px;padding:16px;margin:16px 20px 0;display:none}
 .amenity-edit-form.on{display:block}
 
+
+/* ── SELECTABLE AMENITY GRID (property editor) ── */
+.amenity-select-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;max-height:360px;overflow-y:auto;padding:2px 2px 8px}
+.amenity-select-card{border:1.5px solid var(--rule);border-radius:10px;padding:13px 14px;cursor:pointer;transition:all .2s;background:var(--card);display:flex;gap:10px;align-items:flex-start;position:relative;user-select:none}
+.amenity-select-card:hover{border-color:var(--gold);background:#fffdf5;transform:translateY(-1px);box-shadow:0 3px 12px rgba(201,150,12,.1)}
+.amenity-select-card.selected{border-color:var(--gold);background:linear-gradient(135deg,#fffdf5,#fff8e6);box-shadow:0 0 0 3px rgba(201,150,12,.15)}
+.asc-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--rule);flex-shrink:0;margin-top:1px;transition:all .2s;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:transparent}
+.amenity-select-card.selected .asc-check{background:var(--gold);border-color:var(--gold);color:#fff}
+.asc-body{flex:1;min-width:0}
+.asc-name{font-size:.82rem;font-weight:700;color:var(--ink);line-height:1.3;margin-bottom:3px}
+.asc-desc{font-size:.7rem;color:var(--dim);line-height:1.5;font-style:italic}
+.amenity-select-search{width:100%;padding:9px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-size:.84rem;font-family:'DM Sans',sans-serif;background:var(--card);color:var(--ink);outline:none;margin-bottom:10px}
+.amenity-select-search:focus{background:#fffdf5}
+.asc-count{font-size:.72rem;color:var(--gold);font-weight:700;margin-bottom:8px}
+
 </style>
 </head>
 <body>
@@ -2622,17 +2637,15 @@ function showPropTab(id, btn) {
 
 /* ── RENDER PROPERTIES (enhanced) ── */
 function renderProperties() {
-  // Merge saved extras (amenities, images, vacancy) into PROPERTIES before rendering
   try {
-    const extras = getPropExtras ? getPropExtras() : {};
-    PROPERTIES.forEach(function(p) {
-      const ex = extras[p.id];
-      if (ex) {
-        if (ex.amenities && ex.amenities.length) p.amenities = ex.amenities;
-        if (ex.availableFrom) p.availableFrom = ex.availableFrom;
-      }
-    });
-  } catch(e) {}
+
+  // Merge saved property extras
+  const _extras = (typeof getPropExtras === 'function') ? getPropExtras() : {};
+  PROPERTIES.forEach(function(p) {
+    var ex = _extras[p.id];
+    if (ex && ex.amenities && ex.amenities.length) p.amenities = ex.amenities;
+    if (ex && ex.availableFrom) p.availableFrom = ex.availableFrom;
+  });
 
   const search = (document.getElementById('propSearch')?.value||'').toLowerCase();
   const city = document.getElementById('propCityFilter')?.value||'';
@@ -2694,6 +2707,11 @@ function renderProperties() {
     </div>`;
   }).join('') || '<div style="text-align:center;padding:40px;color:var(--dim)">No properties match your filters</div>';
   setTimeout(enrichPropertyCardsWithImages, 50);
+  } catch(e) {
+    console.error('renderProperties error:', e);
+    var g = document.getElementById('propGrid');
+    if (g) g.innerHTML = '<div style="padding:30px;color:var(--red);font-size:.84rem">Error rendering properties: ' + e.message + '</div>';
+  }
 }
 
 /* ── DOCUMENT COUNTS CACHE ── */
@@ -3190,21 +3208,35 @@ const DEFAULT_AMENITIES = [
   '2 Bathrooms','3 Bathrooms','Car Park','24hr Security','Borehole Water',
   'Estate Generator','Gated Estate','CCTV','Swimming Pool','Gym',
   'Intercom','POP Ceiling','Tiled Floors','Wardrobe','Air Conditioning',
-  'Solar Power','Security Post','Playground','Perimeter Fence','Good Road Access',
-  'High Footfall Area','Serene Environment','Easy Access Road',
-  // Premium estate features
-  '24/7 Power Support','Smart Access Control','Fibre Optic Node',
-  'Integrated Waste','Industrial Water','On-site Concierge'
+  'Solar Power','Security Post','Good Road Access','High Footfall Area',
+  'Serene Environment','Easy Access Road','Perimeter Fence','Playground',
+  // Premium estate amenities
+  'Professional Janitorial & Waste Services',
+  'Large Car Storage Space',
+  'Spacious En-Suite Apartments',
+  'Child-Friendly Environment',
+  '24/7 Power Support',
+  'Smart Access Control',
+  'Fibre Optic Node',
+  'Industrial Water',
+  'On-site Concierge'
 ];
 
-// Amenity descriptions — shown as tooltips in the editor
+// Amenity descriptions — shown in cards and as tooltips
 const AMENITY_DESCRIPTIONS = {
-  '24/7 Power Support':   'Centralized inverter and backup systems.',
-  'Smart Access Control': 'Biometric and keycard entry protocols.',
-  'Fibre Optic Node':     'High-speed internet backbone readiness.',
-  'Integrated Waste':     'Automated estate collection cycles.',
-  'Industrial Water':     'Multi-stage purification plant.',
-  'On-site Concierge':    'Professional estate management desk.'
+  'Professional Janitorial & Waste Services': 'A structured and regular waste collection and janitorial system keeps communal areas clean, hygienic, and pleasant throughout the year.',
+  'Large Car Storage Space':                  'Generous parking and vehicle storage provisions within the compound, accommodating multiple cars per household with ease.',
+  'Spacious En-Suite Apartments':             'Thoughtfully designed residential units featuring full en-suite facilities for maximum privacy, comfort, and luxury.',
+  'Child-Friendly Environment':               'Safe, secure, and dedicated circulation and play spaces designed for the comfort and safety of families with children.',
+  '24/7 Power Support':                       'Centralized inverter and backup systems ensuring uninterrupted electrical supply for all essential services.',
+  'Smart Access Control':                     'Advanced biometric and keycard entry protocols for enhanced security and automated resident verification.',
+  'Fibre Optic Node':                         'High-speed internet backbone readiness with dedicated fibre optic connections to every unit.',
+  'Industrial Water':                         'Multi-stage industrial-grade purification plant delivering clean, pressurized water across the campus.',
+  'On-site Concierge':                        'Professional estate management desk providing elite hospitality and administrative support to all residents.',
+  '24hr Security':                            'Round-the-clock manned security presence at all estate entry and exit points.',
+  'Borehole Water':                           'Private borehole ensuring steady, clean water supply independent of public utilities.',
+  'Estate Generator':                         'Centralised backup generator providing power continuity during grid outages.',
+  'Gated Estate':                             'Perimeter fencing with controlled access gates for enhanced resident security.'
 };
 
 function getGlobalAmenities() {
@@ -3306,47 +3338,74 @@ function setVacancy(v) {
 }
 
 /* ── AMENITIES ── */
-function renderAmenityChips() {
-  const wrap = document.getElementById('peAmenityChips');
-  if (!wrap) return;
-  if (!_editAmenities.length) {
-    wrap.innerHTML = '<span style="font-size:.76rem;color:var(--dim);font-style:italic">No amenities added yet</span>';
-    return;
-  }
-  wrap.innerHTML = _editAmenities.map((a, i) =>
-    '<span class="amenity-chip">' + a +
-    '<button class="rm" onclick="removeAmenityFromEdit(' + i + ')" title="Remove">&#x2715;</button>' +
-    '</span>'
-  ).join('');
+function renderAmenitySelectGrid() {
+  var grid = document.getElementById('amenitySelectGrid');
+  if (!grid) return;
+  var all = getGlobalAmenities();
+  var query = (document.getElementById('amenitySearch') ? document.getElementById('amenitySearch').value : '').toLowerCase();
+  var savedDescs = getSavedDescriptions ? getSavedDescriptions() : {};
+
+  var filtered = query ? all.filter(function(a) { return a.toLowerCase().includes(query); }) : all;
+
+  grid.innerHTML = filtered.map(function(a) {
+    var isSelected = _editAmenities.includes(a);
+    var desc = savedDescs[a] || (typeof AMENITY_DESCRIPTIONS !== 'undefined' ? AMENITY_DESCRIPTIONS[a] : '') || '';
+    var safeA = a.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    return '<div class="amenity-select-card' + (isSelected ? ' selected' : '') + '" data-amenity="' + safeA + '" onclick="toggleAmenityCard(this)">' +
+      '<div class="asc-check">&#10003;</div>' +
+      '<div class="asc-body">' +
+        '<div class="asc-name">' + a + '</div>' +
+        (desc ? '<div class="asc-desc">' + desc + '</div>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  updateAmenityCount();
 }
 
-function renderAmenityPresets() {
-  const wrap = document.getElementById('amenityPresets');
-  if (!wrap) return;
-  const all = getGlobalAmenities();
-  const available = all.filter(a => !_editAmenities.includes(a));
-  wrap.innerHTML = available.map(function(a) {
-    var safe = a.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-    var desc = (typeof AMENITY_DESCRIPTIONS !== 'undefined' && AMENITY_DESCRIPTIONS[a]) ? AMENITY_DESCRIPTIONS[a] : '';
-    var title = desc ? ' title="' + desc.replace(/"/g,'&quot;') + '"' : '';
-    return '<span class="preset-chip" data-val="' + safe + '" onclick="addPresetByData(this)"' + title + '>' + a + '</span>';
-  }).join('');
+function toggleAmenityCard(el) {
+  var a = el.getAttribute('data-amenity');
+  if (!a) return;
+  var idx = _editAmenities.indexOf(a);
+  if (idx >= 0) {
+    _editAmenities.splice(idx, 1);
+    el.classList.remove('selected');
+  } else {
+    _editAmenities.push(a);
+    el.classList.add('selected');
+  }
+  el.querySelector('.asc-check').textContent = _editAmenities.includes(a) ? '' : '';
+  updateAmenityCount();
 }
+
+function updateAmenityCount() {
+  var el = document.getElementById('amenityCount');
+  if (el) el.textContent = _editAmenities.length + ' selected';
+}
+
+function filterAmenityCards() {
+  renderAmenitySelectGrid();
+}
+
+// Keep these as aliases so existing code still works
+function renderAmenityChips() { renderAmenitySelectGrid(); }
+function renderAmenityPresets() { renderAmenitySelectGrid(); }
 
 function addAmenityToEdit() {
-  const inp = document.getElementById('peAmenityInput');
-  const val = (inp.value || '').trim();
+  var inp = document.getElementById('peAmenityInput');
+  var val = (inp ? inp.value : '').trim();
   if (!val) return;
   if (!_editAmenities.includes(val)) {
     _editAmenities.push(val);
-    // Also add to global list if new
-    const globals = getGlobalAmenities();
-    if (!globals.includes(val)) { globals.push(val); saveGlobalAmenities(globals); }
-    renderAmenityChips();
-    renderAmenityPresets();
+    // Add to global list if new so it appears in the grid
+    var globals = getGlobalAmenities();
+    if (!globals.includes(val)) {
+      globals.push(val);
+      saveGlobalAmenities(globals);
+    }
   }
-  inp.value = '';
-  inp.focus();
+  if (inp) { inp.value = ''; inp.focus(); }
+  renderAmenitySelectGrid();
 }
 
 
@@ -3357,15 +3416,13 @@ function addPresetByData(el) {
 function addPresetAmenity(a) {
   if (!_editAmenities.includes(a)) {
     _editAmenities.push(a);
-    renderAmenityChips();
-    renderAmenityPresets();
+    renderAmenitySelectGrid();
   }
 }
 
 function removeAmenityFromEdit(i) {
   _editAmenities.splice(i, 1);
-  renderAmenityChips();
-  renderAmenityPresets();
+  renderAmenitySelectGrid();
 }
 
 /* ── IMAGES ── */
@@ -3721,14 +3778,20 @@ function enrichPropertyCardsWithImages() {
 
       <!-- AMENITIES -->
       <div class="pec-section">
-        <div class="pec-section-title">Amenities</div>
-        <div class="amenity-chip-wrap" id="peAmenityChips"></div>
-        <div style="font-size:.68rem;color:var(--dim);margin-bottom:7px;font-weight:600">Quick add from list:</div>
-        <div class="amenity-presets" id="amenityPresets"></div>
-        <div class="amenity-add-row">
-          <input type="text" id="peAmenityInput" placeholder="Type custom amenity and press Enter or click Add"
+        <div class="pec-section-title" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Amenities</span>
+          <span class="asc-count" id="amenityCount">0 selected</span>
+        </div>
+        <input class="amenity-select-search" id="amenitySearch"
+          placeholder="&#128269; Search amenities..."
+          oninput="filterAmenityCards()"/>
+        <div class="amenity-select-grid" id="amenitySelectGrid"></div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--rule);display:flex;gap:8px;align-items:center">
+          <input type="text" id="peAmenityInput"
+            placeholder="+ Add custom amenity not in list"
+            style="flex:1;padding:8px 11px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-size:.82rem;font-family:'DM Sans',sans-serif;background:var(--card);outline:none"
             onkeydown="if(event.key==='Enter'){event.preventDefault();addAmenityToEdit()}"/>
-          <button class="btn btn-gold btn-sm" onclick="addAmenityToEdit()">+ Add</button>
+          <button class="btn btn-gold btn-sm" onclick="addAmenityToEdit()">+ Custom</button>
         </div>
       </div>
 
