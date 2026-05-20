@@ -3244,9 +3244,9 @@ function renderAmenityPresets() {
   if (!wrap) return;
   const all = getGlobalAmenities();
   const available = all.filter(a => !_editAmenities.includes(a));
-  wrap.innerHTML = available.map(a =>
-    '<span class="preset-chip" onclick="addPresetAmenity('' + a.replace(/'/g, "\'") + '')">' + a + '</span>'
-  ).join('');
+  wrap.innerHTML = available.map(function(a) {
+    return '<span class="preset-chip" data-val="' + a.replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '" onclick="addPresetByData(this)">' + a + '</span>';
+  }).join('');
 }
 
 function addAmenityToEdit() {
@@ -3265,6 +3265,11 @@ function addAmenityToEdit() {
   inp.focus();
 }
 
+
+function addPresetByData(el) {
+  var a = el.getAttribute('data-amenity');
+  if (a) addPresetAmenity(a);
+}
 function addPresetAmenity(a) {
   if (!_editAmenities.includes(a)) {
     _editAmenities.push(a);
