@@ -3132,13 +3132,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Global amenities list — stored in localStorage + Firestore
 const DEFAULT_AMENITIES = [
+  // Core residential
   '2 Bedrooms','3 Bedrooms','Living Room','Dining Room','Kitchen',
   '2 Bathrooms','3 Bathrooms','Car Park','24hr Security','Borehole Water',
   'Estate Generator','Gated Estate','CCTV','Swimming Pool','Gym',
   'Intercom','POP Ceiling','Tiled Floors','Wardrobe','Air Conditioning',
   'Solar Power','Security Post','Playground','Perimeter Fence','Good Road Access',
-  'High Footfall Area','Serene Environment','Easy Access Road'
+  'High Footfall Area','Serene Environment','Easy Access Road',
+  // Premium estate features
+  '24/7 Power Support','Smart Access Control','Fibre Optic Node',
+  'Integrated Waste','Industrial Water','On-site Concierge'
 ];
+
+// Amenity descriptions — shown as tooltips in the editor
+const AMENITY_DESCRIPTIONS = {
+  '24/7 Power Support':   'Centralized inverter and backup systems.',
+  'Smart Access Control': 'Biometric and keycard entry protocols.',
+  'Fibre Optic Node':     'High-speed internet backbone readiness.',
+  'Integrated Waste':     'Automated estate collection cycles.',
+  'Industrial Water':     'Multi-stage purification plant.',
+  'On-site Concierge':    'Professional estate management desk.'
+};
 
 function getGlobalAmenities() {
   try {
@@ -3259,7 +3273,10 @@ function renderAmenityPresets() {
   const all = getGlobalAmenities();
   const available = all.filter(a => !_editAmenities.includes(a));
   wrap.innerHTML = available.map(function(a) {
-    return '<span class="preset-chip" data-val="' + a.replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '" onclick="addPresetByData(this)">' + a + '</span>';
+    var safe = a.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    var desc = (typeof AMENITY_DESCRIPTIONS !== 'undefined' && AMENITY_DESCRIPTIONS[a]) ? AMENITY_DESCRIPTIONS[a] : '';
+    var title = desc ? ' title="' + desc.replace(/"/g,'&quot;') + '"' : '';
+    return '<span class="preset-chip" data-val="' + safe + '" onclick="addPresetByData(this)"' + title + '>' + a + '</span>';
   }).join('');
 }
 
@@ -3392,7 +3409,10 @@ function renderGlobalAmenityList() {
   el.innerHTML = '<div style="border:1px solid var(--rule);border-radius:7px;overflow:hidden">' +
     list.map((a, i) =>
       '<div class="amenity-manager-row">' +
+      '<div style="flex:1;min-width:0">' +
       '<span class="amr-name">' + a + '</span>' +
+      (AMENITY_DESCRIPTIONS[a] ? '<div style="font-size:.7rem;color:var(--dim);margin-top:1px">' + AMENITY_DESCRIPTIONS[a] + '</div>' : '') +
+      '</div>' +
       '<span class="amr-count">' + (counts[a] || 0) + ' propert' + (counts[a] === 1 ? 'y' : 'ies') + '</span>' +
       '<div class="amr-actions">' +
       '<button class="btn btn-sm btn-outline" onclick="renameGlobalAmenity(' + i + ')">Rename</button>' +
