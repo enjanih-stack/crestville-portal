@@ -3055,47 +3055,47 @@ async function switchToRole(role) {
     return;
   }
   if (role === 'admin') {
-    if (!ADMIN_EMAILS.includes((currentUser.email||'').toLowerCase())) { toast('Not authorised as admin'); return; }
+    if (!ADMIN_EMAILS.includes((currentUser.email||'').toLowerCase())) {
+      toast('Not authorised as admin'); return;
+    }
     await _bootApp(currentUser, {role:'admin'}, true);
     toast('Switched to Admin Dashboard');
     return;
   }
   if (role === 'existing_tenant') {
-    const overlay = document.createElement('div');
-    overlay.id = 'quickVerifyOverlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:950;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)';
-    overlay.innerHTML = '<div style="background:var(--cream);border-radius:14px;width:100%;max-width:420px;box-shadow:0 24px 80px rgba(0,0,0,.5);overflow:hidden">'
-      + '<div style="background:var(--ink);padding:16px 20px;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between">'
-      + '<div style="font-family:Cormorant Garamond,serif;font-size:1rem;font-weight:700;color:#fff">Verify Your Tenancy</div>'
-      + '<button onclick="document.getElementById(&quot;quickVerifyOverlay&quot;).remove()" style="background:none;border:none;color:#9a8a6a;font-size:1.3rem;cursor:pointer">&#x2715;</button>'
-      + '</div><div style="padding:20px">'
-      + '<p style="font-size:.8rem;color:var(--dim);margin-bottom:14px;line-height:1.6">Enter your details to access your tenancy record.</p>'
-      + '<div class="fg" style="margin-bottom:10px"><label>Full Legal Name *</label><input type="text" id="qvName" placeholder="As on your tenancy agreement"/></div>'
-      + '<div class="fg" style="margin-bottom:10px"><label>Apartment / Unit *</label><input type="text" id="qvUnit" placeholder="e.g. 2BDR Flat 1A"/></div>'
-      + '<div id="qvErr" style="font-size:.76rem;color:var(--red);margin:8px 0;min-height:16px;text-align:center"></div>'
-      + '<div style="display:flex;gap:10px;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--rule)">'
-      + '<button onclick="document.getElementById(&quot;quickVerifyOverlay&quot;).remove()" class="btn btn-outline">Cancel</button>'
-      + '<button onclick="quickVerifyTenant()" class="btn btn-gold">Verify &amp; Continue</button>'
-      + '</div></div></div>';
-    document.body.appendChild(overlay);
-    setTimeout(function(){ const n=document.getElementById('qvName'); if(n)n.focus(); }, 100);
+    // Show the pre-built HTML modal — no JS string building
+    const m = document.getElementById('quickVerifyModal');
+    if (m) {
+      document.getElementById('qvName').value = '';
+      document.getElementById('qvUnit').value = '';
+      document.getElementById('qvErr').textContent = '';
+      m.style.display = 'flex';
+      setTimeout(function(){ document.getElementById('qvName').focus(); }, 100);
+    }
   }
 }
+
+function closeQuickVerify() {
+  const m = document.getElementById('quickVerifyModal');
+  if (m) m.style.display = 'none';
+}
+
 async function quickVerifyTenant() {
-  const name = (document.getElementById('qvName')?.value||'').trim().toLowerCase();
-  const unit = (document.getElementById('qvUnit')?.value||'').trim().toLowerCase();
+  const name = (document.getElementById('qvName').value || '').trim().toLowerCase();
+  const unit = (document.getElementById('qvUnit').value || '').trim().toLowerCase();
   const errEl = document.getElementById('qvErr');
-  if (!name||!unit) { if(errEl) errEl.textContent='Enter your name and unit.'; return; }
+  if (!name || !unit) { if (errEl) errEl.textContent = 'Enter your name and unit.'; return; }
   const match = rentLogs.find(function(r) {
-    const rName=(r.tenant||'').toLowerCase();
-    const rUnit=(getPropertyLabel(r.unitId||r.unit)||'').toLowerCase();
-    const nameOk=rName.includes(name)||name.includes(rName.split(' ')[0]);
-    const unitOk=rUnit.includes(unit.split(' ')[0])||unit.split(' ').some(function(w){return w.length>2&&rUnit.includes(w);});
-    return nameOk&&unitOk;
+    const rName = (r.tenant || '').toLowerCase();
+    const rUnit = (getPropertyLabel(r.unitId || r.unit) || '').toLowerCase();
+    const nameOk = rName.includes(name) || name.includes(rName.split(' ')[0]);
+    const unitOk = rUnit.includes(unit.split(' ')[0]) ||
+      unit.split(' ').some(function(w) { return w.length > 2 && rUnit.includes(w); });
+    return nameOk && unitOk;
   });
-  if (!match) { if(errEl) errEl.textContent='Details not found. Check name and unit.'; return; }
+  if (!match) { if (errEl) errEl.textContent = 'Details not found. Check name and unit.'; return; }
   window._myRecord = match;
-  document.getElementById('quickVerifyOverlay')?.remove();
+  closeQuickVerify();
   await _bootApp(currentUser, {role:'tenant'}, false);
   toast('Switched to Existing Tenant view');
 }
@@ -3640,6 +3640,33 @@ function enrichPropertyCardsWithImages() {
         <button class="btn btn-gold" onclick="savePropEdit()">💾 Save Property</button>
       </div>
 
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ QUICK VERIFY MODAL (Existing Tenant from Switch Role) ═══ -->
+<div id="quickVerifyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:950;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)">
+  <div style="background:var(--cream);border-radius:14px;width:100%;max-width:420px;box-shadow:0 24px 80px rgba(0,0,0,.5);overflow:hidden">
+    <div style="background:var(--ink);padding:16px 20px;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:#fff">Verify Your Tenancy</div>
+      <button onclick="closeQuickVerify()" style="background:none;border:none;color:#9a8a6a;font-size:1.3rem;cursor:pointer;line-height:1">&#x2715;</button>
+    </div>
+    <div style="padding:20px">
+      <p style="font-size:.82rem;color:var(--dim);margin-bottom:16px;line-height:1.65">Enter your details to access your tenancy record.</p>
+      <div class="fg" style="margin-bottom:12px">
+        <label>Full Legal Name *</label>
+        <input type="text" id="qvName" placeholder="As it appears on your tenancy agreement"/>
+      </div>
+      <div class="fg" style="margin-bottom:12px">
+        <label>Apartment / Unit *</label>
+        <input type="text" id="qvUnit" placeholder="e.g. 2BDR Flat 1A, Ojodu"/>
+      </div>
+      <div id="qvErr" style="font-size:.76rem;color:var(--red);margin:8px 0;min-height:16px;text-align:center"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--rule)">
+        <button class="btn btn-outline" onclick="closeQuickVerify()">Cancel</button>
+        <button class="btn btn-gold" onclick="quickVerifyTenant()">Verify &amp; Continue &#x2192;</button>
+      </div>
     </div>
   </div>
 </div>
