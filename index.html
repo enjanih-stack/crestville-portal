@@ -1834,6 +1834,8 @@ function renderAll() {
   updateMetrics();
   renderChart();
   renderExpiringTable();
+  renderProperties();
+  renderRentManager();
   // Auto-check and send renewal emails (admin only, throttled by sent-cache)
   if (isAdmin && typeof checkAndSendRenewalEmails === 'function') {
     checkAndSendRenewalEmails().catch(e => console.log('Email check:', e));
