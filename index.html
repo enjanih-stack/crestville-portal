@@ -614,6 +614,29 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 }
 
 
+
+/* ── SWITCH ROLE / HOME BUTTONS ── */
+.switch-role-btn{display:inline-flex;align-items:center;gap:7px;width:100%;padding:9px 14px;border:1px solid rgba(201,150,12,.3);border-radius:6px;background:rgba(201,150,12,.08);color:var(--gold);font-size:.79rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;margin-bottom:6px;text-align:left}
+.switch-role-btn:hover{background:rgba(201,150,12,.16);border-color:var(--gold)}
+.refresh-btn{display:inline-flex;align-items:center;gap:7px;width:100%;padding:9px 14px;border:1px solid rgba(255,255,255,.1);border-radius:6px;background:rgba(255,255,255,.04);color:#9a8a6a;font-size:.79rem;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;margin-bottom:6px}
+.refresh-btn:hover{background:rgba(255,255,255,.08);color:#e8dfc8}
+
+/* SWITCH ROLE MODAL */
+#switchRoleOverlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:900;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
+#switchRoleOverlay.on{display:flex}
+.sr-card{background:var(--cream);border-radius:14px;width:100%;max-width:420px;box-shadow:0 24px 80px rgba(0,0,0,.5);overflow:hidden}
+.sr-head{background:var(--ink);padding:18px 22px;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between}
+.sr-head h3{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:700;color:#fff}
+.sr-head button{background:none;border:none;color:#9a8a6a;font-size:1.3rem;cursor:pointer;line-height:1}
+.sr-head button:hover{color:#fff}
+.sr-body{padding:20px}
+.sr-option{display:flex;align-items:center;gap:14px;padding:13px 15px;border:1.5px solid var(--rule);border-radius:10px;cursor:pointer;transition:all .2s;background:var(--card);margin-bottom:10px}
+.sr-option:last-child{margin-bottom:0}
+.sr-option:hover{border-color:var(--gold);background:#fffdf5;transform:translateX(3px)}
+.sr-ico{width:42px;height:42px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
+.sr-title{font-family:'Cormorant Garamond',serif;font-size:.98rem;font-weight:700;color:var(--ink);margin-bottom:2px}
+.sr-desc{font-size:.74rem;color:var(--dim);line-height:1.4}
+
 /* ── HOME BUTTON ── */
 .home-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border:1px solid rgba(255,255,255,.12);border-radius:6px;background:none;color:#9a8a6a;font-size:.8rem;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;text-decoration:none}
 .home-btn:hover{color:var(--gold);border-color:var(--gold)}
@@ -876,6 +899,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
     </nav>
 
     <div class="sidebar-foot">
+      <button class="switch-role-btn" onclick="openSwitchRole()">
+        <span>🔄</span> Switch Role
+      </button>
+      <button class="refresh-btn" onclick="refreshPortal()">
+        <span>↺</span> Refresh Portal
+      </button>
       <a class="home-btn" href="https://enjanih-stack.github.io/crestville-portal/landing.html" style="width:100%;margin-bottom:6px">
         <span>🏠</span> Home Page
       </a>
@@ -1058,6 +1087,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
           <div><h1>Properties</h1><div class="ph-sub">Master property list · Tenant documents · Mass import</div></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-gold" onclick="showPropTab('tabUnits',this)">🗂️ All Units</button>
+            <button class="btn btn-outline" onclick="showPropTab('tabAmenities',this)">🏷️ Amenities</button>
             <button class="btn btn-outline" onclick="showPropTab('tabImport',this)">⬆ Import CSV</button>
             <button class="btn btn-outline" onclick="downloadCSVTemplate()">⬇ CSV Template</button>
           </div>
@@ -2588,6 +2618,7 @@ function renderProperties() {
       <div class="uc-bottom">
         <div class="uc-rent">${rec ? '₦'+Number(rec.amount).toLocaleString() : '—'}</div>
         <div style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-outline" onclick="openPropEdit('${p.id}')" title="Edit property details, amenities, images">🏠 Edit</button>
           ${occupied ? `<button class="btn btn-sm btn-outline" onclick="openTenantDrawer('${p.id}')">📁 Docs</button>
           <button class="btn btn-sm btn-outline" onclick="editRentByUnit('${p.id}')">✏️</button>` :
           `<button class="btn btn-sm btn-gold" onclick="addRecordForUnit('${p.id}')">+ Add</button>`}
@@ -2595,6 +2626,7 @@ function renderProperties() {
       </div>
     </div>`;
   }).join('') || '<div style="text-align:center;padding:40px;color:var(--dim)">No properties match your filters</div>';
+  setTimeout(enrichPropertyCardsWithImages, 50);
 }
 
 /* ── DOCUMENT COUNTS CACHE ── */
@@ -3001,6 +3033,448 @@ async function loadAllTenantDocs() {
   else window.addEventListener('DOMContentLoaded', ready);
 })();
 
+
+/* ════════════════════════════════════
+   SWITCH ROLE + REFRESH FUNCTIONS
+════════════════════════════════════ */
+function openSwitchRole() {
+  const email = currentUser ? (currentUser.email||'') : '';
+  document.getElementById('srCurrentEmail').textContent = email;
+  const adminOpt = document.getElementById('srAdminOption');
+  if (adminOpt) adminOpt.style.display = ADMIN_EMAILS.includes(email.toLowerCase()) ? '' : 'none';
+  document.getElementById('switchRoleOverlay').classList.add('on');
+}
+function closeSwitchRole() {
+  document.getElementById('switchRoleOverlay').classList.remove('on');
+}
+async function switchToRole(role) {
+  closeSwitchRole();
+  if (!currentUser) return;
+  if (role === 'new_tenant') {
+    window.location.href = 'https://enjanih-stack.github.io/crestville-portal/landing.html#new';
+    return;
+  }
+  if (role === 'admin') {
+    if (!ADMIN_EMAILS.includes((currentUser.email||'').toLowerCase())) { toast('Not authorised as admin'); return; }
+    await _bootApp(currentUser, {role:'admin'}, true);
+    toast('Switched to Admin Dashboard');
+    return;
+  }
+  if (role === 'existing_tenant') {
+    const overlay = document.createElement('div');
+    overlay.id = 'quickVerifyOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:950;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)';
+    overlay.innerHTML = '<div style="background:var(--cream);border-radius:14px;width:100%;max-width:420px;box-shadow:0 24px 80px rgba(0,0,0,.5);overflow:hidden">'
+      + '<div style="background:var(--ink);padding:16px 20px;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between">'
+      + '<div style="font-family:Cormorant Garamond,serif;font-size:1rem;font-weight:700;color:#fff">Verify Your Tenancy</div>'
+      + '<button onclick="document.getElementById(&quot;quickVerifyOverlay&quot;).remove()" style="background:none;border:none;color:#9a8a6a;font-size:1.3rem;cursor:pointer">&#x2715;</button>'
+      + '</div><div style="padding:20px">'
+      + '<p style="font-size:.8rem;color:var(--dim);margin-bottom:14px;line-height:1.6">Enter your details to access your tenancy record.</p>'
+      + '<div class="fg" style="margin-bottom:10px"><label>Full Legal Name *</label><input type="text" id="qvName" placeholder="As on your tenancy agreement"/></div>'
+      + '<div class="fg" style="margin-bottom:10px"><label>Apartment / Unit *</label><input type="text" id="qvUnit" placeholder="e.g. 2BDR Flat 1A"/></div>'
+      + '<div id="qvErr" style="font-size:.76rem;color:var(--red);margin:8px 0;min-height:16px;text-align:center"></div>'
+      + '<div style="display:flex;gap:10px;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--rule)">'
+      + '<button onclick="document.getElementById(&quot;quickVerifyOverlay&quot;).remove()" class="btn btn-outline">Cancel</button>'
+      + '<button onclick="quickVerifyTenant()" class="btn btn-gold">Verify &amp; Continue</button>'
+      + '</div></div></div>';
+    document.body.appendChild(overlay);
+    setTimeout(function(){ const n=document.getElementById('qvName'); if(n)n.focus(); }, 100);
+  }
+}
+async function quickVerifyTenant() {
+  const name = (document.getElementById('qvName')?.value||'').trim().toLowerCase();
+  const unit = (document.getElementById('qvUnit')?.value||'').trim().toLowerCase();
+  const errEl = document.getElementById('qvErr');
+  if (!name||!unit) { if(errEl) errEl.textContent='Enter your name and unit.'; return; }
+  const match = rentLogs.find(function(r) {
+    const rName=(r.tenant||'').toLowerCase();
+    const rUnit=(getPropertyLabel(r.unitId||r.unit)||'').toLowerCase();
+    const nameOk=rName.includes(name)||name.includes(rName.split(' ')[0]);
+    const unitOk=rUnit.includes(unit.split(' ')[0])||unit.split(' ').some(function(w){return w.length>2&&rUnit.includes(w);});
+    return nameOk&&unitOk;
+  });
+  if (!match) { if(errEl) errEl.textContent='Details not found. Check name and unit.'; return; }
+  window._myRecord = match;
+  document.getElementById('quickVerifyOverlay')?.remove();
+  await _bootApp(currentUser, {role:'tenant'}, false);
+  toast('Switched to Existing Tenant view');
+}
+function refreshPortal() {
+  if (!currentUser) { window.location.reload(); return; }
+  toast('Refreshing data...');
+  pullFromCloud(true)
+    .then(function(){ renderAll(); if(!isAdmin) loadMyProperty({}); toast('Data refreshed'); })
+    .catch(function(){ renderAll(); toast('Refreshed from local data'); });
+}
+document.addEventListener('DOMContentLoaded', function() {
+  var sr = document.getElementById('switchRoleOverlay');
+  if (sr) sr.addEventListener('click', function(e){ if(e.target===this) closeSwitchRole(); });
+});
+
+
+/* ════════════════════════════════════════════════════════════
+   PROPERTY EDITOR
+════════════════════════════════════════════════════════════ */
+
+// Global amenities list — stored in localStorage + Firestore
+const DEFAULT_AMENITIES = [
+  '2 Bedrooms','3 Bedrooms','Living Room','Dining Room','Kitchen',
+  '2 Bathrooms','3 Bathrooms','Car Park','24hr Security','Borehole Water',
+  'Estate Generator','Gated Estate','CCTV','Swimming Pool','Gym',
+  'Intercom','POP Ceiling','Tiled Floors','Wardrobe','Air Conditioning',
+  'Solar Power','Security Post','Playground','Perimeter Fence','Good Road Access',
+  'High Footfall Area','Serene Environment','Easy Access Road'
+];
+
+function getGlobalAmenities() {
+  try {
+    const stored = localStorage.getItem('crs_global_amenities');
+    return stored ? JSON.parse(stored) : [...DEFAULT_AMENITIES];
+  } catch(e) { return [...DEFAULT_AMENITIES]; }
+}
+
+function saveGlobalAmenities(list) {
+  localStorage.setItem('crs_global_amenities', JSON.stringify(list));
+  // Also push to Firestore
+  firebase.firestore().collection('portalSettings').doc('amenities')
+    .set({ list, updatedAt: new Date().toISOString() }).catch(() => {});
+}
+
+// Property extra data (amenities, images, availableFrom)
+// Stored separately from the core PROPERTIES array
+function getPropExtras() {
+  try { return JSON.parse(localStorage.getItem('crs_prop_extras') || '{}'); } catch(e) { return {}; }
+}
+function savePropExtras(extras) {
+  localStorage.setItem('crs_prop_extras', JSON.stringify(extras));
+  firebase.firestore().collection('portalSettings').doc('propExtras')
+    .set({ data: extras, updatedAt: new Date().toISOString() }).catch(() => {});
+}
+function getPropExtra(id) { return getPropExtras()[id] || {}; }
+function setPropExtra(id, data) {
+  const extras = getPropExtras();
+  extras[id] = { ...(extras[id]||{}), ...data };
+  savePropExtras(extras);
+}
+
+// Load propExtras from Firestore on init
+async function loadPropExtras() {
+  try {
+    const snap = await firebase.firestore().collection('portalSettings').doc('propExtras').get();
+    if (snap.exists) {
+      const data = snap.data().data || {};
+      localStorage.setItem('crs_prop_extras', JSON.stringify(data));
+    }
+    const snap2 = await firebase.firestore().collection('portalSettings').doc('amenities').get();
+    if (snap2.exists) {
+      const list = snap2.data().list || [];
+      localStorage.setItem('crs_global_amenities', JSON.stringify(list));
+    }
+  } catch(e) { console.warn('loadPropExtras:', e); }
+}
+
+/* ── OPEN / CLOSE EDITOR ── */
+let _editingPropId = null;
+let _editVacancy = 'occupied';
+let _editAmenities = [];
+let _editImages = [null, null];
+
+function openPropEdit(propId) {
+  const p = PROPERTIES.find(x => x.id === propId);
+  if (!p) return;
+  _editingPropId = propId;
+  const extra = getPropExtra(propId);
+  const rec = rentLogs.find(e => e.unitId === propId);
+
+  document.getElementById('propEditTitle').textContent = 'Edit: ' + p.label;
+  document.getElementById('peLabel').value = p.label || '';
+  document.getElementById('peCity').value = p.city || 'Ojodu';
+  document.getElementById('peType').value = p.type || '2 Bedroom Flat';
+  document.getElementById('peLocation').value = p.location || '';
+  document.getElementById('peRent').value = extra.rent || (rec ? rec.amount : '') || '';
+  document.getElementById('peAvailFrom').value = extra.availableFrom || '';
+
+  // Vacancy
+  _editVacancy = (rec && rec.vacancy !== 'vacant') ? 'occupied' : 'vacant';
+  setVacancy(_editVacancy);
+
+  // Amenities
+  _editAmenities = [...(extra.amenities || p.amenities || [])];
+  renderAmenityChips();
+  renderAmenityPresets();
+
+  // Images
+  _editImages = [extra.img0 || null, extra.img1 || null];
+  renderPropImages();
+
+  document.getElementById('propEditModal').classList.add('on');
+}
+
+function closePropEdit() {
+  document.getElementById('propEditModal').classList.remove('on');
+  _editingPropId = null;
+}
+
+/* ── VACANCY ── */
+function setVacancy(v) {
+  _editVacancy = v;
+  document.getElementById('vtOccupied').classList.toggle('active', v === 'occupied');
+  document.getElementById('vtVacant').classList.toggle('active', v === 'vacant');
+  document.getElementById('vacancyNote').textContent =
+    v === 'occupied' ? 'Currently marked as occupied' : 'Currently marked as vacant / available';
+}
+
+/* ── AMENITIES ── */
+function renderAmenityChips() {
+  const wrap = document.getElementById('peAmenityChips');
+  if (!wrap) return;
+  if (!_editAmenities.length) {
+    wrap.innerHTML = '<span style="font-size:.76rem;color:var(--dim);font-style:italic">No amenities added yet</span>';
+    return;
+  }
+  wrap.innerHTML = _editAmenities.map((a, i) =>
+    '<span class="amenity-chip">' + a +
+    '<button class="rm" onclick="removeAmenityFromEdit(' + i + ')" title="Remove">&#x2715;</button>' +
+    '</span>'
+  ).join('');
+}
+
+function renderAmenityPresets() {
+  const wrap = document.getElementById('amenityPresets');
+  if (!wrap) return;
+  const all = getGlobalAmenities();
+  const available = all.filter(a => !_editAmenities.includes(a));
+  wrap.innerHTML = available.map(a =>
+    '<span class="preset-chip" onclick="addPresetAmenity('' + a.replace(/'/g, "\'") + '')">' + a + '</span>'
+  ).join('');
+}
+
+function addAmenityToEdit() {
+  const inp = document.getElementById('peAmenityInput');
+  const val = (inp.value || '').trim();
+  if (!val) return;
+  if (!_editAmenities.includes(val)) {
+    _editAmenities.push(val);
+    // Also add to global list if new
+    const globals = getGlobalAmenities();
+    if (!globals.includes(val)) { globals.push(val); saveGlobalAmenities(globals); }
+    renderAmenityChips();
+    renderAmenityPresets();
+  }
+  inp.value = '';
+  inp.focus();
+}
+
+function addPresetAmenity(a) {
+  if (!_editAmenities.includes(a)) {
+    _editAmenities.push(a);
+    renderAmenityChips();
+    renderAmenityPresets();
+  }
+}
+
+function removeAmenityFromEdit(i) {
+  _editAmenities.splice(i, 1);
+  renderAmenityChips();
+  renderAmenityPresets();
+}
+
+/* ── IMAGES ── */
+function loadPropImage(slot, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { toast('Image must be under 2MB'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    _editImages[slot] = e.target.result;
+    renderPropImages();
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderPropImages() {
+  [0, 1].forEach(i => {
+    const slot = document.getElementById('imgSlot' + i);
+    if (!slot) return;
+    // Remove existing img if any
+    const existImg = slot.querySelector('img');
+    if (existImg) existImg.remove();
+    if (_editImages[i]) {
+      const img = document.createElement('img');
+      img.src = _editImages[i];
+      slot.insertBefore(img, slot.firstChild);
+      slot.querySelector('.prop-img-placeholder').style.display = 'none';
+      slot.querySelector('.img-label').style.display = 'none';
+    } else {
+      slot.querySelector('.prop-img-placeholder').style.display = '';
+      slot.querySelector('.img-label').style.display = '';
+    }
+  });
+}
+
+/* ── SAVE ── */
+function savePropEdit() {
+  if (!_editingPropId) return;
+  const p = PROPERTIES.find(x => x.id === _editingPropId);
+  if (!p) return;
+
+  // Update PROPERTIES array in memory
+  p.label    = document.getElementById('peLabel').value.trim() || p.label;
+  p.city     = document.getElementById('peCity').value;
+  p.type     = document.getElementById('peType').value;
+  p.location = document.getElementById('peLocation').value.trim() || p.location;
+
+  // Save extras
+  setPropExtra(_editingPropId, {
+    amenities:     _editAmenities,
+    img0:          _editImages[0],
+    img1:          _editImages[1],
+    rent:          document.getElementById('peRent').value,
+    availableFrom: document.getElementById('peAvailFrom').value,
+    vacancy:       _editVacancy,
+  });
+
+  // Update vacancy in rentLogs
+  const recIdx = rentLogs.findIndex(e => e.unitId === _editingPropId);
+  if (recIdx >= 0) {
+    rentLogs[recIdx].vacancy = _editVacancy;
+  } else if (_editVacancy === 'vacant') {
+    // No rent record exists — it's already vacant, nothing to do
+  }
+
+  closePropEdit();
+  renderProperties();
+  renderAll();
+  toast('Property updated successfully');
+}
+
+/* ════════════════════════════════════════════════════════════
+   GLOBAL AMENITIES MANAGER
+════════════════════════════════════════════════════════════ */
+function renderGlobalAmenityList() {
+  const el = document.getElementById('globalAmenityList');
+  if (!el) return;
+  const list = getGlobalAmenities();
+  if (!list.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--dim);font-size:.84rem">No amenities yet. Add your first one.</div>';
+    return;
+  }
+  // Count how many properties use each amenity
+  const extras = getPropExtras();
+  const counts = {};
+  list.forEach(a => {
+    counts[a] = PROPERTIES.filter(p => {
+      const ex = extras[p.id];
+      const amenities = ex ? ex.amenities : (p.amenities || []);
+      return amenities.includes(a);
+    }).length;
+  });
+
+  el.innerHTML = '<div style="border:1px solid var(--rule);border-radius:7px;overflow:hidden">' +
+    list.map((a, i) =>
+      '<div class="amenity-manager-row">' +
+      '<span class="amr-name">' + a + '</span>' +
+      '<span class="amr-count">' + (counts[a] || 0) + ' propert' + (counts[a] === 1 ? 'y' : 'ies') + '</span>' +
+      '<div class="amr-actions">' +
+      '<button class="btn btn-sm btn-outline" onclick="renameGlobalAmenity(' + i + ')">Rename</button>' +
+      '<button class="btn btn-sm btn-red" onclick="deleteGlobalAmenity(' + i + ')">Delete</button>' +
+      '</div></div>'
+    ).join('') + '</div>';
+}
+
+function openAddGlobalAmenity() {
+  const form = document.getElementById('addGlobalAmenityForm');
+  form.style.display = 'block';
+  document.getElementById('newGlobalAmenity').focus();
+}
+
+function saveGlobalAmenity() {
+  const val = (document.getElementById('newGlobalAmenity').value || '').trim();
+  if (!val) return;
+  const list = getGlobalAmenities();
+  if (list.includes(val)) { toast('Amenity already exists'); return; }
+  list.push(val);
+  saveGlobalAmenities(list);
+  document.getElementById('newGlobalAmenity').value = '';
+  document.getElementById('addGlobalAmenityForm').style.display = 'none';
+  renderGlobalAmenityList();
+  toast('Amenity added: ' + val);
+}
+
+function deleteGlobalAmenity(i) {
+  const list = getGlobalAmenities();
+  const name = list[i];
+  if (!confirm('Delete amenity "' + name + '"? It will be removed from the list but NOT from any property that already has it.')) return;
+  list.splice(i, 1);
+  saveGlobalAmenities(list);
+  renderGlobalAmenityList();
+  toast('Amenity deleted');
+}
+
+function renameGlobalAmenity(i) {
+  const list = getGlobalAmenities();
+  const newName = prompt('Rename amenity:', list[i]);
+  if (!newName || !newName.trim() || newName.trim() === list[i]) return;
+  list[i] = newName.trim();
+  saveGlobalAmenities(list);
+  renderGlobalAmenityList();
+  toast('Amenity renamed');
+}
+
+// Patch showPropTab to render amenity list when tab is shown
+const _origShowPropTab = typeof showPropTab === 'function' ? showPropTab : null;
+function showPropTab(id, btn) {
+  document.querySelectorAll('.prop-sub-page').forEach(p => p.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  if (id === 'tabAmenities') renderGlobalAmenityList();
+}
+
+// Patch renderProperties to use extras (amenities, images, vacancy)
+const _origRenderProperties = renderProperties;
+function renderProperties() {
+  const extras = getPropExtras();
+  // Merge extras into PROPERTIES temporarily
+  PROPERTIES.forEach(p => {
+    const ex = extras[p.id];
+    if (ex) {
+      if (ex.amenities) p.amenities = ex.amenities;
+      if (ex.availableFrom) p.availableFrom = ex.availableFrom;
+      if (ex.rent && !rentLogs.find(r => r.unitId === p.id)) p._rent = ex.rent;
+    }
+  });
+  _origRenderProperties();
+}
+
+// Enrich property cards with images after render
+function enrichPropertyCardsWithImages() {
+  const extras = getPropExtras();
+  PROPERTIES.forEach(p => {
+    const ex = extras[p.id];
+    if (!ex || (!ex.img0 && !ex.img1)) return;
+    // Find the card - it will have a title matching the property label
+    // Inject a small image strip if images exist
+    const cards = document.querySelectorAll('.unit-card');
+    cards.forEach(card => {
+      const titleEl = card.querySelector('.uc-title');
+      if (!titleEl || titleEl.textContent !== p.label) return;
+      if (card.querySelector('.prop-card-imgs')) return; // already added
+      if (ex.img0 || ex.img1) {
+        const imgStrip = document.createElement('div');
+        imgStrip.className = 'prop-card-imgs';
+        imgStrip.style.cssText = 'display:flex;gap:4px;margin-top:8px;border-radius:5px;overflow:hidden;height:60px';
+        [ex.img0, ex.img1].filter(Boolean).forEach(src => {
+          const img = document.createElement('img');
+          img.src = src;
+          img.style.cssText = 'flex:1;object-fit:cover;border-radius:4px';
+          imgStrip.appendChild(img);
+        });
+        const topDiv = card.querySelector('.uc-top');
+        if (topDiv) topDiv.appendChild(imgStrip);
+      }
+    });
+  });
+}
+
 </script>
 
 <!-- ═══ ROLE SELECTOR ═══ -->
@@ -3023,6 +3497,149 @@ async function loadAllTenantDocs() {
         <button class="btn btn-outline" onclick="signOutAndReturn()">← Sign Out</button>
         <button class="btn btn-gold" onclick="continueWithRole()">Continue →</button>
       </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ SWITCH ROLE MODAL ═══ -->
+<div id="switchRoleOverlay">
+  <div class="sr-card">
+    <div class="sr-head">
+      <h3>Switch Role</h3>
+      <button onclick="closeSwitchRole()">✕</button>
+    </div>
+    <div class="sr-body">
+      <div style="font-size:.78rem;color:var(--dim);margin-bottom:14px;line-height:1.6">
+        Signed in as <strong id="srCurrentEmail"></strong>.<br>Choose how you want to use the portal:
+      </div>
+
+      <div class="sr-option" onclick="switchToRole('new_tenant')">
+        <div class="sr-ico" style="background:#e6f0fb">🏠</div>
+        <div>
+          <div class="sr-title">New / Prospective Tenant</div>
+          <div class="sr-desc">Browse available properties and start a new rental application</div>
+        </div>
+      </div>
+
+      <div class="sr-option" onclick="switchToRole('existing_tenant')">
+        <div class="sr-ico" style="background:#eaf5ee">🔑</div>
+        <div>
+          <div class="sr-title">Existing Tenant</div>
+          <div class="sr-desc">View your tenancy details, renew or raise a deviation request</div>
+        </div>
+      </div>
+
+      <div class="sr-option" id="srAdminOption" style="display:none" onclick="switchToRole('admin')">
+        <div class="sr-ico" style="background:#fff8e6">🏛️</div>
+        <div>
+          <div class="sr-title">Admin Dashboard</div>
+          <div class="sr-desc">Manage all properties, tenants, records and documents</div>
+        </div>
+      </div>
+
+      <div style="padding-top:14px;border-top:1px solid var(--rule);margin-top:4px;display:flex;gap:10px;justify-content:space-between;align-items:center">
+        <a href="https://enjanih-stack.github.io/crestville-portal/landing.html"
+           style="display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:var(--dim);text-decoration:none;padding:7px 12px;border:1px solid var(--rule);border-radius:6px;transition:all .18s"
+           onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--rule)'">
+          🏠 Back to Home Page
+        </a>
+        <button onclick="closeSwitchRole()" style="background:none;border:1px solid var(--rule);color:var(--dim);padding:7px 16px;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.78rem;transition:all .18s"
+          onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--rule)'">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ PROPERTY EDITOR MODAL ═══ -->
+<div class="prop-edit-modal" id="propEditModal">
+  <div class="prop-edit-card">
+    <div class="pec-head">
+      <h3 id="propEditTitle">Edit Property</h3>
+      <button style="background:none;border:none;color:#9a8a6a;font-size:1.3rem;cursor:pointer" onclick="closePropEdit()">✕</button>
+    </div>
+    <div class="pec-stripe"></div>
+    <div class="pec-body">
+
+      <!-- BASIC DETAILS -->
+      <div class="pec-section">
+        <div class="pec-section-title">Basic Details</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="fg span2"><label>Property Label / Name</label><input type="text" id="peLabel" placeholder="e.g. 2BDR Flat 1A"/></div>
+          <div class="fg"><label>City</label>
+            <select id="peCity" style="width:100%;padding:10px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-size:.88rem;font-family:'DM Sans',sans-serif;background:var(--card);outline:none">
+              <option value="Ojodu">Ojodu</option>
+              <option value="Ibadan">Ibadan</option>
+              <option value="Enugu">Enugu</option>
+            </select>
+          </div>
+          <div class="fg"><label>Property Type</label>
+            <select id="peType" style="width:100%;padding:10px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-size:.88rem;font-family:'DM Sans',sans-serif;background:var(--card);outline:none">
+              <option>2 Bedroom Flat</option>
+              <option>3 Bedroom Flat</option>
+              <option>Self Contained</option>
+              <option>Room &amp; Parlour</option>
+              <option>Commercial</option>
+            </select>
+          </div>
+          <div class="fg" style="grid-column:1/-1"><label>Full Location / Address</label><input type="text" id="peLocation" placeholder="Full estate address"/></div>
+          <div class="fg"><label>Annual Rent (₦)</label><input type="number" id="peRent" placeholder="500000"/></div>
+          <div class="fg"><label>Available From</label><input type="date" id="peAvailFrom"/></div>
+        </div>
+      </div>
+
+      <!-- VACANCY TOGGLE -->
+      <div class="pec-section">
+        <div class="pec-section-title">Vacancy Status</div>
+        <div class="vacancy-toggle" id="vacancyToggle">
+          <button class="vt-btn vt-occupied active" id="vtOccupied" onclick="setVacancy('occupied')">✅ Occupied</button>
+          <button class="vt-btn vt-vacant" id="vtVacant" onclick="setVacancy('vacant')">🔴 Vacant / Available</button>
+        </div>
+        <div style="font-size:.72rem;color:var(--dim);margin-top:7px" id="vacancyNote">Currently marked as occupied</div>
+      </div>
+
+      <!-- AMENITIES -->
+      <div class="pec-section">
+        <div class="pec-section-title">Amenities</div>
+        <div class="amenity-chip-wrap" id="peAmenityChips"></div>
+        <div style="font-size:.68rem;color:var(--dim);margin-bottom:7px;font-weight:600">Quick add from list:</div>
+        <div class="amenity-presets" id="amenityPresets"></div>
+        <div class="amenity-add-row">
+          <input type="text" id="peAmenityInput" placeholder="Type custom amenity and press Enter or click Add"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();addAmenityToEdit()}"/>
+          <button class="btn btn-gold btn-sm" onclick="addAmenityToEdit()">+ Add</button>
+        </div>
+      </div>
+
+      <!-- PROPERTY IMAGES -->
+      <div class="pec-section">
+        <div class="pec-section-title">Property Photos (up to 2)</div>
+        <div class="prop-img-grid">
+          <div class="prop-img-slot" id="imgSlot0">
+            <input type="file" accept="image/*" onchange="loadPropImage(0,this)"/>
+            <div class="prop-img-placeholder">📷</div>
+            <div class="img-label">Photo 1 — click to upload</div>
+            <div class="img-overlay"><span style="color:#fff;font-size:.8rem">Change Photo</span></div>
+          </div>
+          <div class="prop-img-slot" id="imgSlot1">
+            <input type="file" accept="image/*" onchange="loadPropImage(1,this)"/>
+            <div class="prop-img-placeholder">📷</div>
+            <div class="img-label">Photo 2 — click to upload</div>
+            <div class="img-overlay"><span style="color:#fff;font-size:.8rem">Change Photo</span></div>
+          </div>
+        </div>
+        <div style="font-size:.72rem;color:var(--dim)">Images stored locally and shown on property cards. Max 2MB each.</div>
+      </div>
+
+      <!-- FOOTER BUTTONS -->
+      <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--rule)">
+        <button class="btn btn-outline" onclick="closePropEdit()">Cancel</button>
+        <button class="btn btn-gold" onclick="savePropEdit()">💾 Save Property</button>
+      </div>
+
     </div>
   </div>
 </div>
