@@ -280,7 +280,7 @@ canvas.sig-canvas.ro{cursor:default}
 </div>
 
 <!-- DATA EXCHANGE PANEL -->
-<details class="xpanel" style="max-width:900px;margin:0 auto" id="xPanel">
+<details class="xpanel" style="max-width:900px;margin:0 auto;display:none" id="xPanel">
   <summary>⇄ Data Exchange — Import · Export · Share Link · API Integration</summary>
   <div class="xpanel-inner">
     <div class="xbox">
@@ -322,13 +322,11 @@ canvas.sig-canvas.ro{cursor:default}
       </div>
       <div class="lnk-meta"><span>Size:</span><span class="lnk-size" id="A-sz">—</span><span style="color:#bbb">· DEFLATE compressed</span></div>
       <div class="send-panel">
-        <h4>📤 Send via…</h4>
+        <h4>📤 Share Application Form by Email</h4>
         <div class="send-methods">
-          <div class="sm-opt"><input type="checkbox" id="sm-wa" onchange="toggleSendField()"><label class="sm-label" for="sm-wa"><span>💬</span> WhatsApp</label></div>
-          <div class="sm-opt"><input type="checkbox" id="sm-em" onchange="toggleSendField()"><label class="sm-label" for="sm-em"><span>✉️</span> Email</label></div>
-          <div class="sm-opt"><input type="checkbox" id="sm-sms" onchange="toggleSendField()"><label class="sm-label" for="sm-sms"><span>📱</span> SMS</label></div>
-          <div class="sm-opt"><input type="checkbox" id="sm-all" onchange="toggleAll()"><label class="sm-label" for="sm-all"><span>🔀</span> All</label></div>
+          <div class="sm-opt"><input type="checkbox" id="sm-em" onchange="toggleSendField()" checked><label class="sm-label" for="sm-em" style="border-color:var(--gold);background:#fffdf0;color:var(--ink)"><span>✉️</span> Email</label></div>
         </div>
+        <p style="font-size:.74rem;color:var(--dim);margin-bottom:8px;font-style:italic">📩 Consent links will be sent by email only</p>
         <div class="sm-fields">
           <div class="sm-field" id="sf-wa"><span class="lbl">Applicant WhatsApp Number</span><input type="tel" id="in-wa" placeholder="+2348012345678"></div>
           <div class="sm-field" id="sf-em"><span class="lbl">Applicant Email</span><input type="email" id="in-em" placeholder="applicant@email.com"></div>
@@ -336,9 +334,7 @@ canvas.sig-canvas.ro{cursor:default}
           <div class="sm-field" id="sf-msg"><span class="lbl">Custom Message (optional)</span><textarea id="in-msg" placeholder="Add a personal note to accompany the link…" style="min-height:48px"></textarea></div>
         </div>
         <div class="send-actions" id="send-actions" style="display:none">
-          <button class="send-btn sb-wa" id="btn-wa" style="display:none" onclick="sendWA()">💬 WhatsApp</button>
-          <button class="send-btn sb-em" id="btn-em" style="display:none" onclick="sendEmail()">✉️ Email</button>
-          <button class="send-btn sb-sms" id="btn-sms" style="display:none" onclick="sendSMS()">📱 SMS</button>
+          <button class="send-btn sb-em" id="btn-em" onclick="sendEmail()">✉️ Send Email</button>
           <button class="send-btn sb-cp" onclick="copyShareLink('A-lnk')">📋 Copy Link</button>
         </div>
       </div>
@@ -393,6 +389,12 @@ canvas.sig-canvas.ro{cursor:default}
     <div class="fr c2">
       <div class="fg"><span class="lbl">16. Landlord Address</span><input type="text" id="q16_landlordAddr" placeholder="Landlord's address" oninput="up()"/></div>
       <div class="fg"><span class="lbl">18. Landlord Contact Email</span><input type="email" id="q18_landlordEmail" placeholder="landlord@email.com" oninput="up()"/></div>
+    </div>
+    <div class="consent-strip" style="margin-top:12px">
+      <div class="consent-strip-label">📤 Send Reference Request to Current Landlord: <span>An email is sent to your current landlord requesting a reference on your behalf</span></div>
+      
+    </div>
+      <button class="cbtn cbtn-em" onclick="sendLandlordReference()">✉️ Email Current Landlord</button>
     </div>
     <div class="fr c1"><div class="fg"><span class="lbl">11. Why are you relocating? <span class="req">*</span></span><textarea id="q11_relocating" placeholder="Please explain your reason for relocating…" oninput="up()"></textarea></div></div>
     <div style="margin-bottom:12px">
@@ -535,9 +537,11 @@ canvas.sig-canvas.ro{cursor:default}
     
     <div class="consent-strip">
       <div class="consent-strip-label">📤 Send Referee 1 Consent &amp; Advisory Link:</div>
+      
+    </div>
+      
+    </div>
       <button class="cbtn cbtn-em" onclick="sendConsentByEmail('referee','r1_name','r1_email','r1_phone','r1_addr','r1_occ','r1_rel')">✉️ Email</button>
-      <button class="cbtn cbtn-wa" onclick="sendConsentByWA('referee','r1_name','r1_phone')">💬 WhatsApp</button>
-      <button class="cbtn cbtn-sms" onclick="sendConsentBySMS('referee','r1_name','r1_phone')">📱 SMS</button>
     </div>
     <hr style="border:none;border-top:1px dashed var(--rule);margin:16px 0"/>
     <div class="ref-badge">Referee 2</div>
@@ -557,9 +561,11 @@ canvas.sig-canvas.ro{cursor:default}
 
     <div class="consent-strip">
       <div class="consent-strip-label">📤 Send Referee 2 Consent &amp; Advisory Link:</div>
+      
+    </div>
+      
+    </div>
       <button class="cbtn cbtn-em" onclick="sendConsentByEmail('referee','r2_name','r2_email','r2_phone','r2_addr','r2_occ','r2_rel')">✉️ Email</button>
-      <button class="cbtn cbtn-wa" onclick="sendConsentByWA('referee','r2_name','r2_phone')">💬 WhatsApp</button>
-      <button class="cbtn cbtn-sms" onclick="sendConsentBySMS('referee','r2_name','r2_phone')">📱 SMS</button>
     </div>
 
 <!-- G: SIGNATURE -->
@@ -890,7 +896,6 @@ function _compressPayload(obj) {
 }
 
 function _buildConsentLink(role, overrides) {
-  const base = location.href.split('/').slice(0,-1).join('/');
   const applicantName = document.getElementById('q1_name')?.value || '';
   const property = document.getElementById('q21_apartments')?.value || '';
   const payload = {
@@ -900,7 +905,9 @@ function _buildConsentLink(role, overrides) {
     ...overrides,
     issuedAt: new Date().toISOString()
   };
-  return base + '/' + _CRS_PORTAL + '#' + _compressPayload(payload);
+  // Always use absolute URL so link works from any email client
+  const compressed = _compressPayload(payload);
+  return _CRS_PORTAL + '#' + compressed;
 }
 
 function _consentEmailBody(role, name, link, applicantName) {
@@ -916,7 +923,82 @@ function _consentEmailBody(role, name, link, applicantName) {
     agent: '\nNote: As a property agent, you are confirming your professional capacity and due diligence.',
     tenant: '\nNote: You are being asked to acknowledge your tenancy terms and obligations.'
   };
-  return `Dear ${name},\n\nYou have been listed as a ${label} for a tenancy application by ${applicantName} with Crestechnologies IS Ltd (Crestville Properties).\n${warnings[role]||''}\n\nPlease click the link below to review the advisory notice, confirm your details, and sign:\n\n${link}\n\nIf you have any questions, please contact us at crestechnologies@outlook.com\n\nRegards,\nCrestechnologies IS Ltd\nCrestville Properties`;
+  const shortLink = link.length > 100
+    ? link.substring(0, 80) + '...[click to open full link]'
+    : link;
+
+  return `Dear ${name},
+
+You have been listed as a ${label} for a property rental application submitted by ${applicantName} with Crestechnologies IS Ltd (Crestville Properties).
+${warnings[role]||''}
+
+WHAT YOU NEED TO DO:
+Please click the link below to:
+  1. Review the legal advisory notice relevant to your role
+  2. Confirm your personal details
+  3. Provide your digital signature
+
+YOUR CONSENT LINK:
+${link}
+
+(Copy and paste the above link into your browser if it is not clickable)
+
+This link is unique to you and expires in 30 days. Please do not share it.
+
+CONTACT US:
+If you have any questions about this request, please contact us at:
+  Email: crestechnologies@outlook.com
+  Address: Victoria Estate #20, Ojodu, Ogun State, Nigeria
+
+Regards,
+Crestechnologies IS Ltd
+Crestville Properties
+RC 1643396`;
+}
+
+
+/* ── LANDLORD REFERENCE EMAIL ── */
+function sendLandlordReference() {
+  var landlordEmail = document.getElementById('q18_landlordEmail')
+                    ? document.getElementById('q18_landlordEmail').value.trim() : '';
+  var landlordName  = document.getElementById('q15_landlordName')
+                    ? document.getElementById('q15_landlordName').value.trim() : 'Landlord';
+  var applicantName = document.getElementById('q1_name')
+                    ? document.getElementById('q1_name').value.trim() : 'the applicant';
+
+  if (!landlordEmail) {
+    alert('Please enter the current landlord\'s email address (Field 18) before sending.');
+    return;
+  }
+
+  var subject = encodeURIComponent('Tenant Reference Request — ' + applicantName + ' — Crestville Properties');
+  var body = encodeURIComponent(
+    'Dear ' + (landlordName || 'Landlord') + ',\n\n' +
+    'We are writing on behalf of ' + applicantName + ', who has applied to rent a property managed by Crestechnologies IS Ltd (Crestville Properties).\n\n' +
+    'They have listed you as their current landlord and we would be grateful if you could provide a reference confirming their tenancy history, conduct, and payment record.\n\n' +
+    'Please reply to this email at your earliest convenience. Your response will be treated with the utmost confidentiality.\n\n' +
+    'For any queries, please contact us at crestechnologies@outlook.com.\n\n' +
+    'Thank you for your assistance.\n\n' +
+    'Yours sincerely,\n' +
+    'Crestechnologies IS Ltd — Crestville Properties\n' +
+    'RC 1643396 | crestechnologies@outlook.com'
+  );
+  window.open('mailto:' + landlordEmail + '?subject=' + subject + '&body=' + body);
+  showToast('✓ Email client opened for landlord reference request');
+}
+
+/* ── COMPRESSED SHARE LINK HELPER ── */
+function getCompressedLink(data) {
+  try {
+    var json   = JSON.stringify(data || collectFormData());
+    var bytes  = pako.deflate(json, { level: 9 });
+    var binary = '';
+    for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    var b64 = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    return window.location.origin + window.location.pathname + '#' + b64;
+  } catch(e) {
+    return window.location.href;
+  }
 }
 
 function sendConsentByEmail(role, nameId, emailId, phoneId, addrId, occId, relId) {
