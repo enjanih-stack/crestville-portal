@@ -225,6 +225,59 @@ canvas.sig-canvas.ro{cursor:default}
   .btn{justify-content:center}
   .send-methods{flex-direction:column}
 }
+
+/* ── SUBMISSION SUCCESS SCREEN ── */
+#successScreen{
+  display:none;position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(135deg,#0a0908 0%,#141210 50%,#0d1520 100%);
+  align-items:center;justify-content:center;padding:24px;
+  flex-direction:column;text-align:center;
+}
+#successScreen.on{display:flex}
+.ss-card{
+  background:#faf8f4;border-radius:20px;max-width:520px;width:100%;
+  box-shadow:0 32px 80px rgba(0,0,0,.5);overflow:hidden;
+}
+.ss-top{
+  background:var(--ink);padding:32px 28px 24px;
+  border-bottom:3px solid var(--gold);
+}
+.ss-icon{font-size:4rem;display:block;margin-bottom:12px;animation:ss-pop .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes ss-pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+.ss-title{
+  font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:700;
+  color:#fff;margin-bottom:8px;
+}
+.ss-ref{
+  font-family:'DM Mono',monospace;font-size:.8rem;color:var(--gold);
+  background:rgba(201,150,12,.1);border:1px solid rgba(201,150,12,.25);
+  border-radius:4px;padding:5px 14px;display:inline-block;margin-top:4px;
+}
+.ss-body{padding:24px 28px}
+.ss-steps{text-align:left;margin-bottom:22px}
+.ss-step{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #e8e0d0;font-size:.84rem;color:#5a4e44}
+.ss-step:last-child{border-bottom:none}
+.ss-step-icon{width:26px;height:26px;border-radius:50%;background:#1a5c2e;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;flex-shrink:0;margin-top:1px}
+.ss-step-text{flex:1;line-height:1.6}
+.ss-step-text strong{color:#0f0e0c}
+.ss-actions{display:flex;flex-direction:column;gap:10px}
+.ss-btn-home{
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  padding:14px;background:linear-gradient(135deg,#7a5800,var(--gold),#e8b422);
+  color:#fff;border:none;border-radius:8px;font-family:'Cormorant Garamond',serif;
+  font-size:1rem;font-weight:700;letter-spacing:.05em;cursor:pointer;
+  text-decoration:none;transition:all .2s;
+}
+.ss-btn-home:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(201,150,12,.4)}
+.ss-btn-close{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  padding:12px;background:transparent;color:#8a7a60;border:1.5px solid #d4ccbe;
+  border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.88rem;
+  font-weight:500;cursor:pointer;transition:all .2s;
+}
+.ss-btn-close:hover{border-color:#8a7a60;color:#0f0e0c}
+.ss-note{font-size:.72rem;color:#9a8a6a;margin-top:14px;line-height:1.7;text-align:center}
+
 </style>
 
 
@@ -307,7 +360,7 @@ canvas.sig-canvas.ro{cursor:default}
 <div style="max-width:900px;margin:0 auto;padding:16px 12px 20px">
 
 <!-- SHARE / SEND SECTION -->
-<div class="card" style="border-color:var(--gold)">
+<div class="card" style="border-color:var(--gold);display:none">
   <div class="card-head"><div class="card-num">📤</div><h2>Generate &amp; Send Form Link</h2></div>
   <div class="card-body">
     <div class="info"><strong>Landlord / Agent:</strong> Generate a compressed shareable link of this form (pre-filled or blank) and send it directly to the applicant via WhatsApp, Email, or SMS.</div>
@@ -568,6 +621,20 @@ canvas.sig-canvas.ro{cursor:default}
       <button class="cbtn cbtn-em" onclick="sendConsentByEmail('referee','r2_name','r2_email','r2_phone','r2_addr','r2_occ','r2_rel')">✉️ Email</button>
     </div>
 
+
+<!-- CONSENT CHECKBOX -->
+<div style="background:linear-gradient(135deg,#fffdf0,#faf5e4);border:1.5px solid rgba(201,150,12,.4);border-radius:8px;padding:16px 18px;margin-bottom:18px">
+  <label style="display:flex;gap:12px;align-items:flex-start;cursor:pointer">
+    <input type="checkbox" id="consentCheckbox" style="width:18px;height:18px;margin-top:2px;accent-color:#c9960c;flex-shrink:0"/>
+    <div>
+      <div style="font-size:.84rem;font-weight:700;color:#0f0e0c;margin-bottom:4px">I consent to the sharing of this application</div>
+      <div style="font-size:.78rem;color:#5a4e44;line-height:1.65">
+        By checking this box, I confirm that all information provided is true and accurate. I consent to Crestechnologies IS Ltd (Crestville Properties) contacting my referees, guarantors, and previous landlord as stated in this form for the purposes of verifying my application. I understand that my referees and guarantors will receive an email consent request upon submission.
+      </div>
+    </div>
+  </label>
+</div>
+
 <!-- G: SIGNATURE -->
 <div class="card">
   <div class="card-head"><div class="card-num">G</div><h2>Applicant Signature &amp; Declaration</h2></div>
@@ -608,7 +675,6 @@ canvas.sig-canvas.ro{cursor:default}
 <div class="sbar">
   <span class="sbar-status" id="sbarTxt">Fill required (*) fields to continue</span>
   <div class="sbar-btns">
-    <button class="btn btn-outline" onclick="exportKYT()">⬆ Export JSON</button>
     <button class="btn btn-gr" onclick="submitForm()">✔ Submit Application</button>
   </div>
 </div>
@@ -851,12 +917,171 @@ function downloadJSON(){
   a.click();toast('JSON downloaded');
 }
 function submitForm(){
-  const missing=REQUIRED.filter(id=>{const el=document.getElementById(id);return!(el&&el.value.trim())||(id==='q12_evicted'&&!ynState.q12);});
-  if(missing.length){toast('✗ Fill all required (*) fields');const f=document.getElementById(missing[0]);if(f)f.focus();return;}
-  const data=collectKYT();
-  if(window.parent!==window)window.parent.postMessage({type:'CRS_KYT_DATA',payload:data},'*');
-  exportKYT();
-  toast('✓ Application submitted & exported');
+  var missing = REQUIRED.filter(function(id){
+    var el = document.getElementById(id);
+    return !(el && el.value.trim()) || (id === 'q12_evicted' && !ynState.q12);
+  });
+  if (missing.length) {
+    toast('Fill all required (*) fields');
+    var f = document.getElementById(missing[0]);
+    if (f) f.focus();
+    return;
+  }
+  var cb = document.getElementById('consentCheckbox');
+  if (cb && !cb.checked) {
+    toast('Please check the consent box before submitting');
+    cb.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+
+  var data = collectKYT();
+  var ref  = 'CRS-KYT-' + Date.now().toString(36).toUpperCase().slice(-6);
+  var refEl = document.getElementById('ssRefCode');
+  if (refEl) refEl.textContent = 'REF: ' + ref;
+
+  var applicantName  = (document.getElementById('q1_name')  ? document.getElementById('q1_name').value  : '').trim();
+  var applicantEmail = (document.getElementById('q10_email') ? document.getElementById('q10_email').value: '').trim();
+  var applicantPhone = (document.getElementById('q9_phone')  ? document.getElementById('q9_phone').value : '').trim();
+  var property       = (document.getElementById('q21_apartments') ? document.getElementById('q21_apartments').value : 'Property').trim();
+  var r1Name         = (document.getElementById('r1_name')   ? document.getElementById('r1_name').value  : '').trim();
+  var r1Email        = (document.getElementById('r1_email')  ? document.getElementById('r1_email').value : '').trim();
+  var r1Phone        = (document.getElementById('r1_phone')  ? document.getElementById('r1_phone').value : '').trim();
+  var r2Name         = (document.getElementById('r2_name')   ? document.getElementById('r2_name').value  : '').trim();
+  var r2Email        = (document.getElementById('r2_email')  ? document.getElementById('r2_email').value : '').trim();
+  var r2Phone        = (document.getElementById('r2_phone')  ? document.getElementById('r2_phone').value : '').trim();
+  var landlordName   = (document.getElementById('q15_landlordName')  ? document.getElementById('q15_landlordName').value  : '').trim();
+  var landlordEmail  = (document.getElementById('q18_landlordEmail') ? document.getElementById('q18_landlordEmail').value : '').trim();
+  var landlordPhone  = (document.getElementById('q17_landlordPhone') ? document.getElementById('q17_landlordPhone').value : '').trim();
+
+  /* ─── helpers ─────────────────────────────────────────── */
+  function sendMail(to, subject, html){
+    if (!to || !to.length) return;
+    if (typeof firebase === 'undefined' || !firebase.firestore) return;
+    firebase.firestore().collection('mail').add({
+      to: Array.isArray(to) ? to : [to],
+      message: { subject: subject, html: html }
+    }).catch(function(e){ console.warn('mail error', e); });
+  }
+
+  function buildLink(role, extras){
+    var payload = { _role:role, _ref:ref, _formType:'Pre-Rental KYT',
+      applicantName:applicantName, property:property, issuedAt:new Date().toISOString() };
+    Object.assign(payload, extras||{});
+    var compressed = _compressPayload(payload);
+    return 'https://enjanih-stack.github.io/crestville-portal/CRS_Consent_Portal_v2.html#' + compressed;
+  }
+
+  function appTable(){
+    return '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px">'
+      + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:7px;color:#888;width:130px">Name</td><td style="padding:7px;font-weight:600">' + applicantName + '</td></tr>'
+      + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:7px;color:#888">Email</td><td style="padding:7px">' + applicantEmail + '</td></tr>'
+      + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:7px;color:#888">Phone</td><td style="padding:7px">' + applicantPhone + '</td></tr>'
+      + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:7px;color:#888">Property</td><td style="padding:7px">' + property + '</td></tr>'
+      + '<tr><td style="padding:7px;color:#888">Reference</td><td style="padding:7px;font-weight:700;color:#c9960c">' + ref + '</td></tr>'
+      + '</table>';
+  }
+
+  function consentHtml(recipientName, hdrColor, roleLabel, icon, legalNote, link){
+    var shortLink = link.length > 90 ? link.substring(0, 90) + '...' : link;
+    return '<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;border-radius:10px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.12)">'
+      + '<div style="background:' + hdrColor + ';padding:22px 28px;border-bottom:3px solid #c9960c">'
+      + '<div style="font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#c9960c;margin-bottom:7px">Crestechnologies IS Ltd &middot; Crestville Properties</div>'
+      + '<div style="font-size:20px;font-weight:700;color:#fff;font-family:Georgia,serif">' + icon + ' ' + roleLabel + ' Consent Request</div>'
+      + '</div>'
+      + '<div style="background:#1a1612;padding:14px 28px;border-bottom:1px solid #2a2620">'
+      + '<div style="font-size:10px;color:#9a8a6a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">Regarding Applicant</div>'
+      + '<div style="font-size:15px;font-weight:700;color:#fff;font-family:Georgia,serif">' + applicantName + '</div>'
+      + '<div style="font-size:12px;color:#c9960c;margin-top:3px">Property: ' + property + ' &middot; Ref: ' + ref + '</div>'
+      + '</div>'
+      + '<div style="background:#faf8f4;padding:26px 28px">'
+      + '<p style="font-size:14px;color:#2c2c2a;margin:0 0 14px">Dear ' + (recipientName || 'Sir/Ma') + ',</p>'
+      + '<p style="font-size:14px;color:#4a4440;line-height:1.75;margin:0 0 14px">'
+      + applicantName + ' has applied to rent a property managed by <strong>Crestechnologies IS Ltd</strong> and has listed you as their <strong>' + roleLabel + '</strong>.</p>'
+      + '<div style="background:#fff8e6;border-left:4px solid #c9960c;padding:14px 16px;border-radius:0 6px 6px 0;margin:0 0 16px">'
+      + '<div style="font-weight:700;color:#7a5a00;margin-bottom:6px;font-size:13px">Your Role as ' + roleLabel + '</div>'
+      + '<div style="font-size:13px;color:#5a4000;line-height:1.7">' + legalNote + '</div>'
+      + '</div>'
+      + '<div style="font-size:13px;color:#4a4440;line-height:1.75;margin-bottom:16px">'
+      + '<strong>What you need to do:</strong><br>'
+      + '1. Click the consent button below<br>'
+      + '2. Review the legal advisory for your role<br>'
+      + '3. Confirm your details and sign digitally<br>'
+      + '4. Your signed response is sent automatically to the landlord</div>'
+      + appTable()
+      + '<div style="text-align:center;margin:22px 0 12px">'
+      + '<a href="' + link + '" style="display:inline-block;background:#c9960c;color:#fff;text-decoration:none;padding:14px 32px;border-radius:6px;font-weight:700;font-size:14px">'
+      + '&#9998;&#65039; Open Consent Form &rarr;</a></div>'
+      + '<div style="text-align:center;font-size:12px;color:#9a8a6a;margin-bottom:18px">Or copy: <a href="' + link + '" style="color:#c9960c;word-break:break-all">' + shortLink + '</a></div>'
+      + '<div style="background:#fff;border:1px solid #e0d8c8;border-radius:6px;padding:12px 14px;font-size:12px;color:#8a7a60">'
+      + '<strong style="color:#2c2c2a;display:block;margin-bottom:4px">Contact Crestechnologies IS Ltd</strong>'
+      + 'crestechnologies@outlook.com &nbsp;&middot;&nbsp; enjanih@gmail.com<br>'
+      + 'Victoria Estate #20, Ojodu, Ogun State, Nigeria</div>'
+      + '</div>'
+      + '<div style="background:#0f0e0c;padding:12px 28px;text-align:center;font-size:11px;color:#7a6e62">'
+      + 'Automated consent request &middot; Ref: ' + ref + ' &middot; ' + new Date().toLocaleDateString('en-NG')
+      + '</div></div>';
+  }
+
+  var refNote  = 'As a character referee, you are being asked to provide a personal reference attesting to the applicant\'s character and suitability as a tenant. This does not create any financial liability on your part.';
+  var landNote = 'You are being asked to provide a landlord reference for the above applicant who was or is your tenant. Please confirm their tenancy history, payment record and conduct. Your response is treated with strict confidentiality.';
+
+  /* ─── Send emails ───────────────────────────────────────── */
+  if (r1Email) {
+    sendMail(r1Email,
+      '[CRS] Character Referee Consent Request \u2014 ' + applicantName + ' \u2014 ' + ref,
+      consentHtml(r1Name, '#1e3a5f', 'Character Referee', '\uD83D\uDC64',
+        refNote, buildLink('referee', {refereeName:r1Name, refereeEmail:r1Email, refereePhone:r1Phone})));
+  }
+  if (r2Email) {
+    sendMail(r2Email,
+      '[CRS] Character Referee Consent Request \u2014 ' + applicantName + ' \u2014 ' + ref,
+      consentHtml(r2Name, '#1e3a5f', 'Character Referee', '\uD83D\uDC64',
+        refNote, buildLink('referee', {refereeName:r2Name, refereeEmail:r2Email, refereePhone:r2Phone})));
+  }
+  if (landlordEmail) {
+    sendMail(landlordEmail,
+      '[CRS] Landlord Reference Request \u2014 ' + applicantName + ' \u2014 ' + ref,
+      consentHtml(landlordName, '#1a5c2e', 'Previous Landlord', '\uD83C\uDFE0',
+        landNote, buildLink('landlord', {landlordName:landlordName, landlordEmail:landlordEmail, landlordPhone:landlordPhone})));
+  }
+
+  /* ─── Admin notification ────────────────────────────────── */
+  var adminHtml = '<div style="font-family:Arial,sans-serif;max-width:640px">'
+    + '<div style="background:#0f0e0c;padding:18px;border-bottom:3px solid #c9960c">'
+    + '<h2 style="color:#c9960c;margin:0;font-size:18px">New KYT Application Received</h2>'
+    + '<div style="color:#9a8a6a;font-size:12px;margin-top:4px">Ref: ' + ref + '</div></div>'
+    + '<div style="padding:20px;background:#faf8f4">'
+    + appTable()
+    + '<div style="background:#e8f5ee;border-radius:6px;padding:12px;font-size:12px;color:#1a5c2e;margin-top:10px">'
+    + 'Consent emails sent to: '
+    + (r1Email ? r1Name + ' (' + r1Email + ')' + (r2Email?', ':'') : '')
+    + (r2Email ? r2Name + ' (' + r2Email + ')' + (landlordEmail?', ':'') : '')
+    + (landlordEmail ? landlordName + ' (' + landlordEmail + ')' : '')
+    + '</div></div>'
+    + '<div style="background:#0f0e0c;padding:10px;text-align:center;font-size:11px;color:#888">'
+    + 'Submitted: ' + new Date().toLocaleString('en-NG') + '</div></div>';
+
+  sendMail(['crestechnologies@outlook.com','enjanih@gmail.com'],
+    '[CRS KYT] New Application \u2014 ' + applicantName + ' \u2014 ' + ref, adminHtml);
+
+  if (window.parent !== window) {
+    window.parent.postMessage({type:'CRS_KYT_DATA', payload:data}, '*');
+  }
+
+  /* ─── Success screen ────────────────────────────────────── */
+  var notified = [];
+  if (r1Email) notified.push(r1Name + ' (Referee 1)');
+  if (r2Email) notified.push(r2Name + ' (Referee 2)');
+  if (landlordEmail) notified.push(landlordName + ' (Previous Landlord)');
+  var notifyEl = document.getElementById('ssNotified');
+  if (notifyEl && notified.length) {
+    notifyEl.innerHTML = '<strong>Consent emails sent to:</strong><br>' + notified.join('<br>');
+    notifyEl.style.display = 'block';
+  }
+  document.querySelectorAll('.card, .prop-badge, .sbar').forEach(function(el){ el.style.display='none'; });
+  var screen = document.getElementById('successScreen');
+  if (screen) screen.classList.add('on');
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 function loadSample(){
   const s={q1_name:'Adewale Babatunde Idowu',q2_address:'12 Agodi GRA, Ibadan',q3_marital:'Married',q4_occupation:'Pharmacist',q5_employer:'State Hospital Ibadan',q6_employerAddr:'Ring Road, Ibadan',q7_state:'Oyo State',q8_lga:'Ibadan North',q9_phone:'+2348031234567',q10_email:'adewale.idowu@gmail.com',q11_relocating:'Relocation due to job transfer',q13_use:'Purely residential — self and wife only',q14_movein:'2025-05-01',q19_source:'Word of mouth / referral',q21_apartments:"2 Bedroom Flat, Ibadan Ababeji Engr's Residence Zone C",q21_unitType:'Residential — 2 Bedroom Flat',q22_familySize:'2',q23_leaveTime:'07:00',q23_returnTime:'18:30',q28_hygiene:'8',q29_selfDesc:'Quiet, tidy, respectful professional',q15_landlordName:'Mr. Festus Okonkwo',q16_landlordAddr:'Bodija Estate, Ibadan',q17_landlordPhone:'+2348065432100',q18_landlordEmail:'f.okonkwo@mail.com',r1_name:'Dr. Kemi Afolabi',r1_addr:'UCH Road, Ibadan',r1_email:'kemi.a@uch.ng',r1_phone:'+2348055678900',r1_occ:'Medical Doctor',r1_rel:'Colleague',r2_name:'Pastor Samuel Eze',r2_addr:'Ojodu Abiodun, Lagos',r2_email:'s.eze@church.ng',r2_phone:'+2349012345678',r2_occ:'Pastor',r2_rel:'Church leader',q12_toggle:'no',q20_toggle:'no',q24_toggle:'no',q25_toggle:'no',q26_toggle:'yes',q27_toggle:'no'};
@@ -1082,5 +1307,55 @@ window.sendCRSEmail = async (to, subject, html) => {
   } catch(e) { console.error('Email error:', e); return false; }
 };
 </script>
+
+<!-- ═══ SUBMISSION SUCCESS SCREEN ═══ -->
+<div id="successScreen">
+  <div class="ss-card">
+    <div class="ss-top">
+      <span class="ss-icon">✅</span>
+      <div class="ss-title">Application Submitted!</div>
+      <div style="font-size:.82rem;color:#9a8a6a;margin-top:6px">Your Know Your Tenant (KYT) form has been received</div>
+      <div class="ss-ref" id="ssRefCode">REF: CRS-KYT-000000</div>
+      <div id="ssNotified" style="display:none;margin-top:10px;font-size:.78rem;color:#9a8a6a;line-height:1.7;text-align:left;background:rgba(26,92,46,.1);border-radius:6px;padding:9px 12px"></div>
+    </div>
+    <div class="ss-body">
+      <div class="ss-steps">
+        <div style="font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#9a8a6a;margin-bottom:10px">What happens next</div>
+        <div class="ss-step">
+          <div class="ss-step-icon">1</div>
+          <div class="ss-step-text"><strong>Referees &amp; Guarantors notified</strong> — Your referees and guarantors receive a consent link by email to confirm and sign their advisory declaration.</div>
+        </div>
+        <div class="ss-step">
+          <div class="ss-step-icon">2</div>
+          <div class="ss-step-text"><strong>Admin review</strong> — Crestechnologies IS Ltd will review your application and contact you within 3–5 working days at the email address you provided.</div>
+        </div>
+        <div class="ss-step">
+          <div class="ss-step-icon">3</div>
+          <div class="ss-step-text"><strong>Tenancy agreement</strong> — If approved, you will receive a digital tenancy agreement to sign. All parties sign before keys are handed over.</div>
+        </div>
+        <div class="ss-step">
+          <div class="ss-step-icon">✓</div>
+          <div class="ss-step-text"><strong>Check your email</strong> — A copy of your submission reference has been noted. Keep it for your records.</div>
+        </div>
+      </div>
+      <div class="ss-actions">
+        <a class="ss-btn-home" href="https://enjanih-stack.github.io/crestville-portal/index.html">
+          🏠 Return to Tenant Portal
+        </a>
+        <a class="ss-btn-home" href="https://enjanih-stack.github.io/crestville-portal/landing.html" style="background:linear-gradient(135deg,#1e3a5f,#2a5080)">
+          🏡 Back to Home Page
+        </a>
+        <button class="ss-btn-close" onclick="window.close()">
+          ✕ Close this form
+        </button>
+      </div>
+      <div class="ss-note">
+        Questions? Contact us at <strong>crestechnologies@outlook.com</strong><br>
+        Crestechnologies IS Ltd · RC 1643396 · Crestville Properties
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
