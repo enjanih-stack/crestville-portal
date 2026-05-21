@@ -798,6 +798,64 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .pnb-crumb{font-size:.72rem;color:var(--dim);padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
 .pnb-crumb span{color:var(--gold);font-weight:600}
 
+
+/* ── TENANT DASHBOARD ── */
+.tenant-dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:700px){.tenant-dash-grid{grid-template-columns:1fr}}
+
+/* TENANCY STATUS CARD */
+.tenancy-status-card{background:linear-gradient(135deg,#0f0e0c,#1a1612);border-radius:12px;padding:22px 24px;border:1px solid #2a2620;position:relative;overflow:hidden;grid-column:1/-1}
+.tsc-glow{position:absolute;width:300px;height:300px;border-radius:50%;top:-100px;right:-80px;pointer-events:none}
+.tsc-label{font-size:.6rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;opacity:.8}
+.tsc-unit{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:4px}
+.tsc-loc{font-size:.79rem;color:#9a8a6a;margin-bottom:18px}
+.tsc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:580px){.tsc-stats{grid-template-columns:1fr 1fr}}
+.tsc-stat{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:12px 14px}
+.tsc-stat-label{font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:5px;opacity:.8}
+.tsc-stat-value{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;color:#fff;line-height:1.2}
+.tsc-stat-sub{font-size:.68rem;color:#7a6e62;margin-top:2px}
+
+/* DAYS REMAINING PILL — RED WHEN ≤60 */
+.days-remaining-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:.8rem;font-weight:700;margin-top:10px}
+.drp-ok{background:rgba(26,92,46,.15);border:1.5px solid rgba(26,92,46,.4);color:#4aaf6e}
+.drp-warn{background:rgba(201,150,12,.12);border:1.5px solid rgba(201,150,12,.4);color:#e8b422}
+.drp-danger{background:rgba(140,31,31,.15);border:1.5px solid rgba(140,31,31,.5);color:#e05c5c;animation:pulse-red 2s ease-in-out infinite}
+@keyframes pulse-red{0%,100%{box-shadow:0 0 0 0 rgba(140,31,31,.4)}50%{box-shadow:0 0 0 6px rgba(140,31,31,0)}}
+
+/* TIMELINE BAR */
+.tsc-timeline{margin-top:16px;position:relative;z-index:1}
+.tsc-tl-labels{display:flex;justify-content:space-between;font-size:.62rem;color:#7a6e62;margin-bottom:5px}
+.tsc-tl-bar{height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.tsc-tl-fill{height:100%;border-radius:3px;transition:width .8s ease}
+
+/* APPLICATION TRACKER */
+.app-tracker-card{background:var(--card);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+.atc-head{background:var(--ink);padding:14px 18px;display:flex;align-items:center;gap:10px}
+.atc-head h3{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:700;color:#fff}
+.atc-steps{padding:16px 18px;display:flex;flex-direction:column;gap:0}
+.atc-step{display:flex;gap:12px;position:relative}
+.atc-step:not(:last-child)::before{content:'';position:absolute;left:14px;top:32px;width:2px;height:calc(100% - 8px);background:var(--rule)}
+.atc-step.done::before{background:var(--green)}
+.atc-step.active::before{background:linear-gradient(to bottom,var(--green),var(--rule))}
+.atc-dot{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;margin-top:4px;z-index:1;border:2px solid var(--rule)}
+.atc-step.done .atc-dot{background:var(--green);border-color:var(--green);color:#fff}
+.atc-step.active .atc-dot{background:var(--gold);border-color:var(--gold);color:#fff}
+.atc-step.pending .atc-dot{background:var(--card);color:var(--dim)}
+.atc-body{flex:1;padding-bottom:16px}
+.atc-name{font-size:.85rem;font-weight:600;color:var(--ink);margin-bottom:2px}
+.atc-step.active .atc-name{color:var(--gold)}
+.atc-desc{font-size:.74rem;color:var(--dim);line-height:1.5}
+.atc-action{margin-top:6px}
+
+/* QUICK ACTION CARDS */
+.tenant-qa-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.tenant-qa-card{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 14px;text-align:center;cursor:pointer;transition:all .22s;display:flex;flex-direction:column;align-items:center;gap:7px}
+.tenant-qa-card:hover{border-color:var(--gold);box-shadow:0 4px 20px rgba(201,150,12,.12);transform:translateY(-2px)}
+.tqa-icon{font-size:1.6rem}
+.tqa-label{font-family:'Cormorant Garamond',serif;font-size:.88rem;font-weight:700;color:var(--ink)}
+.tqa-sub{font-size:.68rem;color:var(--dim);line-height:1.4}
+
 </style>
 </head>
 <body>
@@ -1786,6 +1844,7 @@ async function _bootApp(user, userData, adminMode) {
 
   if (!adminMode) {
     loadMyProperty(userData);
+    setTimeout(renderTenantDashboard, 1200);
     // Update welcome card
     setTimeout(() => {
       const rec = window._myRecord || rentLogs.find(e =>
@@ -1938,6 +1997,7 @@ function renderAll() {
   renderExpiringTable();
   renderProperties();
   renderRentManager();
+  if (!isAdmin && typeof renderTenantDashboard === "function") setTimeout(renderTenantDashboard, 100);
   // Auto-check and send renewal emails (admin only, throttled by sent-cache)
   if (isAdmin && typeof checkAndSendRenewalEmails === 'function') {
     checkAndSendRenewalEmails().catch(e => console.log('Email check:', e));
@@ -3783,6 +3843,164 @@ function _navTo(pgId) {
   closeSidebar();
   _updateNavBtns();
   setTimeout(function() { _navInProgress = false; }, 50);
+}
+
+
+/* ════════════════════════════════════════════════
+   TENANT DASHBOARD — status card + app tracker
+════════════════════════════════════════════════ */
+function renderTenantDashboard() {
+  var rec = window._myRecord ||
+    rentLogs.find(function(e) {
+      return (e.tenantEmail||'').toLowerCase() === ((currentUser&&currentUser.email)||'').toLowerCase();
+    });
+
+  // ── TENANCY STATUS CARD ────────────────────────────────────────
+  var today = new Date(); today.setHours(0,0,0,0);
+  var startD  = rec && rec.start  ? new Date(rec.start)  : null;
+  var expiryD = rec && rec.expiry ? new Date(rec.expiry) : null;
+  if (startD)  startD.setHours(0,0,0,0);
+  if (expiryD) expiryD.setHours(0,0,0,0);
+
+  var daysLeft   = expiryD ? Math.round((expiryD - today) / 864e5) : null;
+  var totalDays  = (startD && expiryD) ? Math.round((expiryD - startD) / 864e5) : 365;
+  var elapsed    = startD ? Math.round((today - startD) / 864e5) : 0;
+  var pct        = Math.min(100, Math.max(0, Math.round((elapsed / totalDays) * 100)));
+  var isOverdue  = daysLeft !== null && daysLeft < 0;
+  var isExpiring = daysLeft !== null && daysLeft >= 0 && daysLeft <= 60;
+  var isCritical = daysLeft !== null && daysLeft >= 0 && daysLeft <= 14;
+
+  var fmt = function(d) {
+    return d ? new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}) : '—';
+  };
+
+  // Glow colour
+  var glowClr = isOverdue ? 'rgba(140,31,31,.15)' : isExpiring ? 'rgba(201,150,12,.12)' : 'rgba(26,92,46,.1)';
+  var fillClr = isOverdue ? '#e05c5c' : isExpiring ? '#c9960c' : '#4aaf6e';
+  var tlClr   = fillClr;
+
+  // Set glow
+  var glow = document.getElementById('tscGlow');
+  if (glow) glow.style.background = 'radial-gradient(circle,' + glowClr + ',transparent 70%)';
+
+  if (rec) {
+    var propLabel = getPropertyLabel(rec.unitId||rec.unit);
+    var propObj   = PROPERTIES.find(function(p){return p.id===(rec.unitId||rec.unit);});
+    var loc       = rec.location || (propObj ? propObj.location : '') || '';
+
+    _setText('tdUnit', propLabel || '—');
+    _setText('tdLoc',  loc ? '📍 ' + loc : '');
+    _setText('tdRent', rec.amount ? '₦' + Number(rec.amount).toLocaleString() : '—');
+    _setText('tdStart', fmt(rec.start));
+    _setText('tdExpiry', fmt(rec.expiry));
+    _setText('tdStatus', isOverdue ? '🔴 Expired' : isExpiring ? '🟡 Expiring' : '🟢 Active');
+    _setText('tdStatusSub', isOverdue ? 'Renewal required' : isExpiring ? 'Renew soon' : 'In good standing');
+
+    // Days remaining pill — RED when ≤60 days
+    var pill = document.getElementById('tdDaysPill');
+    if (pill) {
+      if (daysLeft !== null) {
+        var pillClass = isCritical ? 'drp-danger' : isExpiring ? 'drp-danger' : daysLeft <= 90 ? 'drp-warn' : 'drp-ok';
+        var pillIcon  = isOverdue ? '🚨' : isExpiring ? '⚠️' : '✅';
+        var pillText  = isOverdue
+          ? Math.abs(daysLeft) + ' days overdue — contact landlord immediately'
+          : daysLeft + ' days remaining' + (daysLeft <= 60 ? ' — renew now' : '');
+        pill.innerHTML = '<span class="days-remaining-pill ' + pillClass + '">' + pillIcon + ' ' + pillText + '</span>';
+        // Pulse if critical
+        if (isExpiring) pill.querySelector('.days-remaining-pill').style.fontWeight = '700';
+      } else {
+        pill.innerHTML = '';
+      }
+    }
+
+    // Timeline
+    var fill = document.getElementById('tdTlFill');
+    if (fill) { fill.style.width = pct + '%'; fill.style.background = tlClr; }
+    _setText('tdTlPct', pct + '% elapsed');
+    _setText('tdTlStart', startD ? startD.toLocaleDateString('en-NG',{month:'short',year:'numeric'}) : 'Start');
+    _setText('tdTlEnd',   expiryD ? expiryD.toLocaleDateString('en-NG',{month:'short',year:'numeric'}) : 'Expiry');
+  } else {
+    _setText('tdUnit', 'No tenancy record linked');
+    _setText('tdLoc',  'Contact crestechnologies@outlook.com to link your account');
+    _setText('tdRent','—'); _setText('tdStart','—'); _setText('tdExpiry','—'); _setText('tdStatus','—');
+    var p = document.getElementById('tdDaysPill'); if(p) p.innerHTML = '';
+  }
+
+  // ── APPLICATION TRACKER ────────────────────────────────────────
+  // Determine which steps are done based on whether tenant has a record
+  var hasRecord = !!rec;
+  var hasExpiry = rec && rec.expiry;
+
+  var steps = [
+    {
+      name:    'Browse Properties',
+      desc:    'View available units on the landing page and choose a property',
+      done:    true, // always done if they're logged in
+      action:  null
+    },
+    {
+      name:    'Complete KYT Questionnaire',
+      desc:    'Fill the Know Your Tenant form with personal details, referees and guarantors',
+      done:    hasRecord,
+      active:  !hasRecord,
+      action:  hasRecord ? null : {label:'Open KYT Form →', fn:"window.open('https://enjanih-stack.github.io/crestville-portal/CRS_PreRental_Questionnaire_v3.html','_blank')"}
+    },
+    {
+      name:    'Referee & Guarantor Consent',
+      desc:    'Referees and guarantors receive a consent link and sign digitally',
+      done:    hasRecord,
+      action:  null
+    },
+    {
+      name:    'Admin Review & Approval',
+      desc:    'Crestechnologies IS Ltd reviews your application and contacts you with the outcome',
+      done:    hasRecord,
+      action:  null
+    },
+    {
+      name:    'Sign Tenancy Agreement',
+      desc:    'Receive and sign the digital tenancy agreement — all parties sign including Clause X acknowledgement',
+      done:    hasRecord,
+      action:  null
+    },
+    {
+      name:    'Active Tenancy',
+      desc:    hasExpiry
+                ? 'Your tenancy is active. Expiry: ' + fmt(rec.expiry) + (daysLeft !== null ? ' (' + (isOverdue ? Math.abs(daysLeft)+' days overdue' : daysLeft+' days remaining') + ')' : '')
+                : 'Move in and enjoy your new home. All documents available in your portal.',
+      done:    hasRecord && !isOverdue,
+      active:  hasRecord && !isOverdue,
+      action:  (hasRecord && isExpiring) ? {label:'Request Renewal →', fn:'openRenewalModal()'} : null
+    },
+    {
+      name:    'Renewal / Vacating',
+      desc:    'Submit renewal request 60 days before expiry, or notify landlord of intent to vacate per Clause X',
+      done:    false,
+      pending: true,
+      action:  hasRecord ? {label:'Request Renewal', fn:'openRenewalModal()'} : null
+    }
+  ];
+
+  var stepsHtml = steps.map(function(s, i) {
+    var stateClass = s.done ? 'done' : (s.active ? 'active' : 'pending');
+    var dotContent = s.done ? '✓' : (i + 1);
+    return '<div class="atc-step ' + stateClass + '">' +
+      '<div class="atc-dot">' + dotContent + '</div>' +
+      '<div class="atc-body">' +
+        '<div class="atc-name">' + s.name + '</div>' +
+        '<div class="atc-desc">' + s.desc + '</div>' +
+        (s.action ? '<div class="atc-action"><button class="btn btn-gold btn-sm" style="margin-top:6px;font-size:.76rem" onclick="' + s.action.fn + '">' + s.action.label + '</button></div>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  var stepsEl = document.getElementById('appTrackerSteps');
+  if (stepsEl) stepsEl.innerHTML = stepsHtml;
+}
+
+function _setText(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = val;
 }
 
 </script>
