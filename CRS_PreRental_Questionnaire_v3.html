@@ -682,6 +682,8 @@ canvas.sig-canvas.ro{cursor:default}
 
 <script>
 'use strict';
+const _CRS_PORTAL = 'https://enjanih-stack.github.io/crestville-portal/CRS_Consent_Portal_v2.html';
+
 /* ── COMPRESS / SHARE LINK ─────────────────── */
 function compressLink(obj){
   const json=JSON.stringify(obj);
@@ -1108,7 +1110,7 @@ window.addEventListener('DOMContentLoaded',()=>{
 
 <script>
 /* ── CRS CONSENT LINK GENERATOR (KYT) ── */
-const _CRS_PORTAL = 'https://enjanih-stack.github.io/crestville-portal/CRS_Consent_Portal_v2.html';
+
 
 function _compressPayload(obj) {
   if (typeof pako === 'undefined') {
@@ -1310,51 +1312,142 @@ window.sendCRSEmail = async (to, subject, html) => {
 
 <!-- ═══ SUBMISSION SUCCESS SCREEN ═══ -->
 <div id="successScreen">
-  <div class="ss-card">
+
+  <!-- Confetti canvas -->
+  <canvas id="confettiCanvas" style="position:fixed;inset:0;pointer-events:none;z-index:1"></canvas>
+
+  <div class="ss-card" style="position:relative;z-index:2">
+
+    <!-- TOP: animated checkmark -->
     <div class="ss-top">
-      <span class="ss-icon">✅</span>
-      <div class="ss-title">Application Submitted!</div>
-      <div style="font-size:.82rem;color:#9a8a6a;margin-top:6px">Your Know Your Tenant (KYT) form has been received</div>
-      <div class="ss-ref" id="ssRefCode">REF: CRS-KYT-000000</div>
-      <div id="ssNotified" style="display:none;margin-top:10px;font-size:.78rem;color:#9a8a6a;line-height:1.7;text-align:left;background:rgba(26,92,46,.1);border-radius:6px;padding:9px 12px"></div>
+      <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#1a5c2e,#4aaf6e);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 0 12px rgba(74,175,110,.15),0 0 0 24px rgba(74,175,110,.06);animation:pop-in .6s cubic-bezier(.175,.885,.32,1.275) forwards">
+        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="ss-title" style="font-size:1.5rem">Application Submitted!</div>
+      <div style="font-size:.85rem;color:#9a8a6a;margin-top:6px;line-height:1.6">Your Know Your Tenant (KYT) e-form has been received by Crestechnologies IS Ltd</div>
+      <div class="ss-ref" id="ssRefCode" style="margin-top:12px;font-size:1rem;letter-spacing:.12em">REF: CRS-KYT-000000</div>
+      <div id="ssNotified" style="display:none;margin-top:14px;font-size:.8rem;color:#4aaf6e;line-height:1.75;text-align:left;background:rgba(26,92,46,.12);border:1px solid rgba(26,92,46,.2);border-radius:8px;padding:12px 14px"></div>
     </div>
+
     <div class="ss-body">
+
+      <!-- WHAT HAPPENS NEXT -->
       <div class="ss-steps">
-        <div style="font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#9a8a6a;margin-bottom:10px">What happens next</div>
+        <div style="font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#9a8a6a;margin-bottom:12px">What happens next</div>
+
         <div class="ss-step">
-          <div class="ss-step-icon">1</div>
-          <div class="ss-step-text"><strong>Referees &amp; Guarantors notified</strong> — Your referees and guarantors receive a consent link by email to confirm and sign their advisory declaration.</div>
+          <div class="ss-step-icon" style="background:rgba(201,150,12,.15);color:#c9960c;border:1.5px solid rgba(201,150,12,.3)">1</div>
+          <div class="ss-step-text">
+            <strong style="color:#e8dfc8">Referees &amp; Landlord notified</strong><br>
+            <span style="font-size:.78rem;color:#9a8a6a">Consent emails sent to your referees and previous landlord for digital verification.</span>
+          </div>
         </div>
+
         <div class="ss-step">
-          <div class="ss-step-icon">2</div>
-          <div class="ss-step-text"><strong>Admin review</strong> — Crestechnologies IS Ltd will review your application and contact you within 3–5 working days at the email address you provided.</div>
+          <div class="ss-step-icon" style="background:rgba(201,150,12,.15);color:#c9960c;border:1.5px solid rgba(201,150,12,.3)">2</div>
+          <div class="ss-step-text">
+            <strong style="color:#e8dfc8">Admin review (3–5 working days)</strong><br>
+            <span style="font-size:.78rem;color:#9a8a6a">Our team reviews your application and contacts you at your registered email address.</span>
+          </div>
         </div>
+
         <div class="ss-step">
-          <div class="ss-step-icon">3</div>
-          <div class="ss-step-text"><strong>Tenancy agreement</strong> — If approved, you will receive a digital tenancy agreement to sign. All parties sign before keys are handed over.</div>
+          <div class="ss-step-icon" style="background:rgba(201,150,12,.15);color:#c9960c;border:1.5px solid rgba(201,150,12,.3)">3</div>
+          <div class="ss-step-text">
+            <strong style="color:#e8dfc8">Sign tenancy agreement</strong><br>
+            <span style="font-size:.78rem;color:#9a8a6a">If approved, receive and sign your digital tenancy agreement — all parties sign before move-in.</span>
+          </div>
         </div>
+
         <div class="ss-step">
-          <div class="ss-step-icon">✓</div>
-          <div class="ss-step-text"><strong>Check your email</strong> — A copy of your submission reference has been noted. Keep it for your records.</div>
+          <div class="ss-step-icon" style="background:rgba(74,175,110,.15);color:#4aaf6e;border:1.5px solid rgba(74,175,110,.3)">✓</div>
+          <div class="ss-step-text">
+            <strong style="color:#e8dfc8">Keep your reference number safe</strong><br>
+            <span style="font-size:.78rem;color:#9a8a6a">Quote your reference number in all future communications regarding this application.</span>
+          </div>
         </div>
       </div>
-      <div class="ss-actions">
-        <a class="ss-btn-home" href="https://enjanih-stack.github.io/crestville-portal/index.html">
+
+      <!-- ACTIONS -->
+      <div class="ss-actions" style="display:flex;flex-direction:column;gap:10px;margin-top:22px">
+        <a href="https://enjanih-stack.github.io/crestville-portal/index.html"
+           style="display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;background:linear-gradient(135deg,#7a5800,#c9960c,#e8b422);color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:.92rem;letter-spacing:.04em;box-shadow:0 4px 16px rgba(201,150,12,.3)">
           🏠 Return to Tenant Portal
         </a>
-        <a class="ss-btn-home" href="https://enjanih-stack.github.io/crestville-portal/landing.html" style="background:linear-gradient(135deg,#1e3a5f,#2a5080)">
+        <a href="https://enjanih-stack.github.io/crestville-portal/landing.html"
+           style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;background:rgba(255,255,255,.06);color:#e8dfc8;text-decoration:none;border-radius:8px;font-weight:600;font-size:.88rem;border:1px solid rgba(255,255,255,.12)">
           🏡 Back to Home Page
         </a>
-        <button class="ss-btn-close" onclick="window.close()">
+        <button onclick="window.close()"
+           style="padding:10px 20px;background:none;color:#7a6e62;border:1px solid rgba(255,255,255,.08);border-radius:8px;font-size:.84rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s"
+           onmouseover="this.style.color='#e8dfc8'" onmouseout="this.style.color='#7a6e62'">
           ✕ Close this form
         </button>
       </div>
-      <div class="ss-note">
-        Questions? Contact us at <strong>crestechnologies@outlook.com</strong><br>
-        Crestechnologies IS Ltd · RC 1643396 · Crestville Properties
+
+      <div class="ss-note" style="margin-top:18px;font-size:.74rem;color:#5a4e44;text-align:center;line-height:1.8">
+        Questions? <a href="mailto:crestechnologies@outlook.com" style="color:#c9960c">crestechnologies@outlook.com</a><br>
+        Crestechnologies IS Ltd &middot; RC 1643396 &middot; Crestville Properties
       </div>
     </div>
   </div>
+
+  <!-- Confetti + pop-in animation -->
+  <style>
+  @keyframes pop-in{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+  </style>
+  <script>
+  (function(){
+    var ss = document.getElementById('successScreen');
+    if(!ss) return;
+    var obs = new MutationObserver(function(){
+      if(ss.classList.contains('on')) startConfetti();
+    });
+    obs.observe(ss,{attributes:true,attributeFilter:['class']});
+
+    function startConfetti(){
+      var canvas = document.getElementById('confettiCanvas');
+      if(!canvas) return;
+      var ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      var pieces = [];
+      var colors = ['#c9960c','#e8b422','#4aaf6e','#1e3a5f','#e8dfc8','#fff'];
+      for(var i=0;i<120;i++){
+        pieces.push({
+          x: Math.random()*canvas.width,
+          y: Math.random()*canvas.height - canvas.height,
+          r: Math.random()*6+3,
+          d: Math.random()*1.5+0.5,
+          color: colors[Math.floor(Math.random()*colors.length)],
+          tilt: Math.random()*10-5,
+          spin: (Math.random()-0.5)*0.1
+        });
+      }
+      var frame = 0;
+      function draw(){
+        if(frame > 180){ ctx.clearRect(0,0,canvas.width,canvas.height); return; }
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        pieces.forEach(function(p){
+          ctx.save();
+          ctx.translate(p.x,p.y);
+          ctx.rotate(p.tilt);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = Math.max(0, 1 - frame/160);
+          ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*2.5);
+          ctx.restore();
+          p.y += p.d * 2.5;
+          p.tilt += p.spin;
+          if(p.y > canvas.height) p.y = -10;
+        });
+        frame++;
+        requestAnimationFrame(draw);
+      }
+      draw();
+    }
+  })();
+  </script>
+
 </div>
 
 </body>
