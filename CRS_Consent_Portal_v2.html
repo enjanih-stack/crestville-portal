@@ -217,6 +217,31 @@ canvas.sig-canvas{display:block;cursor:crosshair;touch-action:none;width:100%;he
 .rw-decline{margin-top:10px;background:none;border:none;color:#5a4e44;font-size:.78rem;cursor:pointer;font-family:inherit;width:100%;padding:8px;transition:color .2s}
 .rw-decline:hover{color:#9a8a6a}
 
+
+/* ── DOCUMENT UPLOAD CARDS ── */
+.doc-upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
+@media(max-width:600px){.doc-upload-grid{grid-template-columns:1fr}}
+.doc-upload-card{border:2px dashed var(--rule);border-radius:10px;overflow:hidden;transition:border-color .2s;background:var(--cream)}
+.doc-upload-card:hover{border-color:var(--gold)}
+.duc-head{background:linear-gradient(135deg,var(--ink),#1a1612);padding:11px 14px;display:flex;align-items:center;gap:10px;border-bottom:2px solid var(--gold)}
+.duc-icon{font-size:1.2rem}
+.duc-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:.9rem;font-weight:700;color:#fff}
+.duc-sub{font-size:.62rem;color:#9a8a6a;margin-top:1px}
+.duc-body{padding:14px}
+.duc-preview{width:100%;aspect-ratio:4/3;background:var(--bg);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;border:1.5px dashed var(--rule);margin-bottom:10px;transition:all .2s}
+.duc-preview:hover{border-color:var(--gold);background:var(--gold-bg)}
+.duc-preview input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.duc-preview img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:5px}
+.duc-preview .duc-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;border-radius:5px}
+.duc-preview:hover .duc-overlay{opacity:1}
+.duc-placeholder{font-size:2rem;margin-bottom:5px;color:var(--dim)}
+.duc-placeholder-txt{font-size:.72rem;color:var(--dim);text-align:center;line-height:1.5;padding:0 8px}
+.duc-status{font-size:.74rem;padding:5px 10px;border-radius:4px;text-align:center}
+.duc-status.ok{background:rgba(26,92,46,.1);color:var(--green);border:1px solid rgba(26,92,46,.2)}
+.duc-status.pending{color:var(--dim);font-style:italic}
+.duc-hint{font-size:.68rem;color:var(--dim);text-align:center;margin-top:6px;line-height:1.5}
+.doc-upload-required{border-color:rgba(140,31,31,.4);background:#fff8f8}
+
 </style>
 </head>
 <body>
@@ -343,6 +368,81 @@ canvas.sig-canvas{display:block;cursor:crosshair;touch-action:none;width:100%;he
         <div class="fr c2">
           <div class="fg"><span class="lbl" id="regLabel">Registration / Licence No.</span><input type="text" id="myReg" placeholder="Professional registration number"/></div>
           <div class="fg"><span class="lbl" id="orgLabel">Company / Organisation</span><input type="text" id="myOrg" placeholder="Organisation name"/></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCUMENT UPLOADS -->
+  <div class="card" id="docUploadCard">
+    <div class="card-head">
+      <span class="card-icon">📎</span>
+      <h2>Identity Documents</h2>
+    </div>
+    <div class="card-body">
+      <div class="info" style="margin-bottom:14px">
+        Please upload clear photos or scans of the required documents below. These are stored securely and used solely to verify your identity for this tenancy application. Max file size: <strong>3MB each</strong>.
+      </div>
+
+      <div class="doc-upload-grid">
+
+        <!-- PASSPORT PHOTO -->
+        <div class="doc-upload-card doc-upload-required" id="passportCard">
+          <div class="duc-head">
+            <span class="duc-icon">📷</span>
+            <div>
+              <div class="duc-title">Passport Photograph <span style="color:#e05c5c;font-size:.7rem">*Required</span></div>
+              <div class="duc-sub">Recent colour photo, white background, clear face</div>
+            </div>
+          </div>
+          <div class="duc-body">
+            <div class="duc-preview" id="passportPreview" onclick="document.getElementById('passportFile').click()">
+              <input type="file" id="passportFile" accept="image/jpeg,image/png,image/webp" onchange="handleUpload('passport',this)"/>
+              <div class="duc-placeholder">🖼️</div>
+              <div class="duc-placeholder-txt">Click to upload<br>JPG or PNG · Max 3MB</div>
+              <div class="duc-overlay">
+                <span style="color:#fff;font-size:.82rem;font-weight:600">Change Photo</span>
+              </div>
+            </div>
+            <div class="duc-status pending" id="passportStatus">No photo uploaded yet</div>
+            <div class="duc-hint">Must be taken within the last 6 months · White or light background · Face clearly visible</div>
+          </div>
+        </div>
+
+        <!-- NIN -->
+        <div class="doc-upload-card doc-upload-required" id="ninCard">
+          <div class="duc-head">
+            <span class="duc-icon">🪪</span>
+            <div>
+              <div class="duc-title">NIN / National ID <span style="color:#e05c5c;font-size:.7rem">*Required</span></div>
+              <div class="duc-sub">National Identification Number slip or ID card</div>
+            </div>
+          </div>
+          <div class="duc-body">
+            <div class="duc-preview" id="ninPreview" onclick="document.getElementById('ninFile').click()">
+              <input type="file" id="ninFile" accept="image/jpeg,image/png,image/webp,application/pdf" onchange="handleUpload('nin',this)"/>
+              <div class="duc-placeholder">🪪</div>
+              <div class="duc-placeholder-txt">Click to upload<br>JPG, PNG or PDF · Max 3MB</div>
+              <div class="duc-overlay">
+                <span style="color:#fff;font-size:.82rem;font-weight:600">Change Document</span>
+              </div>
+            </div>
+            <div class="duc-status pending" id="ninStatus">No document uploaded yet</div>
+            <div class="duc-hint">Front of NIN slip or National ID card · All text must be clearly readable</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- NIN NUMBER TEXT FIELD -->
+      <div class="fr c2" style="margin-top:14px">
+        <div class="fg">
+          <span class="lbl">NIN Number <span class="req">*</span></span>
+          <input type="text" id="ninNumber" placeholder="11-digit NIN e.g. 12345678901" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'');up()"/>
+        </div>
+        <div class="fg">
+          <span class="lbl">Date of Birth <span class="req">*</span></span>
+          <input type="date" id="myDOB" oninput="up()"/>
         </div>
       </div>
     </div>
@@ -806,7 +906,14 @@ async function submitConsent() {
   const addr = document.getElementById('myAddr').value.trim();
   const print = document.getElementById('myPrint').value.trim();
 
-  if (!name||!email||!phone||!addr) { toast('⚠ Fill all required fields'); return; }
+  const ninNumber = document.getElementById('ninNumber') ? document.getElementById('ninNumber').value.trim() : '';
+  const myDOB     = document.getElementById('myDOB') ? document.getElementById('myDOB').value : '';
+
+  if (!name||!email||!phone||!addr) { toast('⚠ Fill all required personal details'); return; }
+  if (!ninNumber || ninNumber.length < 11) { toast('⚠ Enter your 11-digit NIN number'); return; }
+  if (!myDOB) { toast('⚠ Enter your date of birth'); return; }
+  if (!_uploads.passport) { toast('⚠ Please upload your passport photograph'); return; }
+  if (!_uploads.nin) { toast('⚠ Please upload your NIN / National ID document'); return; }
   if (!print) { toast('⚠ Print your full name in the signature section'); return; }
   if (!_ackIds.every(id => document.getElementById(id)?.checked)) {
     toast('⚠ Please confirm all acknowledgement items'); return;
@@ -1633,6 +1740,58 @@ function showRoleWelcome(payload) {
 
 function proceedToConsent() {
   document.getElementById('roleWelcome').style.display = 'none';
+}
+
+
+/* ════════════════════════════════════════
+   DOCUMENT UPLOAD HANDLING
+════════════════════════════════════════ */
+var _uploads = { passport: null, nin: null };
+
+function handleUpload(type, input) {
+  var file = input.files[0];
+  if (!file) return;
+
+  if (file.size > 3 * 1024 * 1024) {
+    alert('File is too large. Maximum size is 3MB. Please compress or resize the image.');
+    input.value = '';
+    return;
+  }
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    _uploads[type] = e.target.result;
+    var preview = document.getElementById(type + 'Preview');
+    var status  = document.getElementById(type + 'Status');
+    var card    = document.getElementById(type + 'Card');
+
+    // Show image preview (images only)
+    if (file.type.startsWith('image/')) {
+      // Remove existing preview img if any
+      var existing = preview.querySelector('img');
+      if (existing) existing.remove();
+      var img = document.createElement('img');
+      img.src = e.target.result;
+      img.alt = type === 'passport' ? 'Passport photo' : 'NIN document';
+      preview.insertBefore(img, preview.firstChild);
+      // Hide placeholder
+      var ph = preview.querySelector('.duc-placeholder');
+      var pt = preview.querySelector('.duc-placeholder-txt');
+      if (ph) ph.style.display = 'none';
+      if (pt) pt.style.display = 'none';
+    }
+
+    // Update status
+    var sizeKB = (file.size / 1024).toFixed(0);
+    status.textContent = '✓ ' + file.name + ' (' + sizeKB + ' KB)';
+    status.className = 'duc-status ok';
+
+    // Update card border
+    if (card) card.style.borderColor = 'var(--green)';
+
+    up(); // recheck form validity
+  };
+  reader.readAsDataURL(file);
 }
 
 </script>

@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Consent Form Generator — Admin — Crestville Properties</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+<style>
+:root{--gold:#c9960c;--gl:#e8b422;--ink:#0f0e0c;--dim:#7a6e62;--rule:#2a2620;--card:#1a1612;--bg:#0a0908;--cream:#faf8f4;--green:#1a5c2e;--red:#8c1f1f}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',Arial,sans-serif;background:var(--bg);color:#e8dfc8;min-height:100vh}
+.hdr{background:#050403;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--gold)}
+.hdr-left{display:flex;align-items:center;gap:12px}
+.logo{width:44px;height:44px;border-radius:50%;border:2px solid var(--gold);object-fit:cover}
+.co-name{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:#fff}
+.co-sub{font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase}
+.badge-admin{background:rgba(201,150,12,.15);border:1px solid rgba(201,150,12,.3);color:var(--gold);padding:4px 12px;border-radius:20px;font-size:.7rem;font-weight:700;letter-spacing:.08em}
+.wrap{max-width:820px;margin:28px auto;padding:0 16px 60px}
+h1{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:6px}
+.sub{font-size:.84rem;color:var(--dim);line-height:1.6;margin-bottom:24px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:12px;margin-bottom:18px;overflow:hidden}
+.card-head{background:#050403;padding:14px 20px;display:flex;align-items:center;gap:10px;border-bottom:2px solid var(--gold)}
+.card-num{width:28px;height:28px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:700;color:#fff;flex-shrink:0}
+.card-head h2{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:700;color:#fff}
+.card-body{padding:20px}
+.fr{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.fg{flex:1;min-width:200px;display:flex;flex-direction:column;gap:5px}
+.fg.full{flex:1 1 100%}
+.lbl{font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.req{color:#e05c5c;margin-left:2px}
+input,select,textarea{width:100%;padding:10px 13px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-size:.88rem;font-family:inherit;background:#0f0e0c;color:#e8dfc8;outline:none;transition:all .2s}
+input:focus,select:focus,textarea:focus{border-bottom-color:var(--gl);background:#14120f}
+select option{background:#1a1612;color:#e8dfc8}
+textarea{resize:vertical;min-height:70px}
+/* ROLE CARDS */
+.role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:4px}
+.role-card{border:1.5px solid var(--rule);border-radius:8px;padding:13px 12px;cursor:pointer;transition:all .2s;text-align:center;background:#0f0e0c}
+.role-card:hover{border-color:var(--gold);background:#14120f}
+.role-card.active{border-color:var(--gold);background:rgba(201,150,12,.12);box-shadow:0 0 0 3px rgba(201,150,12,.15)}
+.role-icon{font-size:1.6rem;margin-bottom:5px}
+.role-name{font-size:.8rem;font-weight:600;color:#e8dfc8}
+.role-sub{font-size:.66rem;color:var(--dim);margin-top:2px;line-height:1.4}
+/* GENERATE BUTTON */
+.btn-gen{width:100%;padding:16px;background:linear-gradient(135deg,#7a5800,var(--gold),var(--gl));color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.04em;box-shadow:0 4px 20px rgba(201,150,12,.4);transition:all .2s;margin-top:4px}
+.btn-gen:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(201,150,12,.5)}
+.btn-gen:disabled{opacity:.4;cursor:not-allowed;transform:none}
+/* OUTPUT */
+.output-box{background:#050403;border:1px solid var(--rule);border-radius:8px;padding:16px;margin-top:14px;display:none}
+.output-title{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+.output-actions{display:flex;gap:8px;flex-wrap:wrap}
+.out-btn{padding:10px 18px;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.out-btn-gold{background:var(--gold);border:none;color:#fff}
+.out-btn-gold:hover{background:#b8880a}
+.out-btn-outline{background:none;border:1.5px solid var(--rule);color:#e8dfc8}
+.out-btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.info{background:rgba(201,150,12,.08);border-left:3px solid var(--gold);padding:10px 14px;border-radius:0 6px 6px 0;font-size:.8rem;color:#c8a060;line-height:1.65;margin-bottom:14px}
+.preview-link{word-break:break-all;font-size:.76rem;color:var(--gold);background:#0f0e0c;border:1px solid var(--rule);border-radius:4px;padding:8px 10px;margin-top:8px;line-height:1.6;display:none}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <img class="logo" src="data:image/jpeg;base64,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" alt="CRS"/>
+    <div>
+      <div class="co-name">Crestechnologies IS Ltd</div>
+      <div class="co-sub">Consent Form Generator</div>
+    </div>
+  </div>
+  <span class="badge-admin">🔑 ADMIN ONLY</span>
+</div>
+
+<div class="wrap">
+  <h1>Consent Form Generator</h1>
+  <p class="sub">Fill in the applicant and recipient details below. Click <strong>Generate Consent Form</strong> to create a personalised form ready to send to the recipient. They open it, fill their personal details, upload passport photo and NIN, sign and submit directly to you.</p>
+
+  <!-- ROLE SELECTION -->
+  <div class="card">
+    <div class="card-head"><div class="card-num">1</div><h2>Recipient's Role</h2></div>
+    <div class="card-body">
+      <div class="role-grid">
+        <div class="role-card" onclick="setRole('referee',this)"><div class="role-icon">👤</div><div class="role-name">Character Referee</div><div class="role-sub">Attests to tenant's character</div></div>
+        <div class="role-card" onclick="setRole('guarantor',this)"><div class="role-icon">🏦</div><div class="role-name">Guarantor</div><div class="role-sub">Financial surety for tenant</div></div>
+        <div class="role-card" onclick="setRole('landlord',this)"><div class="role-icon">🏠</div><div class="role-name">Previous Landlord</div><div class="role-sub">Reference from past landlord</div></div>
+        <div class="role-card" onclick="setRole('witness',this)"><div class="role-icon">✍️</div><div class="role-name">Witness</div><div class="role-sub">Witness to agreement signing</div></div>
+        <div class="role-card" onclick="setRole('agent',this)"><div class="role-icon">🏢</div><div class="role-name">Agent</div><div class="role-sub">Property agent or solicitor</div></div>
+      </div>
+      <input type="hidden" id="selectedRole" value=""/>
+    </div>
+  </div>
+
+  <!-- APPLICANT (TENANT) DETAILS -->
+  <div class="card">
+    <div class="card-head"><div class="card-num">2</div><h2>Applicant / Tenant Details</h2></div>
+    <div class="card-body">
+      <div class="fr">
+        <div class="fg"><label class="lbl">Tenant Full Name <span class="req">*</span></label><input type="text" id="appName" placeholder="Tenant's legal name" oninput="checkReady()"/></div>
+        <div class="fg"><label class="lbl">Tenant Email</label><input type="email" id="appEmail" placeholder="tenant@email.com"/></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="lbl">Property / Unit <span class="req">*</span></label>
+          <select id="appUnit" onchange="checkReady()">
+            <option value="">— Select unit —</option>
+            <option value="OJ-1A">2BDR Flat 1A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-2A">2BDR Flat 2A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-3A">2BDR Flat 3A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-4A">2BDR Flat 4A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-1B">2BDR Flat 1B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-3B">2BDR Flat 3B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-2B">3BDR Flat 2B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-4B">3BDR Flat 4B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-SC">Self Contain 2C — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-SH">Shop & Office — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="IB-RP">Room & Parlour — Ibadan</option>
+<option value="IB-2B">2 Bedroom Flat — Ibadan</option>
+<option value="EN-2B">2BDR Flat — Enugu</option>
+<option value="EN-S1">Shop 1 — Enugu</option>
+          </select>
+        </div>
+        <div class="fg"><label class="lbl">Annual Rent (₦)</label><input type="number" id="appRent" placeholder="e.g. 750000"/></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="lbl">Tenancy Start Date</label><input type="date" id="appStart"/></div>
+        <div class="fg"><label class="lbl">Tenancy Expiry Date</label><input type="date" id="appExpiry"/></div>
+      </div>
+      <div class="fg full" style="margin-top:2px"><label class="lbl">Application Reference Code</label><input type="text" id="appRef" placeholder="e.g. CRS-KYT-A3F9K2 (leave blank to auto-generate)"/></div>
+    </div>
+  </div>
+
+  <!-- RECIPIENT (CONSENTOR) KNOWN DETAILS -->
+  <div class="card">
+    <div class="card-head"><div class="card-num">3</div><h2>Recipient Details (if known)</h2></div>
+    <div class="card-body">
+      <div class="info">Fill in whatever details you already know about the recipient. These will be pre-filled in their form. Leave blank what they should fill themselves.</div>
+      <div class="fr">
+        <div class="fg"><label class="lbl">Recipient Full Name</label><input type="text" id="recName" placeholder="e.g. Jane Johnson"/></div>
+        <div class="fg"><label class="lbl">Recipient Email</label><input type="email" id="recEmail" placeholder="recipient@email.com"/></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="lbl">Recipient Phone</label><input type="tel" id="recPhone" placeholder="+234..."/></div>
+        <div class="fg"><label class="lbl">Relationship to Tenant</label><input type="text" id="recRel" placeholder="e.g. Employer, Family friend, Landlord"/></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN NOTES -->
+  <div class="card">
+    <div class="card-head"><div class="card-num">4</div><h2>Notes to Recipient (Optional)</h2></div>
+    <div class="card-body">
+      <div class="fg full"><label class="lbl">Message / Instructions</label>
+        <textarea id="adminNote" placeholder="e.g. Please complete and return by 30 May 2026. Contact us on crestechnologies@outlook.com if you have any questions."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- GENERATE -->
+  <button class="btn-gen" id="genBtn" onclick="generateForm()" disabled>⚡ Generate Consent Form</button>
+
+  <!-- OUTPUT -->
+  <div class="output-box" id="outputBox">
+    <div class="output-title">✅ Consent Form Generated</div>
+    <div style="font-size:.8rem;color:var(--dim);margin-bottom:10px;line-height:1.65">The form has been generated. Download it and email it to the recipient as an attachment, or copy the share link to send directly.</div>
+    <div class="output-actions">
+      <button class="out-btn out-btn-gold" onclick="downloadForm()">⬇ Download HTML Form</button>
+      <button class="out-btn out-btn-outline" onclick="copyShareLink()">🔗 Copy Share Link</button>
+      <button class="out-btn out-btn-outline" onclick="emailRecipient()">✉ Email to Recipient</button>
+      <button class="out-btn out-btn-outline" onclick="previewForm()">👁 Preview Form</button>
+    </div>
+    <div class="preview-link" id="shareLink"></div>
+  </div>
+</div>
+
+<script>
+var _role = '';
+var _generatedHtml = '';
+var _shareLink = '';
+var _recipientEmail = '';
+
+function setRole(role, el) {
+  _role = role;
+  document.querySelectorAll('.role-card').forEach(function(c){ c.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('selectedRole').value = role;
+  checkReady();
+}
+
+function checkReady() {
+  var appName = document.getElementById('appName').value.trim();
+  var appUnit = document.getElementById('appUnit').value;
+  document.getElementById('genBtn').disabled = !(_role && appName && appUnit);
+}
+
+function generateForm() {
+  var role     = _role;
+  var appName  = document.getElementById('appName').value.trim();
+  var appEmail = document.getElementById('appEmail').value.trim();
+  var appUnit  = document.getElementById('appUnit');
+  var unitId   = appUnit.value;
+  var unitLabel= appUnit.options[appUnit.selectedIndex].text;
+  var appRent  = document.getElementById('appRent').value;
+  var appStart = document.getElementById('appStart').value;
+  var appExpiry= document.getElementById('appExpiry').value;
+  var appRef   = document.getElementById('appRef').value.trim() || ('CRS-' + Date.now().toString(36).toUpperCase().slice(-6));
+  var recName  = document.getElementById('recName').value.trim();
+  var recEmail = document.getElementById('recEmail').value.trim();
+  var recPhone = document.getElementById('recPhone').value.trim();
+  var recRel   = document.getElementById('recRel').value.trim();
+  var note     = document.getElementById('adminNote').value.trim();
+
+  _recipientEmail = recEmail;
+
+  var payload = {
+    _role: role, _formType: 'Pre-Rental Application',
+    applicantName: appName, applicantEmail: appEmail,
+    property: unitLabel, unitId: unitId,
+    annualRent: appRent, tenancyStart: appStart, tenancyExpiry: appExpiry,
+    refCode: appRef, adminNote: note,
+    name: recName, email: recEmail, phone: recPhone, rel: recRel,
+    issuedAt: new Date().toISOString()
+  };
+
+  // Build compressed share link
+  var json  = JSON.stringify(payload);
+  var bytes = pako.deflate(json, {level:9});
+  var bin   = '';
+  for (var i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+  var b64   = btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  _shareLink = 'https://enjanih-stack.github.io/crestville-portal/CRS_Consent_Portal_v2.html#' + b64;
+
+  // Build standalone HTML
+  _generatedHtml = buildConsentHtml(payload, _shareLink);
+
+  // Show output
+  document.getElementById('outputBox').style.display = 'block';
+  document.getElementById('shareLink').textContent = _shareLink;
+  document.getElementById('shareLink').style.display = 'block';
+  document.getElementById('outputBox').scrollIntoView({behavior:'smooth'});
+}
+
+function downloadForm() {
+  var blob = new Blob([_generatedHtml], {type:'text/html'});
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  var appName = document.getElementById('appName').value.trim().replace(/\s+/g,'_');
+  a.href = url;
+  a.download = 'CRS_Consent_' + _role.toUpperCase() + '_' + appName + '.html';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyShareLink() {
+  navigator.clipboard.writeText(_shareLink).then(function() {
+    var btn = document.querySelector('.out-btn-outline');
+    var orig = btn.innerHTML;
+    btn.innerHTML = '✓ Copied!';
+    setTimeout(function(){ btn.innerHTML = orig; }, 2000);
+  });
+}
+
+function emailRecipient() {
+  var recName  = document.getElementById('recName').value.trim() || 'Sir/Madam';
+  var appName  = document.getElementById('appName').value.trim();
+  var appUnit  = document.getElementById('appUnit');
+  var unitLabel= appUnit.options[appUnit.selectedIndex].text;
+  var roleLabels = {referee:'Character Referee', guarantor:'Guarantor', landlord:'Previous Landlord', witness:'Witness', agent:'Agent'};
+  var roleLabel  = roleLabels[_role] || _role;
+  var subject = encodeURIComponent('[CRS] Consent & Advisory Form — ' + roleLabel + ' — ' + appName);
+  var body = encodeURIComponent(
+    'Dear ' + recName + ',\n\n'
+    + 'You have been listed as a ' + roleLabel + ' for a property rental application by ' + appName
+    + ' with Crestechnologies IS Ltd (Crestville Properties) for the property: ' + unitLabel + '.\n\n'
+    + 'Please click the link below to open your personalised consent form, complete your details, upload your passport photo and NIN, sign and submit:\n\n'
+    + _shareLink + '\n\n'
+    + '(If the link does not open, copy and paste it into your browser)\n\n'
+    + 'If you have any questions, please contact us at crestechnologies@outlook.com\n\n'
+    + 'Regards,\nCrestechnologies IS Ltd\nCrestville Properties\nRC 1643396'
+  );
+  window.open('mailto:' + (_recipientEmail||'') + '?subject=' + subject + '&body=' + body, '_blank');
+}
+
+function previewForm() {
+  var win = window.open('', '_blank');
+  win.document.write(_generatedHtml);
+  win.document.close();
+}
+
+// ── BUILD STANDALONE CONSENT HTML ────────────────────────────────────────────
+function buildConsentHtml(d, shareLink) {
+  var roleLabels = {
+    referee:  {title:'Character Referee',  icon:'👤', color:'#1e3a5f', prefix:'REF',
+      advisory:'You have been listed as a <strong>character referee</strong> for the above-named tenant. You are confirming their character and suitability as a tenant. You are <strong>NOT financially responsible</strong> for rent arrears or damages — your role is character attestation only.'},
+    guarantor:{title:'Financial Guarantor',icon:'🏦', color:'#5c1a1a', prefix:'GTR',
+      advisory:'You are being asked to act as a <strong>financial guarantor</strong> for the above-named tenant. By signing, you agree to be jointly liable for rent arrears, damages and legal costs if the tenant defaults. Please read the full terms carefully before signing.'},
+    landlord: {title:'Previous Landlord',  icon:'🏠', color:'#1a5c2e', prefix:'LLD',
+      advisory:'You have been named as a previous landlord of the above-named tenant. You are being asked to provide a <strong>tenancy reference</strong> confirming their conduct, payment history and general behaviour during their tenancy with you.'},
+    witness:  {title:'Witness',            icon:'✍️', color:'#2a1a5c', prefix:'WIT',
+      advisory:'You are being asked to <strong>witness the signing</strong> of a tenancy-related document. By signing as a witness, you confirm that the signatory is known to you and that you observed them sign the document in question.'},
+    agent:    {title:'Agent',              icon:'🏢', color:'#1a3a1a', prefix:'AGT',
+      advisory:'You are signing as a <strong>property agent or solicitor</strong> in connection with this tenancy application. Please confirm your professional details and provide your signature in accordance with your professional obligations.'},
+  };
+  var R = roleLabels[d._role] || roleLabels.referee;
+  var fmt = function(v){ return v || '—'; };
+
+  return '<!DOCTYPE html>\n<html lang="en">\n<head>\n'
+    + '<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>\n'
+    + '<title>CRS ' + R.title + ' Consent Form</title>\n'
+    + '<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>\n'
+    + '<style>' + RECIPIENT_CSS + '</style>\n</head>\n<body>\n'
+    + buildRecipientBody(d, R)
+    + '<script>' + buildRecipientJS(d, R) + '<\/script>\n</body>\n</html>';
+}
+
+var RECIPIENT_CSS = `
+:root{--ink:#0f0e0c;--cream:#faf8f4;--gold:#c9960c;--gl:#e8b422;--bg:#f4f1ea;--card:#fff;--rule:#e0d8c8;--dim:#8a7a60;--red:#8c1f1f;--green:#1a5c2e;--blue:#1e3a5f;--gold-bg:#fffdf0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+.hdr{background:var(--ink);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--gold)}
+.hdr-left{display:flex;align-items:center;gap:12px}
+.logo{width:46px;height:46px;border-radius:50%;border:2px solid var(--gold);object-fit:cover}
+.co-name{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:#fff}
+.co-sub{font-size:.56rem;color:var(--gold);letter-spacing:.14em;text-transform:uppercase}
+.hdr-right{text-align:right}
+.form-title{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.05em}
+.form-sub{font-size:.56rem;color:var(--gold);letter-spacing:.14em;text-transform:uppercase;margin-top:1px}
+.hdr-bar{background:#1a1612;padding:7px 24px;display:flex;justify-content:space-between;font-size:.66rem;color:#7a6e62;flex-wrap:wrap;gap:4px}
+.wrap{max-width:820px;margin:20px auto;padding:0 14px 80px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:10px;margin-bottom:18px;overflow:hidden}
+.card-head{background:linear-gradient(135deg,var(--ink),#1a1612);padding:13px 18px;display:flex;align-items:center;gap:10px;border-bottom:2px solid var(--gold)}
+.card-icon{font-size:1.1rem}
+.card-head h2{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:700;color:#fff}
+.card-body{padding:18px}
+.fr{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.fg{flex:1;min-width:180px;display:flex;flex-direction:column;gap:4px}
+.fg.full{flex:1 1 100%}
+.lbl{font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.req{color:var(--red);margin-left:2px}
+input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-size:.87rem;font-family:inherit;background:var(--card);color:var(--ink);outline:none;transition:all .18s}
+input:focus,select:focus,textarea:focus{border-bottom-color:var(--gl);background:var(--gold-bg)}
+input[readonly]{background:#f4f1ea;color:var(--dim);cursor:default;border-bottom-color:var(--rule)}
+/* ROLE BANNER */
+.role-banner{padding:18px 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--rule)}
+.role-icon-big{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0}
+.role-title{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700}
+.role-sub{font-size:.78rem;color:var(--dim);margin-top:3px;line-height:1.5}
+/* APPLICANT SUMMARY */
+.app-summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:14px 18px;background:var(--bg);border-bottom:1px solid var(--rule);font-size:.8rem}
+@media(max-width:600px){.app-summary{grid-template-columns:1fr 1fr}}
+.as-item{}
+.as-label{font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:3px}
+.as-value{font-weight:600;color:var(--ink)}
+/* ADVISORY */
+.advisory-box{background:#fff8f8;border:1px solid rgba(140,31,31,.2);border-radius:8px;padding:14px 16px;font-size:.82rem;color:#3a1a1a;line-height:1.75;margin-bottom:14px}
+.advisory-box.blue{background:#f0f4ff;border-color:rgba(30,58,95,.2);color:#1a2a4a}
+.advisory-box.green{background:#f0fff4;border-color:rgba(26,92,46,.2);color:#0a2a14}
+/* DOCUMENT UPLOAD */
+.doc-upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:580px){.doc-upload-grid{grid-template-columns:1fr}}
+.duc{border:2px dashed var(--rule);border-radius:10px;overflow:hidden;transition:border-color .2s}
+.duc:hover{border-color:var(--gold)}
+.duc-head{background:linear-gradient(135deg,var(--ink),#1a1612);padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:2px solid var(--gold)}
+.duc-title{font-family:'Cormorant Garamond',serif;font-size:.88rem;font-weight:700;color:#fff}
+.duc-sub{font-size:.6rem;color:#9a8a6a}
+.duc-body{padding:12px}
+.duc-zone{border:1.5px dashed var(--rule);border-radius:7px;aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;background:var(--bg);margin-bottom:8px;transition:all .2s}
+.duc-zone:hover{border-color:var(--gold);background:var(--gold-bg)}
+.duc-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.duc-zone img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:6px}
+.duc-zone .overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s;border-radius:6px}
+.duc-zone:hover .overlay{opacity:1}
+.duc-ph{font-size:1.8rem;margin-bottom:5px;color:var(--dim)}
+.duc-ph-txt{font-size:.7rem;color:var(--dim);text-align:center;line-height:1.5;padding:0 6px}
+.duc-status{font-size:.72rem;padding:4px 8px;border-radius:4px;text-align:center}
+.duc-status.ok{background:rgba(26,92,46,.1);color:var(--green);border:1px solid rgba(26,92,46,.2)}
+.duc-status.pending{color:var(--dim);font-style:italic}
+/* SIG */
+.sig-tabs{display:flex;border-bottom:2px solid var(--rule);margin-bottom:14px}
+.sig-tab{padding:9px 18px;border:none;background:none;font-family:inherit;font-size:.84rem;font-weight:600;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
+.sig-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.sig-wrap{border:1.5px dashed var(--rule);border-radius:6px;background:var(--cream);overflow:hidden}
+.sig-wrap canvas{display:block;touch-action:none}
+.sig-btns{display:flex;justify-content:flex-end;padding:5px 10px;border-top:1px solid var(--rule)}
+.sig-clear{background:none;border:1px solid var(--rule);border-radius:4px;padding:3px 10px;font-size:.72rem;color:var(--dim);cursor:pointer;font-family:inherit}
+.sig-clear:hover{border-color:var(--red);color:var(--red)}
+/* SBAR */
+.sbar{position:fixed;bottom:0;left:0;right:0;background:var(--ink);border-top:2px solid var(--gold);padding:11px 22px;display:flex;align-items:center;justify-content:space-between;z-index:100;gap:12px;flex-wrap:wrap}
+.sbar-txt{font-size:.78rem;color:#9a8a6a}
+.sbar-txt.ok{color:#4aaf6e}
+.btn-sub{padding:11px 26px;background:linear-gradient(135deg,#1a5c2e,#2e8c4a);color:#fff;border:none;border-radius:6px;font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-sub:disabled{opacity:.4;cursor:not-allowed}
+/* NOTICE */
+.notice-box{background:var(--gold-bg);border-left:3px solid var(--gold);padding:10px 14px;border-radius:0 6px 6px 0;font-size:.8rem;color:#5a4000;line-height:1.65;margin-bottom:14px}
+/* SUCCESS */
+#successScreen{display:none;position:fixed;inset:0;background:linear-gradient(135deg,#0a0908,#141210);z-index:9999;align-items:center;justify-content:center;padding:24px}
+#successScreen.on{display:flex}
+.ss-card{background:linear-gradient(135deg,#1a1612,#0f0e0c);border:1px solid #2a2620;border-top:3px solid var(--gold);border-radius:14px;max-width:500px;width:100%;padding:32px 26px;text-align:center}
+.ss-icon{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#1a5c2e,#4aaf6e);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;animation:pop-in .5s cubic-bezier(.175,.885,.32,1.275) forwards}
+@keyframes pop-in{from{transform:scale(0)}to{transform:scale(1)}}
+.ss-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:8px}
+.ss-ref{font-size:.76rem;color:var(--gold);letter-spacing:.12em;font-weight:700;display:inline-block;padding:3px 14px;background:rgba(201,150,12,.1);border:1px solid rgba(201,150,12,.2);border-radius:20px;margin-bottom:14px}
+.ss-msg{font-size:.82rem;color:#9a8a6a;line-height:1.7;margin-bottom:20px}
+.ss-btn{padding:12px 20px;border-radius:7px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s;border:none;margin-bottom:8px;width:100%}
+.ss-btn-gold{background:linear-gradient(135deg,#7a5800,var(--gold),var(--gl));color:#fff}
+.ss-btn-dim{background:rgba(255,255,255,.06);color:#e8dfc8;border:1px solid rgba(255,255,255,.1)!important}
+`;
+
+function buildRecipientBody(d, R) {
+  var refCode = d.refCode || 'CRS-000000';
+  var advisory_class = {referee:'blue',guarantor:'',landlord:'green',witness:'',agent:'green'}[d._role]||'';
+  var note = d.adminNote ? '<div class="notice-box" style="margin-bottom:14px"><strong>Message from Crestechnologies IS Ltd:</strong><br>' + d.adminNote + '</div>' : '';
+
+  return `
+<div class="hdr">
+  <div class="hdr-left">
+    <img class="logo" src="data:image/jpeg;base64,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" alt="CRS"/>
+    <div><div class="co-name">Crestechnologies IS Ltd</div><div class="co-sub">RC 1643396 &middot; Crestville Properties</div></div>
+  </div>
+  <div class="hdr-right">
+    <div class="form-title">${R.title} Consent Form</div>
+    <div class="form-sub">Crestville Properties</div>
+  </div>
+</div>
+<div class="hdr-bar">
+  <span>&#127968; Crestechnologies IS Ltd &mdash; Crestville Properties</span>
+  <span>Ref: ${refCode}</span>
+  <span>&#9993; crestechnologies@outlook.com</span>
+</div>
+
+<div class="wrap">
+
+${note}
+
+<!-- ROLE BANNER -->
+<div class="card">
+  <div class="role-banner">
+    <div class="role-icon-big" style="background:${R.color}22;border:2px solid ${R.color}44">${R.icon}</div>
+    <div>
+      <div class="role-title" style="color:${R.color}">${R.title}</div>
+      <div class="role-sub">You have been asked to provide consent for a tenancy application by <strong>${d.applicantName||'—'}</strong> with Crestechnologies IS Ltd (Crestville Properties).</div>
+    </div>
+  </div>
+  <div class="app-summary">
+    <div class="as-item"><div class="as-label">Applicant / Tenant</div><div class="as-value">${d.applicantName||'—'}</div></div>
+    <div class="as-item"><div class="as-label">Property / Unit</div><div class="as-value">${d.property||'—'}</div></div>
+    <div class="as-item"><div class="as-label">Your Role</div><div class="as-value">${R.title}</div></div>
+    ${d.annualRent ? '<div class="as-item"><div class="as-label">Annual Rent</div><div class="as-value">&#8358;'+Number(d.annualRent).toLocaleString()+'</div></div>' : ''}
+    ${d.tenancyStart ? '<div class="as-item"><div class="as-label">Tenancy Start</div><div class="as-value">'+d.tenancyStart+'</div></div>' : ''}
+    ${d.tenancyExpiry ? '<div class="as-item"><div class="as-label">Tenancy Expiry</div><div class="as-value">'+d.tenancyExpiry+'</div></div>' : ''}
+  </div>
+  <div class="card-body">
+    <div class="advisory-box ${advisory_class}">
+      <strong>&#9432; Advisory Notice — Your Role as ${R.title}:</strong><br/><br/>
+      ${R.advisory}
+    </div>
+  </div>
+</div>
+
+<!-- YOUR DETAILS -->
+<div class="card">
+  <div class="card-head"><span class="card-icon">👤</span><h2>Your Personal Details</h2></div>
+  <div class="card-body">
+    <div class="notice-box">Please verify the pre-filled details below and complete any missing fields. All fields marked * are required.</div>
+    <div class="fr">
+      <div class="fg"><label class="lbl">Full Legal Name <span class="req">*</span></label><input type="text" id="myName" placeholder="Your full legal name" value="${d.name||''}"/></div>
+      <div class="fg"><label class="lbl">Your Role</label><input type="text" id="myRole" value="${R.title}" readonly/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="lbl">Email Address <span class="req">*</span></label><input type="email" id="myEmail" placeholder="your@email.com" value="${d.email||''}"/></div>
+      <div class="fg"><label class="lbl">Phone Number <span class="req">*</span></label><input type="tel" id="myPhone" placeholder="+234..." value="${d.phone||''}"/></div>
+    </div>
+    <div class="fg full" style="margin-bottom:12px"><label class="lbl">Residential Address <span class="req">*</span></label><input type="text" id="myAddr" placeholder="Your full residential address"/></div>
+    <div class="fr">
+      <div class="fg"><label class="lbl">Occupation / Employer</label><input type="text" id="myOcc" placeholder="Your current occupation"/></div>
+      <div class="fg"><label class="lbl">Relationship to Applicant</label><input type="text" id="myRel" placeholder="e.g. Employer, Family friend" value="${d.rel||''}"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="lbl">Date of Birth <span class="req">*</span></label><input type="date" id="myDOB"/></div>
+      <div class="fg"><label class="lbl">NIN Number <span class="req">*</span></label><input type="text" id="ninNumber" placeholder="11-digit NIN" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'')"/></div>
+    </div>
+  </div>
+</div>
+
+<!-- DOCUMENT UPLOADS -->
+<div class="card">
+  <div class="card-head"><span class="card-icon">📎</span><h2>Identity Documents</h2></div>
+  <div class="card-body">
+    <div class="notice-box">Upload clear photos or scans. These are used solely to verify your identity. Max 3MB each.</div>
+    <div class="doc-upload-grid">
+      <div class="duc" id="passportCard">
+        <div class="duc-head">
+          <div>
+            <div class="duc-title">Passport Photo <span style="color:#e05c5c;font-size:.65rem">*Required</span></div>
+            <div class="duc-sub">Recent colour photo, white background</div>
+          </div>
+        </div>
+        <div class="duc-body">
+          <div class="duc-zone" onclick="document.getElementById('passportFile').click()">
+            <input type="file" id="passportFile" accept="image/*" onchange="handleDoc('passport',this)"/>
+            <div class="duc-ph">📷</div>
+            <div class="duc-ph-txt">Click to upload<br>JPG or PNG · Max 3MB</div>
+            <div class="overlay"><span style="color:#fff;font-size:.8rem">Change</span></div>
+          </div>
+          <div class="duc-status pending" id="passportStatus">No photo uploaded</div>
+        </div>
+      </div>
+      <div class="duc" id="ninCard">
+        <div class="duc-head">
+          <div>
+            <div class="duc-title">NIN / National ID <span style="color:#e05c5c;font-size:.65rem">*Required</span></div>
+            <div class="duc-sub">NIN slip or National ID card</div>
+          </div>
+        </div>
+        <div class="duc-body">
+          <div class="duc-zone" onclick="document.getElementById('ninFile').click()">
+            <input type="file" id="ninFile" accept="image/*,.pdf" onchange="handleDoc('nin',this)"/>
+            <div class="duc-ph">🪪</div>
+            <div class="duc-ph-txt">Click to upload<br>JPG, PNG or PDF · Max 3MB</div>
+            <div class="overlay"><span style="color:#fff;font-size:.8rem">Change</span></div>
+          </div>
+          <div class="duc-status pending" id="ninStatus">No document uploaded</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACKNOWLEDGEMENTS -->
+<div class="card">
+  <div class="card-head"><span class="card-icon">✅</span><h2>Declarations &amp; Acknowledgements</h2></div>
+  <div class="card-body">
+    <div id="ackList"></div>
+  </div>
+</div>
+
+<!-- SIGNATURE -->
+<div class="card">
+  <div class="card-head"><span class="card-icon">✍️</span><h2>Your Signature</h2></div>
+  <div class="card-body">
+    <div class="notice-box">Draw your signature in the box below using your mouse or finger. This constitutes your legal digital consent.</div>
+    <div class="sig-tabs">
+      <button class="sig-tab active" onclick="sigTab('draw',this)">✏ Draw Signature</button>
+    </div>
+    <div class="sig-wrap">
+      <canvas id="sigCanvas" width="740" height="160"></canvas>
+      <div class="sig-btns"><button class="sig-clear" onclick="clearSig()">Clear</button></div>
+    </div>
+    <div class="fr" style="margin-top:14px">
+      <div class="fg"><label class="lbl">Print Full Name <span class="req">*</span></label><input type="text" id="myPrint" placeholder="Print your name exactly as signed"/></div>
+      <div class="fg"><label class="lbl">Date</label><input type="date" id="sigDate"/></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="sbar">
+  <span class="sbar-txt" id="sbarTxt">Complete all required fields to submit</span>
+  <button class="btn-sub" id="subBtn" onclick="submitConsent()" disabled>✓ Submit Consent</button>
+</div>
+
+<div id="successScreen">
+  <div class="ss-card">
+    <div class="ss-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <div class="ss-title">Consent Submitted!</div>
+    <div class="ss-ref" id="ssRef">—</div>
+    <div class="ss-msg" id="ssMsg">Your consent form has been emailed to Crestechnologies IS Ltd. Thank you for completing this request.</div>
+    <a href="https://enjanih-stack.github.io/crestville-portal/landing.html" class="ss-btn ss-btn-gold">&#127968; Return to Home Page</a>
+    <button class="ss-btn ss-btn-dim" onclick="window.close()" style="margin-top:6px">&#10005; Close this form</button>
+  </div>
+</div>
+`;
+}
+
+function buildRecipientJS(d, R) {
+  var acksMap = {
+    referee:  ['I confirm I know the applicant personally or professionally','I am providing this reference voluntarily and truthfully','I understand I may be contacted during the tenancy for verification','I confirm the applicant is of good character to the best of my knowledge'],
+    guarantor:['I understand I am jointly liable for rent arrears if the tenant defaults','I have read and understood the full guarantor obligations','I confirm I have the financial capacity to meet this guarantee','I agree to be contacted immediately if the tenant falls into arrears'],
+    landlord: ['I confirm the applicant was a tenant at my property','I am providing an honest and accurate reference','I confirm the tenancy ended without major disputes','I consent to this reference being used for tenancy purposes only'],
+    witness:  ['I confirm I know the signatory personally','I witnessed the document being signed','I confirm the signatory signed of their own free will','I understand my role as a witness carries legal responsibility'],
+    agent:    ['I confirm my professional details are accurate','I am acting in my professional capacity','I confirm I have no conflict of interest','I consent to my details being recorded in the tenancy file'],
+  };
+  var acks = acksMap[d._role] || acksMap.referee;
+  var acksJson = JSON.stringify(acks);
+
+  return `
+'use strict';
+var _uploads = {passport:null,nin:null};
+var _sigDrawn = false;
+var _ackCount = ` + acks.length + `;
+
+// Build acknowledgements
+(function(){
+  var list = document.getElementById('ackList');
+  if (!list) return;
+  var html = '';
+  ` + acksJson.replace(/`/g,"'") + `.forEach(function(txt,i){
+    html += '<label style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:.84rem;line-height:1.6;color:var(--ink)">'
+      + '<input type="checkbox" id="ack'+i+'" onchange="up()" style="width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:var(--gold)"/>'
+      + txt + '</label>';
+  });
+  list.innerHTML = html;
+})();
+
+// Set today's date
+document.getElementById('sigDate').value = new Date().toISOString().split('T')[0];
+
+// Uploads
+function handleDoc(type, input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (file.size > 3*1024*1024) { alert('File too large. Max 3MB.'); input.value=''; return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    _uploads[type] = e.target.result;
+    var zone = document.getElementById(type === 'passport' ? 'passportFile' : 'ninFile').closest('.duc-zone');
+    if (file.type.startsWith('image/')) {
+      var ex = zone.querySelector('img'); if(ex) ex.remove();
+      var img = document.createElement('img'); img.src = e.target.result; zone.insertBefore(img, zone.firstChild);
+      zone.querySelector('.duc-ph').style.display='none';
+      zone.querySelector('.duc-ph-txt').style.display='none';
+    }
+    var st = document.getElementById(type+'Status');
+    st.textContent = '✓ '+(file.name)+'  ('+(file.size/1024).toFixed(0)+' KB)';
+    st.className='duc-status ok';
+    document.getElementById(type+'Card').style.borderColor='var(--green)';
+    up();
+  };
+  reader.readAsDataURL(file);
+}
+
+// Signature pad
+var _ctx, _drawing=false;
+function initSig() {
+  var c = document.getElementById('sigCanvas');
+  _ctx = c.getContext('2d');
+  _ctx.strokeStyle='#0f0e0c'; _ctx.lineWidth=2; _ctx.lineCap='round';
+  function pos(e){ var r=c.getBoundingClientRect(),s=e.touches?e.touches[0]:e; return{x:s.clientX-r.left,y:s.clientY-r.top}; }
+  c.addEventListener('mousedown',function(e){_drawing=true;var p=pos(e);_ctx.beginPath();_ctx.moveTo(p.x,p.y);});
+  c.addEventListener('mousemove',function(e){if(!_drawing)return;var p=pos(e);_ctx.lineTo(p.x,p.y);_ctx.stroke();_sigDrawn=true;up();});
+  c.addEventListener('mouseup',function(){_drawing=false;});
+  c.addEventListener('touchstart',function(e){e.preventDefault();_drawing=true;var p=pos(e);_ctx.beginPath();_ctx.moveTo(p.x,p.y);},{passive:false});
+  c.addEventListener('touchmove',function(e){e.preventDefault();if(!_drawing)return;var p=pos(e);_ctx.lineTo(p.x,p.y);_ctx.stroke();_sigDrawn=true;up();},{passive:false});
+  c.addEventListener('touchend',function(){_drawing=false;});
+}
+function clearSig(){_ctx.clearRect(0,0,740,160);_sigDrawn=false;up();}
+initSig();
+
+// Validation
+var REQUIRED=['myName','myEmail','myPhone','myAddr','myDOB','ninNumber','myPrint'];
+function up(){
+  var missing=REQUIRED.filter(function(id){var el=document.getElementById(id);return !el||!el.value.trim();});
+  var acksOk=true;
+  for(var i=0;i<_ackCount;i++){var a=document.getElementById('ack'+i);if(!a||!a.checked){acksOk=false;break;}}
+  var allOk=!missing.length&&acksOk&&_sigDrawn&&_uploads.passport&&_uploads.nin;
+  document.getElementById('subBtn').disabled=!allOk;
+  var txt=document.getElementById('sbarTxt');
+  if(allOk){txt.textContent='\\u2713 Ready to submit';txt.className='sbar-txt ok';}
+  else{txt.textContent=missing.length+' required field(s) remaining';txt.className='sbar-txt';}
+}
+
+// Submit
+function submitConsent(){
+  var name   =document.getElementById('myName').value.trim();
+  var email  =document.getElementById('myEmail').value.trim();
+  var phone  =document.getElementById('myPhone').value.trim();
+  var addr   =document.getElementById('myAddr').value.trim();
+  var occ    =document.getElementById('myOcc').value.trim();
+  var rel    =document.getElementById('myRel').value.trim();
+  var dob    =document.getElementById('myDOB').value;
+  var nin    =document.getElementById('ninNumber').value.trim();
+  var print  =document.getElementById('myPrint').value.trim();
+  var sigDate=document.getElementById('sigDate').value;
+
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var initials=name.split(' ').map(function(w){return w[0]||'X';}).join('').slice(0,2).toUpperCase();
+  var rand=''; for(var i=0;i<6;i++) rand+=chars[Math.floor(Math.random()*chars.length)];
+  var code='` + (R.prefix||'REF') + `-'+new Date().getFullYear()+'-'+initials+rand;
+
+  var body='CONSENT FORM SUBMISSION\\n'
+    +'========================\\n'
+    +'Reference: '+code+'\\n'
+    +'Date: '+new Date().toLocaleString('en-NG')+'\\n\\n'
+    +'APPLICANT DETAILS\\n'
+    +'Tenant Name: ` + (d.applicantName||'—') + `\\n'
+    +'Property: ` + (d.property||'—') + `\\n'
+    +'Form Ref: ` + (d.refCode||'—') + `\\n\\n'
+    +'CONSENTOR DETAILS\\n'
+    +'Role: ` + R.title + `\\n'
+    +'Name: '+name+'\\n'
+    +'Email: '+email+'\\n'
+    +'Phone: '+phone+'\\n'
+    +'Address: '+addr+'\\n'
+    +'Occupation: '+occ+'\\n'
+    +'Relationship: '+rel+'\\n'
+    +'Date of Birth: '+dob+'\\n'
+    +'NIN Number: '+nin+'\\n'
+    +'Passport Photo: \\u2713 Uploaded\\n'
+    +'NIN Document: \\u2713 Uploaded\\n'
+    +'Signed By: '+print+'\\n'
+    +'Date Signed: '+sigDate+'\\n\\n'
+    +'All acknowledgements confirmed: YES\\n'
+    +'---\\nSubmitted via CRS Consent Form';
+
+  var subject=encodeURIComponent('[CRS] ` + R.title + ` Consent — '+name+' — ` + (d.applicantName||'Tenant') + ` — '+code);
+  var mailBody=encodeURIComponent(body);
+  window.open('mailto:crestechnologies@outlook.com?subject='+subject+'&body='+mailBody,'_blank');
+
+  document.getElementById('ssRef').textContent=code;
+  document.getElementById('ssMsg').innerHTML='Your consent as <strong>` + R.title + `</strong> for <strong>` + (d.applicantName||'the applicant') + `</strong> has been emailed to Crestechnologies IS Ltd. Thank you for completing this form.';
+  document.querySelectorAll('.card,.sbar').forEach(function(el){el.style.display='none';});
+  document.getElementById('successScreen').classList.add('on');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+`;
+}
+</script>
+</body>
+</html>
