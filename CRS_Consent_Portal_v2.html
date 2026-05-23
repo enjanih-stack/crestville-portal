@@ -678,15 +678,679 @@ window.addEventListener('DOMContentLoaded', () => {
   if (hash) {
     try { _payload = decompress(hash); populatePage(_payload); }
     catch(e) { showEmpty(); }
+  } else {
+    // No hash — show manual entry panel
+    showEmpty();
+    // Fix display: the panel needs flex
+    var mel = document.getElementById('manualEntryPanel');
+    if (mel) mel.style.display = 'flex';
+  }
+  setTimeout(() => document.getElementById('ls').classList.add('out'), 900);
+});
+
+function showEmpty() {
+  // Show manual entry panel for standalone use
+  document.getElementById('manualEntryPanel').style.display = 'block';
+  document.getElementById('mainContent').style.display = 'none';
+}
+
+function submitManualEntry() {
+  var role      = document.getElementById('me_role').value;
+  var appName   = document.getElementById('me_appName').value.trim();
+  var appEmail  = document.getElementById('me_appEmail').value.trim();
+  var property  = document.getElementById('me_property').value.trim();
+  var myName    = document.getElementById('me_myName').value.trim();
+  var myEmail   = document.getElementById('me_myEmail').value.trim();
+  var myPhone   = document.getElementById('me_myPhone').value.trim();
+  var refCode   = document.getElementById('me_refCode').value.trim();
+
+  if (!role || !appName || !myName) {
+    document.getElementById('meErr').textContent = 'Please fill in all required fields.';
+    return;
+  }
+
+  var payload = {
+    _role:         role,
+    _formType:     'Pre-Rental Application (Standalone)',
+    applicantName: appName,
+    applicantEmail:appEmail,
+    property:      property,
+    refCode:       refCode,
+    name:          myName,
+    email:         myEmail,
+    phone:         myPhone,
+    issuedAt:      new Date().toISOString()
+  };
+
+  document.getElementById('manualEntryPanel').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
+  populatePage(payload);
+}
+
+/* ═══ POPULATE PAGE ════════════════════════════════════════════ */
+function populatePage(d) {
+  _role = d._role || 'referee';
+  const R = ROLES[_role] || ROLES.referee;
+  // Show welcome screen first
+  showRoleWelcome(d);
+
+  // Applicant info
+  const name = d.applicantName || d.q1_name || d.tenantName || '—';
+  const prop = d.property || d.q21_apartments || d.propertyAddress || '—';
+  document.getElementById('appName').textContent = name;
+  document.getElementById('appProp').textContent = 'Unit: ' + prop;
+  document.getElementById('appAvatar').textContent = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('propUnit').textContent = prop;
+  document.getElementById('propApplicant').textContent = name;
+  document.getElementById('propRole').textContent = R.title;
+  document.getElementById('propFormType').textContent = d._formType || '—';
+
+  // Role UI
+  applyRoleUI(R);
+  buildAcks(R);
+
+  // Pre-fill details
+  document.getElementById('myName').value = d.name || d.r1_name || d.g1Name || d.tenantName || '';
+  document.getElementById('myEmail').value = d.email || d.r1_email || d.g1Email || d.tenantEmail || '';
+  document.getElementById('myPhone').value = d.phone || d.r1_phone || d.g1Mobile || d.tenantMobile || '';
+  document.getElementById('myAddr').value = d.addr || d.r1_addr || d.g1Office || d.tenantAddress || '';
+  document.getElementById('myOcc').value = d.occ || d.r1_occ || d.g1Occupation || d.tenantOccupation || '';
+  document.getElementById('myRel').value = d.rel || d.r1_rel || (_role === 'tenant' ? 'Tenant' : '');
+  document.getElementById('myRoleDisp').value = R.title;
+
+  // Extra fields for agent/witness
+  if (R.extraFields) {
+    document.getElementById('extraFields').style.display = 'block';
+    if (R.regLabel) document.getElementById('regLabel').textContent = R.regLabel;
+    if (R.orgLabel) document.getElementById('orgLabel').textContent = R.orgLabel;
+  }
+
+  window._payload = d;
+}
+
+function applyRoleUI(R) {
+  const banner = document.getElementById('roleBanner');
+  banner.className = 'role-banner ' + R.bannerClass;
+  document.getElementById('roleIcon').textContent = R.icon;
+  document.getElementById('roleTitle').textContent = R.title;
+  document.getElementById('roleSub').textContent = R.sub;
+  document.getElementById('docSub').textContent = R.docSub;
+  document.getElementById('docTitle').innerHTML = 'Consent &amp; Verification<br>Portal';
+  document.getElementById('myRoleDisp').value = R.title;
+
+  // Advisory
+  const box = document.getElementById('advisoryBox');
+  box.innerHTML = `<div class="advisory ${R.advClass}">
+    <div class="adv-head">${R.advHead}</div>
+    <div class="adv-body">${R.advisory}</div>
+  </div>`;
+}
+
+function buildAcks(R) {
+  const list = document.getElementById('ackList');
+  _ackIds = R.acks.map((text, i) => {
+    const id = 'ack_' + i;
+    const li = document.createElement('li');
+    li.className = 'ack-item';
+    li.innerHTML = `<input type="checkbox" id="${id}"/><label for="${id}">${text}</label>`;
+    list.appendChild(li);
+    return id;
+  });
+}
+
+/* ═══ SUBMIT CONSENT ═══════════════════════════════════════════ */
+async function submitConsent() {
+  const name = document.getElementById('myName').value.trim();
+  const email = document.getElementById('myEmail').value.trim();
+  const phone = document.getElementById('myPhone').value.trim();
+  const addr = document.getElementById('myAddr').value.trim();
+  const print = document.getElementById('myPrint').value.trim();
+
+  if (!name||!email||!phone||!addr) { toast('⚠ Fill all required fields'); return; }
+  if (!print) { toast('⚠ Print your full name in the signature section'); return; }
+  if (!_ackIds.every(id => document.getElementById(id)?.checked)) {
+    toast('⚠ Please confirm all acknowledgement items'); return;
+  }
+
+  const R = ROLES[_role] || ROLES.referee;
+  const d = _payload || {};
+  const applicantName = d.applicantName || d.q1_name || d.tenantName || '—';
+  const property = d.property || d.q21_apartments || d.propertyAddress || '—';
+  const formType = d._formType || '—';
+
+  // Generate share code
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const initials = name.split(' ').map(w=>w[0]||'X').join('').slice(0,2).toUpperCase();
+  let rand=''; for(let i=0;i<6;i++) rand+=chars[Math.floor(Math.random()*chars.length)];
+  const code = `${R.prefix}-${new Date().getFullYear()}-${initials}${rand}`;
+
+  // Email to crestechnologies@outlook.com ONLY
+  const htmlBody = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e0d8c8;border-radius:8px;overflow:hidden">
+      <div style="background:#0f0e0c;padding:18px 20px;text-align:center">
+        <h2 style="color:#c9960c;margin:0;font-size:18px">Crestechnologies IS Ltd</h2>
+        <p style="color:#888;font-size:12px;margin:4px 0 0">Crestville Properties — Consent Notification</p>
+      </div>
+      <div style="padding:22px;background:#faf8f4">
+        <h3 style="color:#1a5c2e;margin:0 0 14px">${R.title} Consent Confirmed</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888;width:140px">Reference Code</td><td style="padding:8px;font-weight:700;color:#c9960c;font-size:15px">${code}</td></tr>
+          <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Role</td><td style="padding:8px;font-weight:600">${R.title}</td></tr>
+          <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Full Name</td><td style="padding:8px">${name}</td></tr>
+          <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Email</td><td style="padding:8px">${email}</td></tr>
+          <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Phone</td><td style="padding:8px">${phone}</td></tr>
+          <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Address</td><td style="padding:8px">${addr}</td></tr>
+          <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Occupation</td><td style="padding:8px">${document.getElementById('myOcc').value||'—'}</td></tr>
+          <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Relationship</td><td style="padding:8px">${document.getElementById('myRel').value||'—'}</td></tr>
+          <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Applicant / Tenant</td><td style="padding:8px">${applicantName}</td></tr>
+          <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Property</td><td style="padding:8px">${property}</td></tr>
+          <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Form Type</td><td style="padding:8px">${formType}</td></tr>
+          <tr><td style="padding:8px;color:#888">Submitted</td><td style="padding:8px">${new Date().toLocaleString('en-GB')}</td></tr>
+        </table>
+      </div>
+      <div style="background:#0f0e0c;padding:10px 20px;text-align:center;font-size:11px;color:#888">
+        Crestechnologies IS Ltd · crestechnologies@outlook.com · Ojodu, Ogun State, Nigeria
+      </div>
+    </div>`;
+
+  // Send via Firebase (if SDK loaded)
+  if (typeof window.sendCRSEmail === 'function') {
+    window.sendCRSEmail(
+      'crestechnologies@outlook.com',
+      `[CRS ${R.prefix}] ${R.title} Consent — ${name} — ${code}`,
+      htmlBody
+    );
+  }
+
+  // Show success
+  document.getElementById('shareCodeDisplay').textContent = code;
+  document.getElementById('doneMsg').textContent =
+    `Thank you, ${name}. Your ${R.title.toLowerCase()} consent has been recorded and a notification sent to Crestechnologies IS Ltd.`;
+  showView('vDone');
+  toast('✓ Submitted! Code: ' + code, 5000);
+}
+
+/* ═══ DECLINE ═══════════════════════════════════════════════════ */
+function declineConsent() {
+  if (!confirm('Are you sure you want to decline? This will be recorded.')) return;
+  const name = document.getElementById('myName').value.trim() || 'Unknown';
+  const R = ROLES[_role] || ROLES.referee;
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let rand=''; for(let i=0;i<4;i++) rand+=chars[Math.floor(Math.random()*chars.length)];
+  const code = `DCL-${new Date().getFullYear()}-${rand}`;
+  document.getElementById('declineRef').textContent = code;
+
+  if (typeof window.sendCRSEmail === 'function') {
+    const d = _payload || {};
+    const applicantName = d.applicantName || d.q1_name || d.tenantName || '—';
+    window.sendCRSEmail(
+      'crestechnologies@outlook.com',
+      `[CRS DECLINED] ${R.title} Consent Declined — ${name} — ${code}`,
+      `<h3>Consent Declined</h3><p>Role: ${R.title}</p><p>Name: ${name}</p><p>Applicant: ${applicantName}</p><p>Code: ${code}</p><p>Time: ${new Date().toLocaleString('en-GB')}</p>`
+    );
+  }
+  showView('vDeclined');
+}
+
+/* ═══ SIGNATURE ═════════════════════════════════════════════════ */
+function sigTab(mode, btn) {
+  document.getElementById('drawPanel').classList.toggle('on', mode==='draw');
+  document.getElementById('uploadPanel').classList.toggle('on', mode==='upload');
+  document.querySelectorAll('.sig-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+}
+function handleUpload(inp) {
+  const file=inp.files[0]; if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    const prev=document.getElementById('sigPrev');
+    prev.src=e.target.result; prev.style.display='block';
+    document.querySelector('#upArea .up-icon').style.display='none';
+    document.querySelector('#upArea p').style.display='none';
+    _sigData=e.target.result;
+    document.getElementById('sigStatus').textContent='✓ Signature uploaded';
+  };
+  r.readAsDataURL(file);
+}
+function clearSig() {
+  const c=document.getElementById('sigCanvas');
+  c.getContext('2d').clearRect(0,0,c.width,c.height);
+  const pr=document.getElementById('sigPrev'); pr.src=''; pr.style.display='none';
+  document.querySelector('#upArea .up-icon').style.display='';
+  document.querySelector('#upArea p').style.display='';
+  document.getElementById('sigStatus').textContent='Sign or upload above';
+  _sigData=null;
+}
+function initCanvas() {
+  const c=document.getElementById('sigCanvas');
+  if(!c)return;
+  const ctx=c.getContext('2d');
+  const rsz=()=>{const r=c.getBoundingClientRect(),dpr=window.devicePixelRatio||1;c.width=r.width*dpr;c.height=r.height*dpr;ctx.scale(dpr,dpr);ctx.strokeStyle='#111';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';};
+  rsz();
+  let on=false,lx=0,ly=0;
+  const gp=e=>{const r=c.getBoundingClientRect(),s=e.touches?e.touches[0]:e;return{x:s.clientX-r.left,y:s.clientY-r.top};};
+  c.addEventListener('mousedown',e=>{on=true;const p=gp(e);lx=p.x;ly=p.y;});
+  c.addEventListener('mousemove',e=>{if(!on)return;const p=gp(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();lx=p.x;ly=p.y;});
+  ['mouseup','mouseleave'].forEach(ev=>c.addEventListener(ev,()=>on=false));
+  c.addEventListener('touchstart',e=>{e.preventDefault();on=true;const p=gp(e);lx=p.x;ly=p.y;},{passive:false});
+  c.addEventListener('touchmove',e=>{if(!on)return;e.preventDefault();const p=gp(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();lx=p.x;ly=p.y;},{passive:false});
+  c.addEventListener('touchend',()=>on=false);
+}
+
+/* ═══ VIEWS & TOAST ═════════════════════════════════════════════ */
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  window.scrollTo(0,0);
+}
+let _tt;
+function toast(m,d=3400){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('on'),d);}
+</script>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+import { initializeApp }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, addDoc }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyAiQ7q1qbwx1i_qjVFaTSJIeb9yneMT21U",
+  authDomain:        "solarappform.firebaseapp.com",
+  projectId:         "solarappform",
+  storageBucket:     "solarappform.firebasestorage.app",
+  messagingSenderId: "298700249528",
+  appId:             "1:298700249528:web:85f6a70780da9479f1174d"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+window.sendCRSEmail = async (to, subject, html) => {
+  try {
+    await addDoc(collection(db, 'mail'), {
+      to: Array.isArray(to) ? to : [to],
+      message: { subject, html }
+    });
+    return true;
+  } catch(e) { console.error('Email error:', e); return false; }
+};
+
+/* ── ROLE WELCOME SCREEN ── */
+function showRoleWelcome(payload) {
+  var role = payload._role || 'referee';
+  var R = ROLES[role] || ROLES.referee;
+  var appName = payload.applicantName || payload.q1_name || payload.name || '—';
+  var unit = payload.property || payload.q21_apartments || '—';
+
+  // Role badge colours
+  var badgeColors = {
+    referee:   'background:rgba(30,58,95,.4);color:#4a9eff;border:1px solid rgba(74,158,255,.3)',
+    guarantor: 'background:rgba(140,31,31,.3);color:#e05c5c;border:1px solid rgba(224,92,92,.3)',
+    witness:   'background:rgba(26,92,46,.3);color:#4aaf6e;border:1px solid rgba(74,175,110,.3)',
+    agent:     'background:rgba(201,150,12,.2);color:#e8b422;border:1px solid rgba(232,180,34,.3)',
+    landlord:  'background:rgba(74,175,110,.2);color:#4aaf6e;border:1px solid rgba(74,175,110,.3)',
+    tenant:    'background:rgba(201,150,12,.2);color:#e8b422;border:1px solid rgba(232,180,34,.3)'
+  };
+
+  var el = function(id) { return document.getElementById(id); };
+  var badge = el('rwBadge');
+  if (badge) { badge.textContent = R.title; badge.style.cssText = badgeColors[role] || badgeColors.referee; }
+  var icon = el('rwIcon'); if (icon) icon.textContent = R.icon || '👤';
+  var title = el('rwTitle'); if (title) title.textContent = 'You have been listed as a ' + R.title;
+  var sub = el('rwSub'); if (sub) sub.textContent = 'For a tenancy application by ' + appName + ' with Crestechnologies IS Ltd';
+  var av = el('rwAvatar'); if (av) av.textContent = appName.split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase() || '??';
+  var nm = el('rwAppName'); if (nm) nm.textContent = appName;
+  var dt = el('rwAppDetail'); if (dt) dt.textContent = 'Property: ' + unit + ' — Crestville Properties';
+
+  document.getElementById('roleWelcome').style.display = 'flex';
+}
+
+function proceedToConsent() {
+  document.getElementById('roleWelcome').style.display = 'none';
+}
+
+</script>
+
+</body>
+
+<!-- ═══ STANDALONE MANUAL ENTRY PANEL ═══ -->
+<div id="manualEntryPanel" style="display:none;min-height:100vh;background:linear-gradient(135deg,#0a0908,#141210);align-items:center;justify-content:center;padding:24px;flex-direction:column">
+  <div style="background:linear-gradient(135deg,#1a1612,#0f0e0c);border:1px solid #2a2620;border-top:3px solid var(--gold);border-radius:14px;max-width:520px;width:100%;padding:32px 28px;box-shadow:0 32px 80px rgba(0,0,0,.6)">
+
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:2rem;margin-bottom:10px">📋</div>
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:6px">Consent & Advisory Form</div>
+      <div style="font-size:.82rem;color:#9a8a6a;line-height:1.6">Crestechnologies IS Ltd — Crestville Properties<br>Complete the details below to proceed to your consent form</div>
+    </div>
+
+    <!-- YOUR ROLE -->
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#9a8a6a;margin-bottom:5px">Your Role in this Application *</label>
+      <select id="me_role" style="width:100%;padding:11px 13px;border:1px solid #2a2620;border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;background:#1a1612;color:#fff;font-size:.9rem;font-family:inherit;outline:none">
+        <option value="">— Select your role —</option>
+        <option value="referee">Character Referee</option>
+        <option value="guarantor">Financial Guarantor</option>
+        <option value="witness">Witness</option>
+        <option value="landlord">Previous Landlord / Reference Provider</option>
+        <option value="agent">Agent</option>
+        <option value="tenant">Tenant</option>
+      </select>
+    </div>
+
+    <div style="border-top:1px solid #2a2620;margin:16px 0;padding-top:14px">
+      <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;opacity:.8">About the Applicant / Tenant</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <label style="display:block;font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9a8a6a;margin-bottom:4px">Tenant Full Name *</label>
+          <input type="text" id="me_appName" placeholder="Applicant's name" style="width:100%;padding:9px 11px;border:1px solid #2a2620;border-bottom:2px solid var(--gold);border-radius:4px 4px 0 0;background:#1a1612;color:#fff;font-size:.85rem;font-family:inherit;outline:none"/>
+        </div>
+        <div>
+          <label style="display:block;font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9a8a6a;margin-bottom:4px">Tenant Email</label>
+          <input type="email" id="me_appEmail" placeholder="tenant@email.com" style="width:100%;padding:9px 11px;border:1px solid #2a2620;border-bottom:2px solid var(--gold);border-radius:4px 4px 0 0;background:#1a1612;color:#fff;font-size:.85rem;font-family:inherit;outline:none"/>
+        </div>
+      </div>
+      <div>
+        <label style="display:block;font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9a8a6a;margin-bottom:4px">Property / Unit</label>
+        <input type="text" id="me_property" placeholder="e.g. 2BDR Flat 1A, 11 Jibewa Somorin Close, Ojodu" style="width:100%;padding:9px 11px;border:1px solid #2a2620;border-bottom:2px solid var(--gold);border-radius:4px 4px 0 0;background:#1a1612;color:#fff;font-size:.85rem;font-family:inherit;outline:none"/>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid #2a2620;margin:16px 0;padding-top:14px">
+      <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;opacity:.8">Your Details</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <label style="display:block;font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9a8a6a;margin-bottom:4px">Your Full Name *</label>
+          <input type="text" id="me_myName" placeholder="Your legal name" style="width:100%;padding:9px 11px;border:1px solid #2a2620;border-bottom:2px solid var(--gold);border-radius:4px 4px 0 0;background:#1a1612;color:#fff;font-size:.85rem;font-family:inherit;outline:none"/>
+        </div>
+        <div>
+          <label style="display:block;font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9a8a6a;margin-bottom:4px">Your Email</label>
+          <input type="email" id="me_myEmail" placeholder="your@email.com" style="width:100%;padding:9px 11px;border:1px solid #2a2620;border-bottom:2px solid var(--gold);border-radius:4px 4px 0 0;background:#1a1612;color:#fff;font-size:.85rem;font-family:inherit;outline:none"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="display:block;font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9a8a6a;margin-bottom:4px">Your Phone</label>
+          <input type="tel" id="me_myPhone" placeholder="+234..." style="width:100%;padding:9px 11px;border:1px solid #2a2620;border-bottom:2px solid var(--gold);border-radius:4px 4px 0 0;background:#1a1612;color:#fff;font-size:.85rem;font-family:inherit;outline:none"/>
+        </div>
+        <div>
+          <label style="display:block;font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9a8a6a;margin-bottom:4px">Reference Code (if given)</label>
+          <input type="text" id="me_refCode" placeholder="e.g. CRS-KYT-A3F9K2" style="width:100%;padding:9px 11px;border:1px solid #2a2620;border-bottom:2px solid var(--gold);border-radius:4px 4px 0 0;background:#1a1612;color:#fff;font-size:.85rem;font-family:inherit;outline:none"/>
+        </div>
+      </div>
+    </div>
+
+    <div id="meErr" style="font-size:.78rem;color:#e05c5c;text-align:center;margin-bottom:10px;min-height:18px"></div>
+
+    <button onclick="submitManualEntry()" style="width:100%;padding:14px;background:linear-gradient(135deg,#7a5800,#c9960c,#e8b422);color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.04em;box-shadow:0 4px 16px rgba(201,150,12,.3)">
+      Continue to Consent Form →
+    </button>
+
+    <div style="margin-top:14px;text-align:center;font-size:.74rem;color:#5a4e44;line-height:1.7">
+      If you received a link by email, please use that link instead of this form.<br>
+      <a href="mailto:crestechnologies@outlook.com" style="color:var(--gold)">crestechnologies@outlook.com</a> &nbsp;·&nbsp; Crestechnologies IS Ltd &nbsp;·&nbsp; RC 1643396
+    </div>
+  </div>
+</div>
+
+<div id="mainContent">
+</div>
+<script>
+'use strict';
+
+/* ═══ ROLE DEFINITIONS ═══════════════════════════════════════════ */
+const ROLES = {
+  referee: {
+    icon: '👤',
+    title: 'Character Referee',
+    sub: 'You have been named as a Character Referee for the tenant below.',
+    bannerClass: 'role-referee',
+    advClass: 'adv-referee',
+    advHead: '📋 Referee Advisory — Please Read Carefully',
+    docSub: 'Referee Consent & Verification',
+    prefix: 'REF',
+    advisory: `
+      <p>You have been listed as a <strong style="color:var(--blue)">character or professional referee</strong> for the above-named tenant. By confirming consent, you acknowledge:</p>
+      <ul>
+        <li>You know the applicant personally or professionally and can attest to their character and reliability.</li>
+        <li>Information you provide will be used solely to evaluate the tenancy application.</li>
+        <li>You may be contacted by Crestechnologies IS Ltd to verify details provided.</li>
+        <li>Providing false references may expose you to civil liability.</li>
+      </ul>
+      <div class="con-box">
+        <h4>⚠ Your Responsibilities as Referee</h4>
+        <ul>
+          <li>You may be contacted at any time during the tenancy for verification.</li>
+          <li>Knowingly false information that causes loss to the landlord may result in civil action against you.</li>
+          <li>Your name, occupation, and contact details will be recorded in the tenancy file.</li>
+          <li>You are expected to notify Crestechnologies IS Ltd of any significant breach by the tenant.</li>
+        </ul>
+      </div>
+      <p><span class="ok">✓ Financial liability:</span> As a referee, you are <strong>NOT financially responsible</strong> for rent arrears or damages. Your role is character attestation only.</p>`,
+    acks: [
+      'I confirm I personally know the applicant and can attest to their character and reliability.',
+      'I understand I may be contacted by Crestechnologies IS Ltd to verify information.',
+      'I confirm all information I provide is truthful and accurate to the best of my knowledge.',
+      'I acknowledge that providing <strong>false references may expose me to civil liability</strong>.',
+      'I agree to notify Crestechnologies IS Ltd if I become aware of any significant breach by the tenant.',
+    ]
+  },
+
+  guarantor: {
+    icon: '⚖️',
+    title: 'Financial Guarantor',
+    sub: 'You have been named as a Financial Guarantor. This is a legally binding obligation — please read carefully.',
+    bannerClass: 'role-guarantor',
+    advClass: 'adv-guarantor',
+    advHead: '⚖ Guarantor Legal Notice — Read Very Carefully Before Signing',
+    docSub: 'Guarantor Consent — Legal Notice',
+    prefix: 'GTR',
+    advisory: `
+      <p>You have been listed as a <strong>financial guarantor</strong> for the above-named tenant. This is a <strong>legally binding obligation</strong> under Nigerian law.</p>
+      <div class="con-box">
+        <h4>⚠ Consequences of Consent as Guarantor</h4>
+        <ul>
+          <li><strong>Financial Liability:</strong> You are jointly and severally liable for all rent arrears, unpaid utility bills, and damages caused by the tenant.</li>
+          <li><strong>Direct Pursuit:</strong> The Landlord may pursue you directly without first exhausting remedies against the tenant.</li>
+          <li><strong>Legal Action:</strong> Non-payment of guaranteed debts may result in court judgments against you.</li>
+          <li><strong>Asset Risk:</strong> Court orders may be sought against your assets to recover losses.</li>
+          <li><strong>Duration:</strong> Your guarantee covers the full tenancy period and any renewals unless formally released in writing.</li>
+          <li><strong>Notification Duty:</strong> You must inform the Landlord promptly if you know the tenant intends to vacate or abandon the property.</li>
+        </ul>
+      </div>
+      <p>By proceeding, you confirm you have had the opportunity to take <strong>independent legal advice</strong> and fully understand your obligations.</p>`,
+    acks: [
+      'I fully understand I am entering into a <strong>legally binding guarantee agreement</strong> with the Landlord.',
+      'I accept that I am <strong>jointly and severally liable</strong> for all rent arrears, damages, and unpaid bills by the tenant.',
+      'I understand the Landlord may pursue me directly for debts without first seeking them from the tenant.',
+      'I confirm I have had the opportunity to seek <strong>independent legal advice</strong> before signing.',
+      'I understand my guarantee obligation covers the <strong>full tenancy period and any renewals</strong> unless released in writing.',
+      'I accept that failure to meet my obligations may result in <strong>court action and potential asset seizure</strong>.',
+      'I agree to promptly notify Crestechnologies IS Ltd if I become aware of the tenant abandoning or vacating the property.',
+    ]
+  },
+
+  witness: {
+    icon: '🧑‍⚖️',
+    title: 'Tenancy Agreement Witness',
+    sub: 'You have been named as a Witness to a tenancy agreement. Your role is to confirm the signing was done freely and voluntarily.',
+    bannerClass: 'role-witness',
+    advClass: 'adv-witness',
+    advHead: '🧑‍⚖️ Witness Advisory — Your Legal Role',
+    docSub: 'Witness Consent & Attestation',
+    prefix: 'WIT',
+    advisory: `
+      <p>You have been asked to act as a <strong style="color:var(--green)">witness to a tenancy agreement</strong> between the tenant above and Crestechnologies IS Ltd (Crestville Properties).</p>
+      <ul>
+        <li>As a witness, you attest that the signing parties signed the agreement <strong>freely, willingly, and in your presence</strong>.</li>
+        <li>You confirm you are <strong>not a party to the agreement</strong> and have no personal financial interest in it.</li>
+        <li>Your signature confirms the authenticity of the execution of the agreement.</li>
+        <li>You must be <strong>18 years or older</strong> and of sound mind at the time of witnessing.</li>
+      </ul>
+      <div class="con-box">
+        <h4>⚠ Witness Responsibilities</h4>
+        <ul>
+          <li>You may be called upon to confirm the circumstances of signing if the agreement is later disputed.</li>
+          <li>Providing a false witness statement is a criminal offence under Nigerian law.</li>
+          <li>Your contact details will be recorded in the tenancy agreement for reference purposes.</li>
+        </ul>
+      </div>
+      <p><span class="ok">✓ Financial liability:</span> As a witness, you have <strong>NO financial liability</strong> for the tenant's obligations. Your role is attestation of signing only.</p>`,
+    acks: [
+      'I confirm I was present and witnessed the signing of the tenancy agreement by the parties involved.',
+      'I attest that the parties signed <strong>freely, willingly, and without coercion</strong>.',
+      'I confirm I am not a party to the agreement and have no personal financial interest in it.',
+      'I am 18 years or older and of sound mind at the time of this attestation.',
+      'I understand I may be contacted to confirm the circumstances of signing if the agreement is disputed.',
+      'I acknowledge that <strong>providing a false witness statement is a criminal offence</strong>.',
+    ],
+    extraFields: true,
+    regLabel: 'ID / NIN Number',
+    orgLabel: 'Place of Work / Institution',
+  },
+
+  agent: {
+    icon: '🤝',
+    title: 'Letting Agent / Property Agent',
+    sub: 'You have been named as the letting agent or property agent for this tenancy. Please confirm your details and professional capacity.',
+    bannerClass: 'role-agent',
+    advClass: 'adv-agent',
+    advHead: '🤝 Agent Advisory — Professional Duties & Responsibilities',
+    docSub: 'Agent Consent & Professional Confirmation',
+    prefix: 'AGT',
+    advisory: `
+      <p>You have been named as the <strong style="color:#7a5a00">letting or property agent</strong> facilitating this tenancy with Crestechnologies IS Ltd (Crestville Properties).</p>
+      <ul>
+        <li>You confirm you are acting in a <strong>professional capacity</strong> as a licensed or authorised property agent.</li>
+        <li>You confirm you have carried out appropriate <strong>due diligence</strong> on the tenant and the property.</li>
+        <li>You agree to comply with all applicable property letting regulations and codes of conduct.</li>
+        <li>You confirm full and accurate disclosure of all material facts relating to this tenancy.</li>
+      </ul>
+      <div class="con-box">
+        <h4>⚠ Agent Responsibilities</h4>
+        <ul>
+          <li>You are responsible for ensuring all tenancy documentation is complete and accurate.</li>
+          <li>Any misrepresentation or fraudulent disclosure may result in civil or criminal liability.</li>
+          <li>You must disclose any conflict of interest relating to this transaction.</li>
+          <li>Your details will be recorded in the tenancy file as the appointed agent.</li>
+        </ul>
+      </div>`,
+    acks: [
+      'I confirm I am acting as a professional letting/property agent for this tenancy.',
+      'I confirm I have carried out <strong>appropriate due diligence</strong> on the tenant and the property.',
+      'I confirm all information and documentation I have provided is <strong>accurate and complete</strong>.',
+      'I have no undisclosed conflict of interest in relation to this tenancy transaction.',
+      'I understand that <strong>misrepresentation or fraud may result in civil or criminal liability</strong>.',
+      'I agree to comply with all applicable property letting regulations and professional codes of conduct.',
+    ],
+    extraFields: true,
+    regLabel: 'Agent Licence / Registration No.',
+    orgLabel: 'Agency / Company Name',
+  },
+
+  tenant: {
+    icon: '🏠',
+    title: 'Tenant Acknowledgement',
+    sub: 'You have been asked to acknowledge and confirm the terms of your tenancy agreement with Crestechnologies IS Ltd.',
+    bannerClass: 'role-tenant',
+    advClass: 'adv-tenant',
+    advHead: '🏠 Tenant Advisory — Your Rights & Obligations',
+    docSub: 'Tenant Consent & Acknowledgement',
+    prefix: 'TEN',
+    advisory: `
+      <p>You are being asked to formally <strong style="color:var(--purple)">acknowledge your tenancy agreement</strong> with Crestechnologies IS Ltd (Crestville Properties).</p>
+      <ul>
+        <li>You confirm you have read and understood the full tenancy agreement including all clauses.</li>
+        <li>You accept all obligations including timely payment of rent, utility bills, and caution deposit.</li>
+        <li>You acknowledge <strong>Clause X</strong> — your obligation to vacate upon expiry or termination of the tenancy.</li>
+        <li>You confirm all information provided in your tenancy application is true and accurate.</li>
+      </ul>
+      <div class="con-box">
+        <h4>⚠ Key Tenant Obligations</h4>
+        <ul>
+          <li>Pay all rent, service charges, and utility bills on time as agreed.</li>
+          <li>Vacate and surrender vacant possession on or before the tenancy expiry date.</li>
+          <li>Maintain the property in good condition and report damages promptly.</li>
+          <li>Not sublet or make alterations without prior written consent from the Landlord.</li>
+          <li>Comply with all estate rules, service charges, and community regulations.</li>
+        </ul>
+      </div>`,
+    acks: [
+      'I confirm I have read and understood the full tenancy agreement including all clauses.',
+      'I accept my obligation to pay rent, utility bills, and the caution deposit as agreed.',
+      'I acknowledge <strong>Clause X</strong> — I must vacate and surrender the property on or before the tenancy expiry date.',
+      'I confirm all information in my tenancy application is <strong>true, accurate, and complete</strong>.',
+      'I agree to maintain the property in good condition and comply with all estate rules.',
+      'I will not sublet or make alterations without prior written consent from the Landlord.',
+    ]
+  }
+};
+
+/* ═══ GLOBALS ═══════════════════════════════════════════════════ */
+let _payload = null, _sigData = null, _role = 'referee', _ackIds = [];
+
+/* ═══ COMPRESS / DECOMPRESS ════════════════════════════════════ */
+function decompress(b64) {
+  const std = b64.replace(/-/g,'+').replace(/_/g,'/');
+  const bin = atob(std); const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return JSON.parse(pako.inflate(bytes,{to:'string'}));
+}
+function compress(obj) {
+  const json = JSON.stringify(obj);
+  const bytes = pako.deflate(json,{level:9});
+  let b=''; for(let i=0;i<bytes.length;i++) b+=String.fromCharCode(bytes[i]);
+  return btoa(b).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+/* ═══ BOOT ══════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('myDate').value = new Date().toISOString().split('T')[0];
+  initCanvas();
+  const hash = location.hash.slice(1);
+  if (hash) {
+    try { _payload = decompress(hash); populatePage(_payload); }
+    catch(e) { showEmpty(); }
   } else { showEmpty(); }
   setTimeout(() => document.getElementById('ls').classList.add('out'), 900);
 });
 
 function showEmpty() {
-  document.getElementById('appName').textContent = 'No data received';
-  const def = ROLES.referee;
-  applyRoleUI(def);
-  buildAcks(def);
+  // Show manual entry panel for standalone use
+  document.getElementById('manualEntryPanel').style.display = 'block';
+  document.getElementById('mainContent').style.display = 'none';
+}
+
+function submitManualEntry() {
+  var role      = document.getElementById('me_role').value;
+  var appName   = document.getElementById('me_appName').value.trim();
+  var appEmail  = document.getElementById('me_appEmail').value.trim();
+  var property  = document.getElementById('me_property').value.trim();
+  var myName    = document.getElementById('me_myName').value.trim();
+  var myEmail   = document.getElementById('me_myEmail').value.trim();
+  var myPhone   = document.getElementById('me_myPhone').value.trim();
+  var refCode   = document.getElementById('me_refCode').value.trim();
+
+  if (!role || !appName || !myName) {
+    document.getElementById('meErr').textContent = 'Please fill in all required fields.';
+    return;
+  }
+
+  var payload = {
+    _role:         role,
+    _formType:     'Pre-Rental Application (Standalone)',
+    applicantName: appName,
+    applicantEmail:appEmail,
+    property:      property,
+    refCode:       refCode,
+    name:          myName,
+    email:         myEmail,
+    phone:         myPhone,
+    issuedAt:      new Date().toISOString()
+  };
+
+  document.getElementById('manualEntryPanel').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
+  populatePage(payload);
 }
 
 /* ═══ POPULATE PAGE ════════════════════════════════════════════ */
