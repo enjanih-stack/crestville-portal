@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Tenancy Renewal Request — Crestville Properties</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+<style>
+
+:root{--ink:#0f0e0c;--cream:#faf8f4;--gold:#c9960c;--gl:#e8b422;--bg:#f4f1ea;--card:#fff;--rule:#e0d8c8;--dim:#8a7a60;--red:#8c1f1f;--green:#1a5c2e;--gold-bg:#fffdf0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.55}
+/* HEADER */
+.hdr{background:var(--ink);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--gold)}
+.hdr-left{display:flex;align-items:center;gap:14px}
+.logo{width:52px;height:52px;border-radius:50%;border:2px solid var(--gold);object-fit:cover}
+.co-name{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.1rem;font-weight:700;color:#fff}
+.co-sub{font-size:.58rem;color:var(--gold);letter-spacing:.14em;text-transform:uppercase;margin-top:2px}
+.hdr-right{text-align:right}
+.form-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:1rem;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.06em}
+.form-sub{font-size:.58rem;color:var(--gold);letter-spacing:.16em;text-transform:uppercase;margin-top:2px}
+.hdr-bar{background:#1a1612;padding:8px 28px;display:flex;justify-content:space-between;font-size:.68rem;color:#7a6e62;border-bottom:1px solid #2a2620;flex-wrap:wrap;gap:6px}
+/* PROGRESS */
+.prog-wrap{background:#e8e2d8;height:4px;position:relative}
+.prog-bar{height:100%;background:linear-gradient(90deg,var(--gold),var(--gl));transition:width .4s ease;width:0%}
+.prog-label{position:absolute;right:10px;top:-18px;font-size:.62rem;font-weight:700;color:var(--gold);letter-spacing:.08em}
+/* FORM WRAPPER */
+.form-wrap{max-width:860px;margin:28px auto;padding:0 16px 60px}
+/* CARD */
+.card{background:var(--card);border:1px solid var(--rule);border-radius:10px;margin-bottom:20px;overflow:hidden}
+.card-head{background:linear-gradient(135deg,var(--ink),#1a1612);padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:2px solid var(--gold)}
+.card-num{width:30px;height:30px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:#fff;flex-shrink:0}
+.card-head h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:1rem;font-weight:700;color:#fff;letter-spacing:.03em}
+.card-body{padding:20px}
+/* FORM FIELDS */
+.fr{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+.fg{flex:1;min-width:200px;display:flex;flex-direction:column;gap:4px}
+.fg.full{flex:1 1 100%}
+.lbl{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.lbl .req{color:var(--red);margin-left:2px}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-size:.88rem;font-family:inherit;background:var(--card);color:var(--ink);outline:none;transition:border-color .18s}
+input:focus,select:focus,textarea:focus{border-bottom-color:var(--gl);background:var(--gold-bg)}
+select{cursor:pointer}
+textarea{resize:vertical;min-height:90px}
+/* INFO BOX */
+.info{background:var(--gold-bg);border-left:3px solid var(--gold);padding:11px 14px;border-radius:0 6px 6px 0;font-size:.82rem;color:#5a4000;line-height:1.65;margin-bottom:14px}
+.notice{background:#fff8f8;border-left:3px solid var(--red);padding:11px 14px;border-radius:0 6px 6px 0;font-size:.82rem;color:#5c1a1a;line-height:1.65;margin-bottom:14px}
+/* SIGNATURE */
+.sig-wrap{border:1.5px dashed var(--rule);border-radius:6px;background:var(--cream);overflow:hidden;position:relative}
+.sig-wrap canvas{display:block;touch-action:none}
+.sig-btns{display:flex;justify-content:flex-end;padding:6px 10px;border-top:1px solid var(--rule);background:#faf8f4}
+.sig-clear{background:none;border:1px solid var(--rule);border-radius:4px;padding:4px 12px;font-size:.74rem;color:var(--dim);cursor:pointer;font-family:inherit}
+.sig-clear:hover{border-color:var(--red);color:var(--red)}
+/* STICKY BAR */
+.sbar{position:fixed;bottom:0;left:0;right:0;background:var(--ink);border-top:2px solid var(--gold);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;z-index:100;gap:12px;flex-wrap:wrap}
+.sbar-status{font-size:.78rem;color:#9a8a6a}
+.sbar-status.ok{color:#4aaf6e}
+.btn-submit{background:linear-gradient(135deg,#1a5c2e,#2e8c4a);color:#fff;border:none;padding:11px 28px;border-radius:6px;font-size:.92rem;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:all .2s}
+.btn-submit:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(26,92,46,.4)}
+.btn-submit:disabled{opacity:.5;cursor:not-allowed;transform:none}
+/* SUCCESS */
+#successScreen{display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0a0908,#141210);align-items:center;justify-content:center;padding:24px}
+#successScreen.on{display:flex}
+.ss-card{background:linear-gradient(135deg,#1a1612,#0f0e0c);border:1px solid #2a2620;border-top:3px solid var(--gold);border-radius:14px;max-width:540px;width:100%;padding:36px 32px;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.6)}
+.ss-icon-ring{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#1a5c2e,#4aaf6e);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 0 0 14px rgba(74,175,110,.1);animation:pop-in .6s cubic-bezier(.175,.885,.32,1.275) forwards}
+@keyframes pop-in{from{transform:scale(0)}to{transform:scale(1)}}
+.ss-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:8px}
+.ss-ref{font-size:.78rem;color:var(--gold);letter-spacing:.14em;font-weight:700;margin-bottom:16px;background:rgba(201,150,12,.1);border:1px solid rgba(201,150,12,.2);border-radius:20px;display:inline-block;padding:4px 16px}
+.ss-msg{font-size:.84rem;color:#9a8a6a;line-height:1.75;margin-bottom:24px}
+.ss-actions{display:flex;flex-direction:column;gap:10px}
+.ss-btn{padding:13px 20px;border-radius:8px;font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
+.ss-btn-primary{background:linear-gradient(135deg,#7a5800,var(--gold),var(--gl));color:#fff;border:none;box-shadow:0 4px 16px rgba(201,150,12,.3)}
+.ss-btn-secondary{background:rgba(255,255,255,.06);color:#e8dfc8;border:1px solid rgba(255,255,255,.1)}
+.ss-btn-close{background:none;color:#7a6e62;border:1px solid rgba(255,255,255,.06);font-size:.82rem}
+.ss-note{margin-top:20px;font-size:.72rem;color:#5a4e44;line-height:1.8}
+
+.renew-terms{background:var(--cream);border:1px solid var(--rule);border-radius:6px;padding:14px 16px;font-size:.8rem;color:var(--dim);line-height:1.8;max-height:160px;overflow-y:auto;margin-bottom:12px}
+.renew-terms p{margin-bottom:8px}
+.duration-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.dur-card{border:1.5px solid var(--rule);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .2s;text-align:center;background:var(--card)}
+.dur-card:hover{border-color:var(--gold);background:var(--gold-bg)}
+.dur-card.active{border-color:var(--gold);background:var(--gold-bg);box-shadow:0 0 0 3px rgba(201,150,12,.15)}
+.dur-label{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.1rem;font-weight:700;color:var(--ink)}
+.dur-sub{font-size:.7rem;color:var(--dim);margin-top:2px}
+.clause-box{background:#fff8f8;border:1px solid rgba(140,31,31,.2);border-radius:6px;padding:14px 16px;font-size:.8rem;color:#4a1a1a;line-height:1.75;margin-bottom:14px}
+.clause-box strong{color:var(--red)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <img class="logo" src="data:image/jpeg;base64,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" alt="CRS"/>
+    <div>
+      <div class="co-name">Crestechnologies IS Ltd</div>
+      <div class="co-sub">RC 1643396 &middot; CRESTVILLE PROPERTIES</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="form-title" id="formTitle">e-Form</div>
+    <div class="form-sub" id="formSub">CRESTVILLE PROPERTIES</div>
+  </div>
+</div>
+<div class="hdr-bar">
+  <span>&#127968; Crestechnologies IS Ltd &mdash; Crestville Properties</span>
+  <span>&#128205; Ojodu, Ogun State, Nigeria</span>
+  <span>&#9993; crestechnologies@outlook.com</span>
+</div>
+
+<div class="prog-wrap"><div class="prog-bar" id="progBar"><span class="prog-label" id="progPct">0%</span></div></div>
+
+<div class="form-wrap">
+
+<!-- ── SECTION A: TENANT DETAILS ── -->
+<div class="card">
+  <div class="card-head"><div class="card-num">A</div><h2>Tenant Details</h2></div>
+  <div class="card-body">
+    <div class="info">Please complete all sections accurately. This form constitutes a formal request to renew your tenancy with Crestechnologies IS Ltd (Crestville Properties).</div>
+    <div class="fr">
+      <div class="fg"><label class="lbl">Full Legal Name <span class="req">*</span></label><input type="text" id="tenantName" placeholder="As on your tenancy agreement" oninput="up()"/></div>
+      <div class="fg"><label class="lbl">Email Address <span class="req">*</span></label><input type="email" id="tenantEmail" placeholder="your@email.com" oninput="up()"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="lbl">Phone Number <span class="req">*</span></label><input type="tel" id="tenantPhone" placeholder="+234…" oninput="up()"/></div>
+      <div class="fg"><label class="lbl">Alternate Phone</label><input type="tel" id="tenantPhone2" placeholder="+234…"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="lbl">Occupation / Employer</label><input type="text" id="tenantOcc" placeholder="Current employer or occupation"/></div>
+      <div class="fg"><label class="lbl">National ID / BVN (last 4 digits)</label><input type="text" id="tenantId" placeholder="e.g. 1234" maxlength="4"/></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION B: PROPERTY DETAILS ── -->
+<div class="card">
+  <div class="card-head"><div class="card-num">B</div><h2>Property &amp; Current Tenancy</h2></div>
+  <div class="card-body">
+    <div class="fr">
+      <div class="fg"><label class="lbl">Property / Unit <span class="req">*</span></label>
+        <select id="unitSelect" onchange="up()">
+          <option value="">— Select your unit —</option>
+          <option value="OJ-1A">2BDR Flat 1A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-2A">2BDR Flat 2A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-3A">2BDR Flat 3A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-4A">2BDR Flat 4A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-1B">2BDR Flat 1B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-3B">2BDR Flat 3B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-2B">3BDR Flat 2B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-4B">3BDR Flat 4B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-SC">Self Contain 2C — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-SH">Shop & Office — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="IB-RP">Room & Parlour — Ibadan</option>
+<option value="IB-2B">2 Bedroom Flat — Ibadan</option>
+<option value="IB-S1">Shop 1 — Ibadan</option>
+<option value="IB-S2">Shop 2 — Ibadan</option>
+<option value="EN-2B">2BDR Flat — Enugu</option>
+<option value="EN-S1">Shop 1 — Enugu</option>
+<option value="EN-S2">Shop 2 — Enugu</option>
+<option value="EN-S3">Shop 3 — Enugu</option>
+        </select>
+      </div>
+      <div class="fg"><label class="lbl">Current Annual Rent (₦) <span class="req">*</span></label><input type="number" id="currentRent" placeholder="e.g. 750000" oninput="up()"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="lbl">Current Tenancy Start Date <span class="req">*</span></label><input type="date" id="currentStart" oninput="up()"/></div>
+      <div class="fg"><label class="lbl">Current Tenancy Expiry Date <span class="req">*</span></label><input type="date" id="currentExpiry" oninput="up()"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg full"><label class="lbl">Current Property Condition <span class="req">*</span></label>
+        <select id="propCondition" onchange="up()">
+          <option value="">— Select —</option>
+          <option>Excellent — no issues</option>
+          <option>Good — minor cosmetic issues only</option>
+          <option>Fair — some maintenance needed</option>
+          <option>Poor — major issues need attention before renewal</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION C: RENEWAL TERMS ── -->
+<div class="card">
+  <div class="card-head"><div class="card-num">C</div><h2>Renewal Duration &amp; Terms</h2></div>
+  <div class="card-body">
+    <div class="lbl" style="margin-bottom:10px">Preferred Renewal Duration <span class="req">*</span></div>
+    <div class="duration-grid">
+      <div class="dur-card" onclick="selectDuration(this,'6 months')"><div class="dur-label">6 Months</div><div class="dur-sub">Short term</div></div>
+      <div class="dur-card" onclick="selectDuration(this,'1 year')"><div class="dur-label">1 Year</div><div class="dur-sub">Standard</div></div>
+      <div class="dur-card" onclick="selectDuration(this,'2 years')"><div class="dur-label">2 Years</div><div class="dur-sub">Extended</div></div>
+      <div class="dur-card" onclick="selectDuration(this,'3 years')"><div class="dur-label">3 Years</div><div class="dur-sub">Long term</div></div>
+      <div class="dur-card" onclick="selectDuration(this,'Other')"><div class="dur-label">Other</div><div class="dur-sub">Specify below</div></div>
+    </div>
+    <input type="hidden" id="renewalDuration" value=""/>
+    <div id="otherDurationWrap" style="display:none;margin-bottom:14px">
+      <div class="fg"><label class="lbl">Specify Duration</label><input type="text" id="otherDuration" placeholder="e.g. 18 months"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="lbl">Preferred New Start Date</label><input type="date" id="newStart"/></div>
+      <div class="fg"><label class="lbl">Rent Increase Accepted? <span class="req">*</span></label>
+        <select id="rentIncrease" onchange="up()">
+          <option value="">— Select —</option>
+          <option value="yes_10">Yes — up to 10% increase acceptable</option>
+          <option value="yes_15">Yes — up to 15% increase acceptable</option>
+          <option value="yes_20">Yes — up to 20% increase acceptable</option>
+          <option value="negotiable">Open to negotiation</option>
+          <option value="no">No — requesting same rent as current</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg full"><label class="lbl">Special Requests or Conditions</label>
+        <textarea id="specialReqs" placeholder="e.g. Request for painting, repairs, or any special conditions you'd like the landlord to consider before renewal…"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION D: FINANCIAL STATUS ── -->
+<div class="card">
+  <div class="card-head"><div class="card-num">D</div><h2>Financial Standing</h2></div>
+  <div class="card-body">
+    <div class="fr">
+      <div class="fg"><label class="lbl">Rent Payment Status <span class="req">*</span></label>
+        <select id="rentStatus" onchange="up()">
+          <option value="">— Select —</option>
+          <option value="fully_paid">Fully paid up to date</option>
+          <option value="partial">Partially paid — balance outstanding</option>
+          <option value="arrears">In arrears — seeking arrangement</option>
+        </select>
+      </div>
+      <div class="fg"><label class="lbl">Outstanding Balance (₦) if any</label><input type="number" id="outstandingBal" placeholder="0 if none"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg full"><label class="lbl">Payment Plan Proposal (if outstanding balance exists)</label>
+        <textarea id="paymentPlan" rows="2" placeholder="If you have any outstanding balance, briefly describe your proposed payment arrangement…"></textarea>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="lbl">Preferred Payment Method</label>
+        <select id="payMethod">
+          <option>Bank Transfer</option>
+          <option>Cheque</option>
+          <option>Cash</option>
+          <option>Mobile Transfer (USSD)</option>
+        </select>
+      </div>
+      <div class="fg"><label class="lbl">Preferred Payment Frequency</label>
+        <select id="payFreq">
+          <option>Annually (full year upfront)</option>
+          <option>Bi-annually (every 6 months)</option>
+          <option>Quarterly (every 3 months)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION E: CLAUSE X ACKNOWLEDGEMENT ── -->
+<div class="card">
+  <div class="card-head"><div class="card-num">E</div><h2>Clause X — Obligation to Vacate</h2></div>
+  <div class="card-body">
+    <div class="clause-box">
+      <strong>Clause X — Mandatory Vacation Notice:</strong><br>
+      The Tenant agrees that at the expiry of this tenancy agreement (or any renewal thereof), the Tenant shall vacate the property within the time stipulated by the Landlord without further notice. The Tenant acknowledges that continued occupation beyond the agreed expiry date without a duly executed renewal agreement shall constitute a breach of contract and may result in legal action for possession, recovery of rent, and associated costs. The Tenant waives any right to statutory protection that may conflict with this clause.
+    </div>
+    <div class="fr">
+      <div class="fg full">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.84rem;color:var(--ink);line-height:1.6">
+          <input type="checkbox" id="clauseXCheck" onchange="up()" style="width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:var(--gold)"/>
+          I have read and fully understand Clause X. I acknowledge my obligation to vacate the property at expiry of the renewed tenancy unless a further renewal agreement is executed.
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION F: SIGNATURE ── -->
+<div class="card">
+  <div class="card-head"><div class="card-num">F</div><h2>Declaration &amp; Signature</h2></div>
+  <div class="card-body">
+    <div class="notice">I hereby declare that all information provided in this Tenancy Renewal Request is true and accurate. I understand that this form constitutes a formal request and does not guarantee renewal — final terms are subject to approval by Crestechnologies IS Ltd.</div>
+    <div class="fr">
+      <div class="fg"><label class="lbl">Full Name (print) <span class="req">*</span></label><input type="text" id="sigName" placeholder="Print your full legal name" oninput="up()"/></div>
+      <div class="fg"><label class="lbl">Date Signed <span class="req">*</span></label><input type="date" id="sigDate" oninput="up()"/></div>
+    </div>
+    <div class="lbl" style="margin-bottom:8px">Applicant Signature <span class="req">*</span></div>
+    <div class="sig-wrap">
+      <canvas id="sigCanvas" width="800" height="160"></canvas>
+      <div class="sig-btns"><button class="sig-clear" type="button" onclick="clearSig()">Clear</button></div>
+    </div>
+    <p style="font-size:.7rem;color:var(--dim);margin-top:6px">Draw your signature above using mouse or touch</p>
+  </div>
+</div>
+
+</div><!-- /form-wrap -->
+
+<!-- STICKY BAR -->
+<div class="sbar">
+  <span class="sbar-status" id="sbarTxt">Complete all required fields to submit</span>
+  <button class="btn-submit" id="submitBtn" onclick="submitRenewal()" disabled>&#10003; Submit Renewal Request</button>
+</div>
+
+<!-- SUCCESS SCREEN -->
+<div id="successScreen">
+  <div class="ss-card">
+    <div class="ss-icon-ring">
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="ss-title">Renewal Request Submitted!</div>
+    <div class="ss-ref" id="ssRef">REF: CRS-RNW-000000</div>
+    <div class="ss-msg" id="ssMsg">Your tenancy renewal request has been received by Crestechnologies IS Ltd. Your renewal request email has been sent to <strong>crestechnologies@outlook.com</strong>. We will review and contact you within 3&ndash;5 working days to confirm terms.</div>
+    <div class="ss-actions">
+      <a href="https://enjanih-stack.github.io/crestville-portal/index.html" class="ss-btn ss-btn-primary">&#127968; Return to Tenant Portal</a>
+      <a href="https://enjanih-stack.github.io/crestville-portal/landing.html" class="ss-btn ss-btn-secondary">&#127969; Back to Home Page</a>
+      <button class="ss-btn ss-btn-close" onclick="window.close()">&#10005; Close this form</button>
+    </div>
+    <div class="ss-note">Questions? <a href="mailto:crestechnologies@outlook.com" style="color:var(--gold)">crestechnologies@outlook.com</a><br>Crestechnologies IS Ltd &middot; RC 1643396 &middot; Crestville Properties</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+var _duration = '';
+var _sigDrawn = false;
+
+// ── Init ──────────────────────────────────────────────────────────────────
+document.getElementById('formTitle').textContent = 'Tenancy Renewal Request';
+document.getElementById('formSub').textContent   = 'TENANCY RENEWAL E-FORM';
+document.getElementById('sigDate').value = new Date().toISOString().split('T')[0];
+
+// ── Duration selection ────────────────────────────────────────────────────
+function selectDuration(el, val) {
+  document.querySelectorAll('.dur-card').forEach(function(c) { c.classList.remove('active'); });
+  el.classList.add('active');
+  _duration = val;
+  document.getElementById('renewalDuration').value = val;
+  document.getElementById('otherDurationWrap').style.display = val === 'Other' ? 'block' : 'none';
+  up();
+}
+
+// ── Validation ────────────────────────────────────────────────────────────
+var REQUIRED = ['tenantName','tenantEmail','tenantPhone','unitSelect','currentRent','currentStart','currentExpiry','propCondition','rentStatus','rentIncrease','sigName','sigDate'];
+
+function up() {
+  var missing = REQUIRED.filter(function(id) {
+    var el = document.getElementById(id);
+    return !el || !el.value.trim();
+  });
+  var hasClause = document.getElementById('clauseXCheck').checked;
+  var hasSig = _sigDrawn;
+  var hasDur = !!_duration && (_duration !== 'Other' || document.getElementById('otherDuration').value.trim());
+  var allOk = !missing.length && hasClause && hasSig && hasDur;
+  var pct = Math.round(((REQUIRED.length - missing.length) / (REQUIRED.length + 3)) * 100);
+  document.getElementById('progBar').style.width = pct + '%';
+  document.getElementById('progPct').textContent = pct + '%';
+  var btn = document.getElementById('submitBtn');
+  var txt = document.getElementById('sbarTxt');
+  btn.disabled = !allOk;
+  if (allOk) { txt.textContent = '&#10003; Ready to submit'; txt.className = 'sbar-status ok'; }
+  else { txt.textContent = missing.length + ' required field(s) incomplete'; txt.className = 'sbar-status'; }
+}
+
+// ── Signature pad ─────────────────────────────────────────────────────────
+(function() {
+  var canvas = document.getElementById('sigCanvas');
+  var ctx    = canvas.getContext('2d');
+  var drawing = false;
+  ctx.strokeStyle = '#0f0e0c';
+  ctx.lineWidth   = 2;
+  ctx.lineCap     = 'round';
+
+  function pos(e) {
+    var r = canvas.getBoundingClientRect();
+    var src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - r.left, y: src.clientY - r.top };
+  }
+  canvas.addEventListener('mousedown',  function(e) { drawing = true; var p = pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); });
+  canvas.addEventListener('mousemove',  function(e) { if (!drawing) return; var p = pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); _sigDrawn = true; up(); });
+  canvas.addEventListener('mouseup',    function()  { drawing = false; });
+  canvas.addEventListener('touchstart', function(e) { e.preventDefault(); drawing = true; var p = pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }, {passive:false});
+  canvas.addEventListener('touchmove',  function(e) { e.preventDefault(); if (!drawing) return; var p = pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); _sigDrawn = true; up(); }, {passive:false});
+  canvas.addEventListener('touchend',   function()  { drawing = false; });
+})();
+
+function clearSig() {
+  var canvas = document.getElementById('sigCanvas');
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  _sigDrawn = false;
+  up();
+}
+
+// ── Submit ────────────────────────────────────────────────────────────────
+function submitRenewal() {
+  var ref = 'CRS-RNW-' + Date.now().toString(36).toUpperCase().slice(-6);
+  var tenantName  = document.getElementById('tenantName').value.trim();
+  var tenantEmail = document.getElementById('tenantEmail').value.trim();
+  var unit        = document.getElementById('unitSelect');
+  var unitLabel   = unit.options[unit.selectedIndex].text;
+  var curRent     = Number(document.getElementById('currentRent').value || 0);
+  var curExpiry   = document.getElementById('currentExpiry').value;
+  var duration    = _duration === 'Other' ? document.getElementById('otherDuration').value.trim() : _duration;
+  var rentInc     = document.getElementById('rentIncrease');
+  var rentIncTxt  = rentInc.options[rentInc.selectedIndex].text;
+  var specialReqs = document.getElementById('specialReqs').value.trim();
+  var rentStatus  = document.getElementById('rentStatus');
+  var rentStatTxt = rentStatus.options[rentStatus.selectedIndex].text;
+  var outBal      = document.getElementById('outstandingBal').value || '0';
+  var payFreq     = document.getElementById('payFreq').value;
+  var sigCanvas   = document.getElementById('sigCanvas');
+  var sigData     = sigCanvas.toDataURL('image/png');
+
+  // Build email HTML
+  function row(label, val) {
+    return '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:7px 10px;color:#888;width:160px;font-size:13px">' + label + '</td>'
+      + '<td style="padding:7px 10px;font-weight:600;font-size:13px">' + val + '</td></tr>';
+  }
+
+  var tableRows = row('Tenant Name', tenantName)
+    + row('Email', tenantEmail)
+    + row('Phone', document.getElementById('tenantPhone').value)
+    + row('Unit / Property', unitLabel)
+    + row('Current Annual Rent', '&#8358;' + curRent.toLocaleString())
+    + row('Tenancy Expiry', curExpiry)
+    + row('Renewal Duration', duration)
+    + row('Rent Increase', rentIncTxt)
+    + row('Rent Status', rentStatTxt)
+    + row('Outstanding Balance', '&#8358;' + Number(outBal).toLocaleString())
+    + row('Payment Frequency', payFreq)
+    + (specialReqs ? row('Special Requests', specialReqs) : '')
+    + row('Clause X Acknowledged', 'Yes &#10003;')
+    + row('Reference', ref);
+
+  var emailHtml = '<div style="font-family:Arial,sans-serif;max-width:640px">'
+    + '<div style="background:#0f0e0c;padding:20px 28px;border-bottom:3px solid #c9960c">'
+    + '<div style="font-size:11px;color:#c9960c;letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px">Crestechnologies IS Ltd</div>'
+    + '<div style="font-size:20px;color:#fff;font-family:Georgia,serif;font-weight:700">Tenancy Renewal Request</div>'
+    + '<div style="font-size:12px;color:#9a8a6a;margin-top:4px">Reference: ' + ref + '</div></div>'
+    + '<div style="background:#faf8f4;padding:24px 28px">'
+    + '<p style="font-size:14px;color:#4a4440;margin-bottom:16px"><strong>' + tenantName + '</strong> has submitted a tenancy renewal request for <strong>' + unitLabel + '</strong>.</p>'
+    + '<table style="width:100%;border-collapse:collapse">' + tableRows + '</table>'
+    + (specialReqs ? '<div style="margin-top:14px;background:#fff8e6;border-left:3px solid #c9960c;padding:12px 14px;font-size:13px;color:#5a4000"><strong>Special Requests:</strong><br>' + specialReqs + '</div>' : '')
+    + '</div>'
+    + '<div style="background:#0f0e0c;padding:10px 28px;text-align:center;font-size:11px;color:#7a6e62">Submitted: ' + new Date().toLocaleString('en-NG') + ' &middot; Crestechnologies IS Ltd &middot; RC 1643396</div>'
+    + '</div>';
+
+
+  document.getElementById('ssRef').textContent = ref;
+  document.getElementById('ssMsg').innerHTML = 'Your renewal request for <strong>' + unitLabel + '</strong> has been received. A confirmation email has been sent to <strong>' + tenantEmail + '</strong>. We will contact you within 3&ndash;5 working days.';
+  document.querySelectorAll('.card,.sbar').forEach(function(el) { el.style.display = 'none'; });
+  var ss = document.getElementById('successScreen');
+  ss.style.display = 'flex';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>

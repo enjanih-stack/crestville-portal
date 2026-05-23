@@ -192,9 +192,64 @@ canvas.sig-canvas{display:block;cursor:crosshair;touch-action:none;width:100%;he
   canvas.sig-canvas,.sig-prev-img{border-bottom:1px solid #bbb;height:70px!important;display:block!important}
   .sig-panel{display:block!important}
 }
+
+/* ── ROLE WELCOME SCREEN ── */
+.role-welcome{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#0a0908,#141210)}
+.rw-card{background:linear-gradient(135deg,#1a1612,#0f0e0c);border:1px solid #2a2620;border-radius:16px;max-width:500px;width:100%;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.7)}
+.rw-banner{padding:28px 28px 20px;text-align:center;border-bottom:1px solid #2a2620}
+.rw-role-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:20px;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
+.rw-icon{font-size:3rem;margin-bottom:10px}
+.rw-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.5rem;font-weight:700;color:#fff;margin-bottom:6px}
+.rw-sub{font-size:.84rem;color:#9a8a6a;line-height:1.6}
+.rw-body{padding:22px 28px}
+.rw-applicant{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.rw-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#7a5800,#c9960c);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.1rem;font-weight:700;color:#fff;flex-shrink:0}
+.rw-app-name{font-size:.95rem;font-weight:700;color:#fff}
+.rw-app-detail{font-size:.76rem;color:#9a8a6a;margin-top:2px}
+.rw-steps{margin-bottom:20px}
+.rw-step{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.rw-step:last-child{border-bottom:none}
+.rw-step-num{width:24px;height:24px;border-radius:50%;background:rgba(201,150,12,.15);border:1px solid rgba(201,150,12,.3);color:#c9960c;font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.rw-step-txt{font-size:.82rem;color:#b8a888;line-height:1.5}
+.rw-step-txt strong{color:#e8dfc8}
+.rw-proceed{width:100%;padding:14px;background:linear-gradient(135deg,#7a5800,#c9960c,#e8b422);color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.04em;box-shadow:0 4px 16px rgba(201,150,12,.3);transition:all .2s}
+.rw-proceed:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(201,150,12,.4)}
+.rw-decline{margin-top:10px;background:none;border:none;color:#5a4e44;font-size:.78rem;cursor:pointer;font-family:inherit;width:100%;padding:8px;transition:color .2s}
+.rw-decline:hover{color:#9a8a6a}
+
 </style>
 </head>
 <body>
+
+<!-- ═══ ROLE WELCOME SCREEN ═══ -->
+<div class="role-welcome" id="roleWelcome" style="display:none">
+  <div class="rw-card">
+    <div class="rw-banner">
+      <div class="rw-role-badge" id="rwBadge"></div>
+      <div class="rw-icon" id="rwIcon">👤</div>
+      <div class="rw-title" id="rwTitle">You have been requested to provide consent</div>
+      <div class="rw-sub" id="rwSub">Crestechnologies IS Ltd — Crestville Properties</div>
+    </div>
+    <div class="rw-body">
+      <div class="rw-applicant">
+        <div class="rw-avatar" id="rwAvatar">?</div>
+        <div>
+          <div class="rw-app-name" id="rwAppName">Loading…</div>
+          <div class="rw-app-detail" id="rwAppDetail">Tenancy Application — Crestville Properties</div>
+        </div>
+      </div>
+      <div class="rw-steps">
+        <div class="rw-step"><div class="rw-step-num">1</div><div class="rw-step-txt"><strong>Read the advisory notice</strong> — understand your legal role and obligations before proceeding</div></div>
+        <div class="rw-step"><div class="rw-step-num">2</div><div class="rw-step-txt"><strong>Confirm your details</strong> — verify your personal information is correct</div></div>
+        <div class="rw-step"><div class="rw-step-num">3</div><div class="rw-step-txt"><strong>Provide your digital signature</strong> — sign to acknowledge your consent and declarations</div></div>
+        <div class="rw-step"><div class="rw-step-num">4</div><div class="rw-step-txt"><strong>Submit</strong> — your signed consent is sent securely to Crestechnologies IS Ltd</div></div>
+      </div>
+      <button class="rw-proceed" onclick="proceedToConsent()">Continue to Consent Form &#8594;</button>
+      <button class="rw-decline" onclick="window.history.back()">&#8592; Go back</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- LOADER -->
 <div id="ls">
@@ -638,6 +693,8 @@ function showEmpty() {
 function populatePage(d) {
   _role = d._role || 'referee';
   const R = ROLES[_role] || ROLES.referee;
+  // Show welcome screen first
+  showRoleWelcome(d);
 
   // Applicant info
   const name = d.applicantName || d.q1_name || d.tenantName || '—';
@@ -879,6 +936,41 @@ window.sendCRSEmail = async (to, subject, html) => {
     return true;
   } catch(e) { console.error('Email error:', e); return false; }
 };
+
+/* ── ROLE WELCOME SCREEN ── */
+function showRoleWelcome(payload) {
+  var role = payload._role || 'referee';
+  var R = ROLES[role] || ROLES.referee;
+  var appName = payload.applicantName || payload.q1_name || payload.name || '—';
+  var unit = payload.property || payload.q21_apartments || '—';
+
+  // Role badge colours
+  var badgeColors = {
+    referee:   'background:rgba(30,58,95,.4);color:#4a9eff;border:1px solid rgba(74,158,255,.3)',
+    guarantor: 'background:rgba(140,31,31,.3);color:#e05c5c;border:1px solid rgba(224,92,92,.3)',
+    witness:   'background:rgba(26,92,46,.3);color:#4aaf6e;border:1px solid rgba(74,175,110,.3)',
+    agent:     'background:rgba(201,150,12,.2);color:#e8b422;border:1px solid rgba(232,180,34,.3)',
+    landlord:  'background:rgba(74,175,110,.2);color:#4aaf6e;border:1px solid rgba(74,175,110,.3)',
+    tenant:    'background:rgba(201,150,12,.2);color:#e8b422;border:1px solid rgba(232,180,34,.3)'
+  };
+
+  var el = function(id) { return document.getElementById(id); };
+  var badge = el('rwBadge');
+  if (badge) { badge.textContent = R.title; badge.style.cssText = badgeColors[role] || badgeColors.referee; }
+  var icon = el('rwIcon'); if (icon) icon.textContent = R.icon || '👤';
+  var title = el('rwTitle'); if (title) title.textContent = 'You have been listed as a ' + R.title;
+  var sub = el('rwSub'); if (sub) sub.textContent = 'For a tenancy application by ' + appName + ' with Crestechnologies IS Ltd';
+  var av = el('rwAvatar'); if (av) av.textContent = appName.split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase() || '??';
+  var nm = el('rwAppName'); if (nm) nm.textContent = appName;
+  var dt = el('rwAppDetail'); if (dt) dt.textContent = 'Property: ' + unit + ' — Crestville Properties';
+
+  document.getElementById('roleWelcome').style.display = 'flex';
+}
+
+function proceedToConsent() {
+  document.getElementById('roleWelcome').style.display = 'none';
+}
+
 </script>
 
 </body>

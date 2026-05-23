@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Rent Payment Advice — Crestville Properties</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+<style>
+:root{--ink:#0f0e0c;--cream:#faf8f4;--gold:#c9960c;--gl:#e8b422;--bg:#f4f1ea;--card:#fff;--rule:#e0d8c8;--dim:#8a7a60;--red:#8c1f1f;--green:#1a5c2e;--blue:#1e3a5f;--gold-bg:#fffdf0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.55}
+/* HEADER */
+.hdr{background:var(--ink);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--gold)}
+.hdr-left{display:flex;align-items:center;gap:14px}
+.logo{width:52px;height:52px;border-radius:50%;border:2px solid var(--gold);object-fit:cover}
+.co-name{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.1rem;font-weight:700;color:#fff}
+.co-sub{font-size:.58rem;color:var(--gold);letter-spacing:.14em;text-transform:uppercase;margin-top:2px}
+.hdr-right{text-align:right}
+.form-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:1rem;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.06em}
+.form-sub{font-size:.58rem;color:var(--gold);letter-spacing:.16em;text-transform:uppercase;margin-top:2px}
+.hdr-bar{background:#1a1612;padding:8px 28px;display:flex;justify-content:space-between;font-size:.68rem;color:#7a6e62;border-bottom:1px solid #2a2620;flex-wrap:wrap;gap:6px}
+/* PROGRESS */
+.prog-wrap{background:#e8e2d8;height:4px;position:relative}
+.prog-bar{height:100%;background:linear-gradient(90deg,var(--gold),var(--gl));transition:width .4s ease;width:0%}
+.prog-label{position:absolute;right:10px;top:-18px;font-size:.62rem;font-weight:700;color:var(--gold);letter-spacing:.08em}
+/* FORM */
+.form-wrap{max-width:900px;margin:24px auto;padding:0 16px 80px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:10px;margin-bottom:20px;overflow:hidden}
+.card-head{background:linear-gradient(135deg,var(--ink),#1a1612);padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:2px solid var(--gold)}
+.card-num{width:30px;height:30px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:#fff;flex-shrink:0}
+.card-head h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:1rem;font-weight:700;color:#fff;letter-spacing:.03em}
+.card-body{padding:20px}
+.fr{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+.fg{flex:1;min-width:200px;display:flex;flex-direction:column;gap:4px}
+.fg.full{flex:1 1 100%}
+.lbl{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.req{color:var(--red);margin-left:2px}
+input[type=text],input[type=email],input[type=tel],input[type=number],input[type=date],select,textarea{width:100%;padding:10px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-size:.88rem;font-family:inherit;background:var(--card);color:var(--ink);outline:none;transition:all .18s}
+input:focus,select:focus,textarea:focus{border-bottom-color:var(--gl);background:var(--gold-bg)}
+select{cursor:pointer}
+textarea{resize:vertical;min-height:80px}
+.info{background:var(--gold-bg);border-left:3px solid var(--gold);padding:11px 14px;border-radius:0 6px 6px 0;font-size:.82rem;color:#5a4000;line-height:1.65;margin-bottom:14px}
+.notice{background:#fff8f8;border-left:3px solid var(--red);padding:11px 14px;border-radius:0 6px 6px 0;font-size:.82rem;color:#5c1a1a;line-height:1.65;margin-bottom:14px}
+
+/* TENANT TYPE TOGGLE */
+.type-toggle{display:flex;gap:0;border-radius:8px;overflow:hidden;border:2px solid var(--gold);margin-bottom:20px}
+.tt-btn{flex:1;padding:14px;border:none;font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;text-align:center;background:var(--card);color:var(--dim)}
+.tt-btn.active{background:linear-gradient(135deg,#7a5800,var(--gold));color:#fff}
+
+/* BANK CARD */
+.bank-card{background:linear-gradient(135deg,#0f0e0c,#1a1612);border-radius:10px;padding:18px 20px;border:1px solid #2a2620;border-left:4px solid var(--gold);margin-bottom:14px}
+.bank-name{font-family:'Cormorant Garamond',Georgia,serif;font-size:.95rem;font-weight:700;color:var(--gold);margin-bottom:10px}
+.bank-detail{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.bank-detail:last-child{border-bottom:none}
+.bank-lbl{font-size:.72rem;color:#7a6e62}
+.bank-val{font-size:.88rem;color:#fff;font-weight:600;display:flex;align-items:center;gap:8px}
+.copy-btn{background:rgba(201,150,12,.15);border:1px solid rgba(201,150,12,.3);color:var(--gold);border-radius:4px;padding:2px 8px;font-size:.68rem;cursor:pointer;font-family:inherit}
+.copy-btn:hover{background:rgba(201,150,12,.3)}
+
+/* PAYMENT SCHEDULE TABLE (New Tenant) */
+.sched-table{width:100%;border-collapse:collapse;margin-top:14px}
+.sched-table th{background:var(--ink);color:var(--gold);padding:10px 12px;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-align:left}
+.sched-table td{padding:10px 12px;border-bottom:1px solid var(--rule);font-size:.85rem;vertical-align:middle}
+.sched-table tr:last-child td{border-bottom:none;background:var(--gold-bg);font-weight:700}
+.sched-table tr.total-row td{background:linear-gradient(135deg,#7a5800,var(--gold));color:#fff;font-weight:700;font-size:.9rem}
+.sched-table .amt{text-align:right;font-family:'Cormorant Garamond',Georgia,serif;font-size:1rem;font-weight:700}
+.sched-table .pct-cell{display:flex;align-items:center;gap:8px}
+.pct-slider{flex:1;accent-color:var(--gold);cursor:pointer;height:4px}
+.pct-display{font-size:.78rem;color:var(--gold);font-weight:700;min-width:36px;text-align:right}
+
+/* SLIDER ROW */
+.slider-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--rule)}
+.slider-row:last-child{border-bottom:none}
+.sr-label{font-size:.84rem;color:var(--ink)}
+.sr-pct{font-size:.78rem;color:var(--gold);font-weight:700;min-width:38px;text-align:right}
+.sr-amt{font-family:'Cormorant Garamond',Georgia,serif;font-size:.95rem;font-weight:700;color:var(--ink);min-width:110px;text-align:right}
+.sr-slider{width:100%;accent-color:var(--gold);cursor:pointer}
+
+/* TOTAL BOX */
+.total-box{background:linear-gradient(135deg,#0f0e0c,#1a1612);border-radius:8px;padding:16px 20px;border:1px solid #2a2620;border-top:3px solid var(--gold);margin-top:14px}
+.tb-label{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:#9a8a6a;margin-bottom:6px}
+.tb-amount{font-family:'Cormorant Garamond',Georgia,serif;font-size:2rem;font-weight:700;color:var(--gold)}
+.tb-breakdown{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.tb-chip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:4px;padding:4px 10px;font-size:.72rem;color:#9a8a6a}
+
+/* SHARE LINK BOX */
+.link-box{background:var(--gold-bg);border:2px solid var(--gold);border-radius:8px;padding:14px 16px;margin-top:14px;display:none}
+.link-box-title{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.link-display{word-break:break-all;font-size:.78rem;color:var(--blue);background:var(--card);border:1px solid var(--rule);border-radius:4px;padding:8px 10px;margin-bottom:8px;line-height:1.6}
+.link-actions{display:flex;gap:8px;flex-wrap:wrap}
+.la-btn{padding:7px 14px;border-radius:5px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;border:1.5px solid var(--rule);background:var(--card);color:var(--ink);transition:all .18s}
+.la-btn:hover{border-color:var(--gold);color:var(--gold)}
+.la-btn.primary{background:var(--gold);border-color:var(--gold);color:#fff}
+.la-btn.primary:hover{background:#b8880a}
+
+/* OTHERS ITEMS */
+.other-item{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.other-item input{flex:1}
+.other-item .remove-btn{width:30px;height:30px;border-radius:50%;background:none;border:1.5px solid var(--rule);color:var(--dim);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.other-item .remove-btn:hover{border-color:var(--red);color:var(--red)}
+
+/* STICKY BAR */
+.sbar{position:fixed;bottom:0;left:0;right:0;background:var(--ink);border-top:2px solid var(--gold);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;z-index:100;gap:12px;flex-wrap:wrap}
+.sbar-status{font-size:.78rem;color:#9a8a6a}
+.sbar-status.ok{color:#4aaf6e}
+.sbar-btns{display:flex;gap:10px}
+.btn-gen{padding:10px 20px;background:rgba(201,150,12,.15);border:1.5px solid rgba(201,150,12,.4);color:var(--gold);border-radius:6px;font-size:.84rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-gen:hover{background:rgba(201,150,12,.25)}
+.btn-submit{background:linear-gradient(135deg,#1a5c2e,#2e8c4a);color:#fff;border:none;padding:11px 24px;border-radius:6px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-submit:disabled{opacity:.4;cursor:not-allowed}
+
+/* SIG PAD */
+.sig-wrap{border:1.5px dashed var(--rule);border-radius:6px;background:var(--cream);overflow:hidden}
+.sig-wrap canvas{display:block;touch-action:none}
+.sig-btns{display:flex;justify-content:flex-end;padding:5px 10px;border-top:1px solid var(--rule)}
+.sig-clear{background:none;border:1px solid var(--rule);border-radius:4px;padding:3px 10px;font-size:.74rem;color:var(--dim);cursor:pointer;font-family:inherit}
+
+/* TENANT VIEW — hide admin section */
+.admin-only{display:block}
+body.tenant-mode .admin-only{display:none!important}
+
+/* SUCCESS */
+#successScreen{display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0a0908,#141210);align-items:center;justify-content:center;padding:24px}
+#successScreen.on{display:flex}
+.ss-card{background:linear-gradient(135deg,#1a1612,#0f0e0c);border:1px solid #2a2620;border-top:3px solid var(--gold);border-radius:14px;max-width:520px;width:100%;padding:32px 28px;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.6)}
+.ss-icon{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#1a5c2e,#4aaf6e);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 0 12px rgba(74,175,110,.1);animation:pop-in .5s cubic-bezier(.175,.885,.32,1.275) forwards}
+@keyframes pop-in{from{transform:scale(0)}to{transform:scale(1)}}
+.ss-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.5rem;font-weight:700;color:#fff;margin-bottom:8px}
+.ss-ref{font-size:.78rem;color:var(--gold);letter-spacing:.12em;font-weight:700;display:inline-block;padding:4px 14px;background:rgba(201,150,12,.1);border:1px solid rgba(201,150,12,.2);border-radius:20px;margin-bottom:14px}
+.ss-msg{font-size:.84rem;color:#9a8a6a;line-height:1.75;margin-bottom:22px}
+.ss-actions{display:flex;flex-direction:column;gap:9px}
+.ss-btn{padding:12px 20px;border-radius:7px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s;border:none}
+.ss-btn-gold{background:linear-gradient(135deg,#7a5800,var(--gold),var(--gl));color:#fff;box-shadow:0 4px 14px rgba(201,150,12,.3)}
+.ss-btn-dim{background:rgba(255,255,255,.06);color:#e8dfc8;border:1px solid rgba(255,255,255,.1)!important}
+.ss-btn-close{background:none;color:#7a6e62;border:1px solid rgba(255,255,255,.06)!important;font-size:.8rem}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-left">
+    <img class="logo" src="data:image/jpeg;base64,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" alt="CRS"/>
+    <div>
+      <div class="co-name">Crestechnologies IS Ltd</div>
+      <div class="co-sub">RC 1643396 &middot; Crestville Properties</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="form-title">Rent Payment Advice</div>
+    <div class="form-sub">PAYMENT NOTIFICATION e-FORM</div>
+  </div>
+</div>
+<div class="hdr-bar">
+  <span>&#127968; Crestechnologies IS Ltd &mdash; Crestville Properties</span>
+  <span>&#128205; Ojodu, Ogun State, Nigeria</span>
+  <span>&#9993; crestechnologies@outlook.com</span>
+</div>
+<div class="prog-wrap"><div class="prog-bar" id="progBar" style="width:0%"><span class="prog-label" id="progPct">0%</span></div></div>
+
+<div class="form-wrap">
+
+<!-- ══ BANK DETAILS ══ -->
+<div class="card">
+  <div class="card-head"><div class="card-num">&#9432;</div><h2>Payment Account Details</h2></div>
+  <div class="card-body">
+    <div class="info">Make all rent and fee payments to the account below. Always include your <strong>unit number + full name</strong> as the narration (e.g. <em>OJ-1A Emmanuel Anih Rent</em>).</div>
+    <div class="bank-card">
+      <div class="bank-name">&#127981; Crestechnologies IS Ltd &mdash; Zenith Bank PLC</div>
+      <div class="bank-detail"><span class="bank-lbl">Bank</span><span class="bank-val">Zenith Bank PLC</span></div>
+      <div class="bank-detail"><span class="bank-lbl">Account Number</span><span class="bank-val" style="font-size:1.1rem;letter-spacing:.1em">1023456789 <button class="copy-btn" onclick="copyTxt('1023456789',this)">Copy</button></span></div>
+      <div class="bank-detail"><span class="bank-lbl">Account Name</span><span class="bank-val">Crestechnologies IS Ltd</span></div>
+      <div class="bank-detail"><span class="bank-lbl">Sort Code</span><span class="bank-val">057</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TENANT TYPE (ADMIN ONLY) ══ -->
+<div class="card admin-only" id="adminSetupCard">
+  <div class="card-head"><div class="card-num">&#9998;</div><h2>Setup — New or Existing Tenant?</h2></div>
+  <div class="card-body">
+    <div class="info">Select the tenant type. For <strong>New Tenants</strong>, fill in the payment schedule below and generate a pre-filled link to send to the tenant. For <strong>Existing Tenants</strong>, the tenant fills in their own payment details.</div>
+    <div class="type-toggle">
+      <button class="tt-btn active" id="btnNew" onclick="setType('new')">&#127968; New Tenant</button>
+      <button class="tt-btn" id="btnExist" onclick="setType('existing')">&#128273; Existing Tenant</button>
+    </div>
+
+    <!-- NEW TENANT SETUP -->
+    <div id="newTenantSetup">
+      <div class="fr">
+        <div class="fg"><label class="lbl">Tenant Full Name <span class="req">*</span></label><input type="text" id="nt_name" placeholder="Tenant's legal name" oninput="calcSchedule()"/></div>
+        <div class="fg"><label class="lbl">Tenant Email</label><input type="email" id="nt_email" placeholder="tenant@email.com"/></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="lbl">Property / Unit <span class="req">*</span></label>
+          <select id="nt_unit" onchange="calcSchedule()">
+            <option value="">— Select unit —</option>
+            <option value="OJ-1A">2BDR Flat 1A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-2A">2BDR Flat 2A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-3A">2BDR Flat 3A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-4A">2BDR Flat 4A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-1B">2BDR Flat 1B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-3B">2BDR Flat 3B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-2B">3BDR Flat 2B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-4B">3BDR Flat 4B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-SC">Self Contain 2C — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-SH">Shop & Office — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="IB-RP">Room & Parlour — Ibadan</option>
+<option value="IB-2B">2 Bedroom Flat — Ibadan</option>
+<option value="IB-S1">Shop 1 — Ibadan</option>
+<option value="IB-S2">Shop 2 — Ibadan</option>
+<option value="EN-2B">2BDR Flat — Enugu</option>
+<option value="EN-S1">Shop 1 — Enugu</option>
+<option value="EN-S2">Shop 2 — Enugu</option>
+<option value="EN-S3">Shop 3 — Enugu</option>
+          </select>
+        </div>
+        <div class="fg"><label class="lbl">Annual Rent (&#8358;) <span class="req">*</span></label>
+          <input type="number" id="nt_rent" placeholder="e.g. 750000" oninput="calcSchedule()"/>
+        </div>
+      </div>
+
+      <!-- PAYMENT SCHEDULE -->
+      <div style="font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:14px 0 10px">Payment Schedule</div>
+      <div style="border:1px solid var(--rule);border-radius:8px;overflow:hidden">
+
+        <!-- RENT -->
+        <div class="slider-row" style="padding:12px 14px;background:var(--gold-bg)">
+          <div class="sr-label"><strong>Annual Rent</strong></div>
+          <div class="sr-pct">100%</div>
+          <div class="sr-amt" id="disp_rent">&#8358;0</div>
+        </div>
+
+        <!-- CAUTION FEE -->
+        <div class="slider-row" style="padding:10px 14px">
+          <div>
+            <div class="sr-label">Refundable Caution Fee</div>
+            <input type="range" class="sr-slider" id="sl_caution" min="0" max="200" value="100" step="5" oninput="calcSchedule()"/>
+          </div>
+          <div class="sr-pct" id="pct_caution">100%</div>
+          <div class="sr-amt" id="disp_caution">&#8358;0</div>
+        </div>
+
+        <!-- DOCUMENTATION FEE -->
+        <div class="slider-row" style="padding:10px 14px">
+          <div>
+            <div class="sr-label">Documentation / Legal Fee</div>
+            <input type="range" class="sr-slider" id="sl_doc" min="0" max="30" value="10" step="1" oninput="calcSchedule()"/>
+          </div>
+          <div class="sr-pct" id="pct_doc">10%</div>
+          <div class="sr-amt" id="disp_doc">&#8358;0</div>
+        </div>
+
+        <!-- AGENCY FEE -->
+        <div class="slider-row" style="padding:10px 14px">
+          <div>
+            <div class="sr-label">Agency Fee</div>
+            <input type="range" class="sr-slider" id="sl_agency" min="0" max="30" value="10" step="1" oninput="calcSchedule()"/>
+          </div>
+          <div class="sr-pct" id="pct_agency">10%</div>
+          <div class="sr-amt" id="disp_agency">&#8358;0</div>
+        </div>
+
+        <!-- JANITORIAL -->
+        <div class="slider-row" style="padding:10px 14px">
+          <div class="sr-label" style="margin-bottom:4px">Janitorial Services (&#8358;)</div>
+          <input type="number" id="nt_janitorial" placeholder="0" oninput="calcSchedule()" style="width:120px;padding:6px 8px;font-size:.84rem;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:4px 4px 0 0;outline:none;background:var(--card)"/>
+          <div class="sr-amt" id="disp_janitorial">&#8358;0</div>
+        </div>
+
+        <!-- WASTE DISPOSAL -->
+        <div class="slider-row" style="padding:10px 14px">
+          <div class="sr-label" style="margin-bottom:4px">Waste Disposal (&#8358;)</div>
+          <input type="number" id="nt_waste" placeholder="0" oninput="calcSchedule()" style="width:120px;padding:6px 8px;font-size:.84rem;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:4px 4px 0 0;outline:none;background:var(--card)"/>
+          <div class="sr-amt" id="disp_waste">&#8358;0</div>
+        </div>
+
+        <!-- OTHERS -->
+        <div id="othersContainer" style="padding:0 14px"></div>
+        <div style="padding:10px 14px;border-top:1px solid var(--rule)">
+          <button onclick="addOther()" style="background:none;border:1.5px dashed var(--rule);border-radius:6px;padding:8px 16px;font-size:.8rem;color:var(--dim);cursor:pointer;font-family:inherit;transition:all .2s;width:100%;" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--rule)';this.style.color='var(--dim)'">+ Add Other Charge</button>
+        </div>
+      </div>
+
+      <!-- TOTAL -->
+      <div class="total-box">
+        <div class="tb-label">Total Amount Due from Tenant</div>
+        <div class="tb-amount" id="totalDisplay">&#8358;0</div>
+        <div class="tb-breakdown" id="breakdownChips"></div>
+      </div>
+
+      <!-- GENERATE LINK -->
+      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="la-btn primary" onclick="generateLink()" id="genLinkBtn" disabled>&#128279; Generate Payment Link for Tenant</button>
+        <button class="la-btn" onclick="copyLink()" id="copyLinkBtn" style="display:none">&#128203; Copy Link</button>
+        <button class="la-btn" onclick="sendLinkEmail()" id="emailLinkBtn" style="display:none">&#9993; Email to Tenant</button>
+      </div>
+      <div class="link-box" id="linkBox">
+        <div class="link-box-title">&#128279; Tenant Payment Link</div>
+        <div class="link-display" id="linkDisplay"></div>
+        <div style="font-size:.74rem;color:var(--dim);line-height:1.6">Share this link with the tenant. They click it to open the payment advice form pre-filled with their details and the payment schedule. They complete the remaining fields and submit directly to crestechnologies@outlook.com.</div>
+      </div>
+    </div><!-- /newTenantSetup -->
+  </div>
+</div>
+
+<!-- ══ A: TENANT DETAILS ══ -->
+<div class="card" id="tenantDetailsCard">
+  <div class="card-head"><div class="card-num">A</div><h2>Tenant &amp; Property Details</h2></div>
+  <div class="card-body">
+    <div class="fr">
+      <div class="fg"><label class="lbl">Full Legal Name <span class="req">*</span></label><input type="text" id="tenantName" placeholder="As on your tenancy agreement" oninput="up()"/></div>
+      <div class="fg"><label class="lbl">Email Address <span class="req">*</span></label><input type="email" id="tenantEmail" placeholder="your@email.com" oninput="up()"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="lbl">Phone Number <span class="req">*</span></label><input type="tel" id="tenantPhone" placeholder="+234..." oninput="up()"/></div>
+      <div class="fg"><label class="lbl">Unit / Property <span class="req">*</span></label>
+        <select id="unitSelect" onchange="up()">
+          <option value="">— Select your unit —</option>
+          <option value="OJ-1A">2BDR Flat 1A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-2A">2BDR Flat 2A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-3A">2BDR Flat 3A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-4A">2BDR Flat 4A — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-1B">2BDR Flat 1B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-3B">2BDR Flat 3B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-2B">3BDR Flat 2B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-4B">3BDR Flat 4B — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-SC">Self Contain 2C — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="OJ-SH">Shop & Office — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="IB-RP">Room & Parlour — Ibadan</option>
+<option value="IB-2B">2 Bedroom Flat — Ibadan</option>
+<option value="IB-S1">Shop 1 — Ibadan</option>
+<option value="IB-S2">Shop 2 — Ibadan</option>
+<option value="EN-2B">2BDR Flat — Enugu</option>
+<option value="EN-S1">Shop 1 — Enugu</option>
+<option value="EN-S2">Shop 2 — Enugu</option>
+<option value="EN-S3">Shop 3 — Enugu</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ B: PAYMENT REQUIRED (shown pre-filled for new tenants) ══ -->
+<div class="card" id="schedCard" style="display:none">
+  <div class="card-head"><div class="card-num">B</div><h2>Payment Schedule Required</h2></div>
+  <div class="card-body">
+    <div class="info" id="schedInfo">Your payment schedule as prepared by Crestechnologies IS Ltd.</div>
+    <div id="schedReadout"></div>
+    <div class="total-box" style="margin-top:14px">
+      <div class="tb-label">Total Amount Required</div>
+      <div class="tb-amount" id="schedTotal">&#8358;0</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ C: PAYMENT DETAILS ══ -->
+<div class="card">
+  <div class="card-head"><div class="card-num" id="secCNum">B</div><h2>Payment Details</h2></div>
+  <div class="card-body">
+    <div class="fr">
+      <div class="fg"><label class="lbl">Date of Payment <span class="req">*</span></label><input type="date" id="payDate" oninput="up()"/></div>
+      <div class="fg"><label class="lbl">Amount Paid (&#8358;) <span class="req">*</span></label><input type="number" id="amountPaid" placeholder="Exact amount paid" oninput="up()"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="lbl">Payment Method <span class="req">*</span></label>
+        <select id="payMethod" onchange="up()">
+          <option value="">— Select —</option>
+          <option>Bank Transfer</option>
+          <option>Mobile Transfer (USSD)</option>
+          <option>Cheque</option>
+          <option>Cash</option>
+          <option>POS</option>
+        </select>
+      </div>
+      <div class="fg"><label class="lbl">Transaction Reference / Teller No. <span class="req">*</span></label><input type="text" id="txRef" placeholder="Bank reference number" oninput="up()"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="lbl">Bank / Platform Used</label><input type="text" id="bankUsed" placeholder="e.g. Zenith Bank, OPay..."/></div>
+      <div class="fg"><label class="lbl">What is this payment for?</label>
+        <select id="payFor">
+          <option>Annual Rent</option>
+          <option>Caution Fee + Rent + Fees (New Tenancy)</option>
+          <option>Partial Rent Payment</option>
+          <option>Caution Fee Only</option>
+          <option>Documentation / Legal Fee</option>
+          <option>Service Charges</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg full" style="margin-top:4px"><label class="lbl">Additional Notes</label>
+      <textarea id="notes" rows="2" placeholder="Any additional information about this payment..."></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ══ D: PROOF OF PAYMENT ══ -->
+<div class="card">
+  <div class="card-head"><div class="card-num" id="secDNum">C</div><h2>Proof of Payment</h2></div>
+  <div class="card-body">
+    <div class="info">Upload your bank transfer confirmation, teller receipt or payment screenshot. Max 3MB.</div>
+    <div style="border:2px dashed var(--rule);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s" onclick="document.getElementById('receiptFile').click()" id="receiptPreview" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--rule)'">
+      <div style="font-size:2rem;margin-bottom:6px">&#128444;&#65039;</div>
+      <div style="font-weight:600;color:var(--ink);font-size:.9rem">Click to upload receipt / screenshot</div>
+      <div style="font-size:.76rem;color:var(--dim);margin-top:4px">JPG, PNG, PDF &middot; Max 3MB</div>
+    </div>
+    <input type="file" id="receiptFile" accept="image/*,.pdf" style="display:none" onchange="previewReceipt(this)"/>
+    <div id="receiptName" style="font-size:.78rem;color:var(--green);margin-top:6px;display:none"></div>
+  </div>
+</div>
+
+<!-- ══ E: DECLARATION ══ -->
+<div class="card">
+  <div class="card-head"><div class="card-num" id="secENum">D</div><h2>Declaration</h2></div>
+  <div class="card-body">
+    <div class="notice">I declare that the payment information submitted is accurate. I understand this form serves as a formal payment notification and does not constitute a receipt. An official receipt will be issued by Crestechnologies IS Ltd upon verification.</div>
+    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.84rem;color:var(--ink);line-height:1.6">
+      <input type="checkbox" id="declareCheck" onchange="up()" style="width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:var(--gold)"/>
+      I confirm the above payment details are correct.
+    </label>
+  </div>
+</div>
+
+</div><!-- /form-wrap -->
+
+<!-- STICKY BAR -->
+<div class="sbar">
+  <span class="sbar-status" id="sbarTxt">Complete all required fields</span>
+  <div class="sbar-btns">
+    <button class="btn-submit" id="submitBtn" onclick="submitForm()" disabled>&#128179; Submit Payment Advice</button>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div id="successScreen">
+  <div class="ss-card">
+    <div class="ss-icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <div class="ss-title">Payment Advice Submitted!</div>
+    <div class="ss-ref" id="ssRef">REF: CRS-PAY-000000</div>
+    <div class="ss-msg" id="ssMsg">Your payment advice has been emailed to Crestechnologies IS Ltd. We will verify and issue an official receipt within 24&#x2013;48 hours.</div>
+    <div class="ss-actions">
+      <a href="https://enjanih-stack.github.io/crestville-portal/index.html" class="ss-btn ss-btn-gold">&#127968; Return to Tenant Portal</a>
+      <a href="https://enjanih-stack.github.io/crestville-portal/landing.html" class="ss-btn ss-btn-dim">&#127969; Back to Home Page</a>
+      <button class="ss-btn ss-btn-close" onclick="window.close()">&#10005; Close</button>
+    </div>
+    <div style="margin-top:16px;font-size:.72rem;color:#5a4e44">&#9993; <a href="mailto:crestechnologies@outlook.com" style="color:var(--gold)">crestechnologies@outlook.com</a> &middot; Crestechnologies IS Ltd &middot; RC 1643396</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ── STATE ── */
+var _tenantType = 'new';   // 'new' | 'existing'
+var _isAdminMode = true;   // becomes false when opened via tenant link
+var _schedule = {};        // computed from sliders
+var _otherCount = 0;
+var _sigDrawn = false;
+var _link = '';
+
+/* ── INIT ── */
+document.getElementById('payDate').value = new Date().toISOString().split('T')[0];
+
+// Detect if opened via tenant link (hash contains compressed data)
+(function() {
+  var hash = window.location.hash.slice(1);
+  if (!hash) return;
+  try {
+    var bytes = atob(hash.replace(/-/g,'+').replace(/_/g,'/'));
+    var arr = new Uint8Array(bytes.length);
+    for (var i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
+    var data = JSON.parse(pako.inflate(arr,{to:'string'}));
+    _isAdminMode = false;
+    document.body.classList.add('tenant-mode');
+    // Pre-fill from data
+    setVal('tenantName', data.name||'');
+    setVal('tenantEmail', data.email||'');
+    setVal('unitSelect', data.unitId||'');
+    // Show payment schedule
+    if (data.schedule) {
+      _schedule = data.schedule;
+      renderScheduleReadout(data.schedule, data.unitLabel);
+      document.getElementById('schedCard').style.display = 'block';
+      document.getElementById('secCNum').textContent = 'C';
+      document.getElementById('secDNum').textContent = 'D';
+      document.getElementById('secENum').textContent = 'E';
+    }
+  } catch(e) { console.warn('link parse:', e); }
+})();
+
+function setVal(id, val) { var el = document.getElementById(id); if(el) el.value = val; }
+
+/* ── TYPE TOGGLE ── */
+function setType(t) {
+  _tenantType = t;
+  document.getElementById('btnNew').classList.toggle('active', t==='new');
+  document.getElementById('btnExist').classList.toggle('active', t==='existing');
+  document.getElementById('newTenantSetup').style.display = t==='new' ? 'block' : 'none';
+  calcSchedule();
+}
+
+/* ── SCHEDULE CALC ── */
+function fmt(n) { return '&#8358;' + Number(n||0).toLocaleString('en-NG'); }
+function num(id) { var el=document.getElementById(id); return Number(el?el.value||0:0); }
+
+function calcSchedule() {
+  var rent = num('nt_rent');
+  var pct = function(id) { return Number(document.getElementById(id).value||0)/100; };
+
+  var caution  = Math.round(rent * pct('sl_caution'));
+  var doc      = Math.round(rent * pct('sl_doc'));
+  var agency   = Math.round(rent * pct('sl_agency'));
+  var janit    = num('nt_janitorial');
+  var waste    = num('nt_waste');
+
+  document.getElementById('pct_caution').textContent = Math.round(pct('sl_caution')*100)+'%';
+  document.getElementById('pct_doc').textContent     = Math.round(pct('sl_doc')*100)+'%';
+  document.getElementById('pct_agency').textContent  = Math.round(pct('sl_agency')*100)+'%';
+
+  document.getElementById('disp_rent').innerHTML    = fmt(rent);
+  document.getElementById('disp_caution').innerHTML = fmt(caution);
+  document.getElementById('disp_doc').innerHTML     = fmt(doc);
+  document.getElementById('disp_agency').innerHTML  = fmt(agency);
+  document.getElementById('disp_janitorial').innerHTML = fmt(janit);
+  document.getElementById('disp_waste').innerHTML   = fmt(waste);
+
+  // Others
+  var othersTotal = 0;
+  var otherItems = [];
+  document.querySelectorAll('.other-name').forEach(function(inp,i) {
+    var amtEl = document.querySelectorAll('.other-amt')[i];
+    var name = inp.value.trim();
+    var amt  = Number(amtEl?amtEl.value||0:0);
+    if (name && amt) { othersTotal += amt; otherItems.push({name,amt}); }
+  });
+
+  var total = rent + caution + doc + agency + janit + waste + othersTotal;
+  document.getElementById('totalDisplay').innerHTML = fmt(total);
+
+  // Breakdown chips
+  var chips = '';
+  if (rent)   chips += '<span class="tb-chip">Rent: '+fmt(rent)+'</span>';
+  if (caution)chips += '<span class="tb-chip">Caution: '+fmt(caution)+'</span>';
+  if (doc)    chips += '<span class="tb-chip">Legal: '+fmt(doc)+'</span>';
+  if (agency) chips += '<span class="tb-chip">Agency: '+fmt(agency)+'</span>';
+  if (janit)  chips += '<span class="tb-chip">Janitorial: '+fmt(janit)+'</span>';
+  if (waste)  chips += '<span class="tb-chip">Waste: '+fmt(waste)+'</span>';
+  otherItems.forEach(function(o){ chips += '<span class="tb-chip">'+o.name+': '+fmt(o.amt)+'</span>'; });
+  document.getElementById('breakdownChips').innerHTML = chips;
+
+  _schedule = {
+    rent, caution, doc, agency, janit, waste,
+    others: otherItems, total,
+    pctCaution: Math.round(pct('sl_caution')*100),
+    pctDoc: Math.round(pct('sl_doc')*100),
+    pctAgency: Math.round(pct('sl_agency')*100)
+  };
+
+  // Enable/disable generate button
+  var el = document.getElementById('nt_name');
+  var el2 = document.getElementById('nt_unit');
+  var canGen = rent>0 && el&&el.value.trim() && el2&&el2.value;
+  document.getElementById('genLinkBtn').disabled = !canGen;
+}
+
+function renderScheduleReadout(sched, unitLabel) {
+  var rows = [
+    ['Annual Rent', sched.rent],
+    ['Refundable Caution Fee ('+(sched.pctCaution||100)+'%)', sched.caution],
+    ['Documentation / Legal Fee ('+(sched.pctDoc||10)+'%)', sched.doc],
+    ['Agency Fee ('+(sched.pctAgency||10)+'%)', sched.agency],
+    ['Janitorial Services', sched.janit],
+    ['Waste Disposal', sched.waste],
+  ];
+  if (sched.others) sched.others.forEach(function(o){ rows.push([o.name, o.amt]); });
+  var html = '<table class="sched-table"><thead><tr><th>Description</th><th style="text-align:right">Amount (&#8358;)</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    if (r[1]) html += '<tr><td>'+r[0]+'</td><td class="amt">'+Number(r[1]).toLocaleString()+'</td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('schedReadout').innerHTML = html;
+  document.getElementById('schedTotal').innerHTML = '&#8358;' + Number(sched.total||0).toLocaleString();
+}
+
+/* ── ADD OTHER ── */
+function addOther() {
+  _otherCount++;
+  var id = _otherCount;
+  var div = document.createElement('div');
+  div.className = 'other-item slider-row';
+  div.id = 'other_'+id;
+  div.style.padding = '10px 14px';
+  div.innerHTML = '<input type="text" class="other-name" placeholder="Description (e.g. Water levy)" oninput="calcSchedule()" style="flex:2;padding:8px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:4px 4px 0 0;outline:none"/>'
+    +'<input type="number" class="other-amt" placeholder="Amount" oninput="calcSchedule()" style="width:130px;padding:8px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:4px 4px 0 0;outline:none"/>'
+    +'<button class="remove-btn" onclick="document.getElementById('other_'+id+'').remove();calcSchedule()" title="Remove">&#10005;</button>';
+  document.getElementById('othersContainer').appendChild(div);
+}
+
+/* ── GENERATE LINK ── */
+function generateLink() {
+  var name   = document.getElementById('nt_name').value.trim();
+  var email  = document.getElementById('nt_email').value.trim();
+  var unitEl = document.getElementById('nt_unit');
+  var unitId = unitEl.value;
+  var unitLabel = unitEl.options[unitEl.selectedIndex].text;
+
+  var payload = {
+    name, email, unitId, unitLabel,
+    schedule: _schedule,
+    _v: 1
+  };
+
+  var json  = JSON.stringify(payload);
+  var bytes = pako.deflate(json, {level:9});
+  var bin   = '';
+  for (var i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+  var b64   = btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  _link     = window.location.href.split('#')[0].split('?')[0] + '#' + b64;
+
+  document.getElementById('linkDisplay').textContent = _link;
+  document.getElementById('linkBox').style.display   = 'block';
+  document.getElementById('copyLinkBtn').style.display  = 'inline-flex';
+  document.getElementById('emailLinkBtn').style.display = 'inline-flex';
+  document.getElementById('linkBox').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(_link).then(function() {
+    var btn = document.getElementById('copyLinkBtn');
+    btn.textContent = '&#10003; Copied!';
+    setTimeout(function(){ btn.innerHTML = '&#128203; Copy Link'; }, 2000);
+  });
+}
+
+function sendLinkEmail() {
+  var name    = document.getElementById('nt_name').value.trim();
+  var email   = document.getElementById('nt_email').value.trim();
+  var unitEl  = document.getElementById('nt_unit');
+  var unitLabel = unitEl.options[unitEl.selectedIndex].text;
+  var subject = encodeURIComponent('[CRS] Your Payment Advice Form — ' + unitLabel);
+  var body    = encodeURIComponent(
+    'Dear ' + (name||'Tenant') + ',\n\n'
+    + 'Please click the link below to open your pre-filled payment advice form. Complete the remaining fields and click Submit to send it directly to us.\n\n'
+    + 'YOUR PAYMENT LINK:\n' + _link + '\n\n'
+    + 'Payment details and the total amount due are already filled in for you.\n\n'
+    + 'If the link is not clickable, copy and paste it into your browser.\n\n'
+    + 'Regards,\nCrestechnologies IS Ltd\nCrestville Properties\nRC 1643396'
+  );
+  window.open('mailto:' + (email||'') + '?subject=' + subject + '&body=' + body, '_blank');
+}
+
+/* ── COPY ACCOUNT ── */
+function copyTxt(txt, btn) {
+  navigator.clipboard.writeText(txt).then(function() {
+    var orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(function(){ btn.textContent = orig; }, 1500);
+  });
+}
+
+/* ── VALIDATION ── */
+var REQUIRED = ['tenantName','tenantEmail','tenantPhone','unitSelect','payDate','amountPaid','payMethod','txRef'];
+function up() {
+  var missing = REQUIRED.filter(function(id){ var el=document.getElementById(id); return !el||!el.value.trim(); });
+  var hasDeclare = document.getElementById('declareCheck').checked;
+  var allOk = !missing.length && hasDeclare;
+  var filled = REQUIRED.length - missing.length + (hasDeclare?1:0);
+  var pct = Math.round((filled/(REQUIRED.length+1))*100);
+  document.getElementById('progBar').style.width = pct+'%';
+  document.getElementById('progPct').textContent = pct+'%';
+  document.getElementById('submitBtn').disabled = !allOk;
+  var txt = document.getElementById('sbarTxt');
+  if (allOk) { txt.textContent = '\u2713 Ready to submit'; txt.className = 'sbar-status ok'; }
+  else { txt.textContent = missing.length + ' required field(s) incomplete'; txt.className = 'sbar-status'; }
+}
+
+/* ── RECEIPT UPLOAD ── */
+function previewReceipt(input) {
+  if (!input.files||!input.files[0]) return;
+  var file = input.files[0];
+  if (file.size > 3*1024*1024) { alert('File exceeds 3MB'); return; }
+  var el = document.getElementById('receiptName');
+  el.textContent = '\u2713 ' + file.name + ' (' + (file.size/1024).toFixed(0) + ' KB)';
+  el.style.display = 'block';
+  document.getElementById('receiptPreview').style.borderColor = 'var(--green)';
+}
+
+/* ── SUBMIT ── */
+function submitForm() {
+  var ref      = 'CRS-PAY-' + Date.now().toString(36).toUpperCase().slice(-6);
+  var name     = document.getElementById('tenantName').value.trim();
+  var email    = document.getElementById('tenantEmail').value.trim();
+  var phone    = document.getElementById('tenantPhone').value.trim();
+  var unitEl   = document.getElementById('unitSelect');
+  var unitLabel= unitEl.options[unitEl.selectedIndex].text;
+  var payDate  = document.getElementById('payDate').value;
+  var amtPaid  = Number(document.getElementById('amountPaid').value||0);
+  var method   = document.getElementById('payMethod').value;
+  var txRef    = document.getElementById('txRef').value.trim();
+  var bankUsed = document.getElementById('bankUsed').value.trim();
+  var payFor   = document.getElementById('payFor').value;
+  var notes    = document.getElementById('notes').value.trim();
+
+  var schedLines = '';
+  if (_schedule && _schedule.total) {
+    schedLines = '\nPAYMENT SCHEDULE REQUIRED\n'
+      + (_schedule.rent   ? 'Annual Rent: N' + _schedule.rent.toLocaleString() + '\n' : '')
+      + (_schedule.caution? 'Caution Fee ('+_schedule.pctCaution+'%): N' + _schedule.caution.toLocaleString() + '\n' : '')
+      + (_schedule.doc    ? 'Documentation Fee ('+_schedule.pctDoc+'%): N' + _schedule.doc.toLocaleString() + '\n' : '')
+      + (_schedule.agency ? 'Agency Fee ('+_schedule.pctAgency+'%): N' + _schedule.agency.toLocaleString() + '\n' : '')
+      + (_schedule.janit  ? 'Janitorial Services: N' + _schedule.janit.toLocaleString() + '\n' : '')
+      + (_schedule.waste  ? 'Waste Disposal: N' + _schedule.waste.toLocaleString() + '\n' : '');
+    if (_schedule.others) _schedule.others.forEach(function(o){ schedLines += o.name+': N'+o.amt.toLocaleString()+'\n'; });
+    schedLines += 'TOTAL REQUIRED: N' + _schedule.total.toLocaleString() + '\n';
+  }
+
+  var body = 'RENT PAYMENT ADVICE\n'
+    + '===================\n'
+    + 'Reference: ' + ref + '\n'
+    + 'Date: ' + new Date().toLocaleString('en-NG') + '\n\n'
+    + 'TENANT DETAILS\n'
+    + 'Name: ' + name + '\n'
+    + 'Email: ' + email + '\n'
+    + 'Phone: ' + phone + '\n'
+    + 'Unit: ' + unitLabel + '\n'
+    + schedLines
+    + '\nPAYMENT MADE\n'
+    + 'Amount Paid: N' + amtPaid.toLocaleString() + '\n'
+    + 'Payment For: ' + payFor + '\n'
+    + 'Date: ' + payDate + '\n'
+    + 'Method: ' + method + (bankUsed ? ' via ' + bankUsed : '') + '\n'
+    + 'Transaction Ref: ' + txRef + '\n'
+    + (notes ? 'Notes: ' + notes + '\n' : '')
+    + '\n---\nSubmitted via CRS Rent Payment Advice eForm';
+
+  var subject = encodeURIComponent('[CRS] Payment Advice — '+name+' — '+unitLabel+' — N'+amtPaid.toLocaleString()+' — '+ref);
+  var mailBody = encodeURIComponent(body);
+  window.open('mailto:crestechnologies@outlook.com?subject='+subject+'&body='+mailBody, '_blank');
+
+  document.getElementById('ssRef').textContent = ref;
+  document.getElementById('ssMsg').innerHTML = 'Payment advice email opened for <strong>'+name+'</strong> — <strong>'+unitLabel+'</strong>. Click Send in your email app to notify Crestechnologies IS Ltd. We will issue an official receipt within 24&#x2013;48 hours.';
+  document.querySelectorAll('.card,.sbar').forEach(function(el){ el.style.display='none'; });
+  document.getElementById('successScreen').classList.add('on');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
