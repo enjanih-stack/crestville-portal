@@ -697,11 +697,19 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .mpc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-top: 18px; }
 .mpc-item { background: rgba(255,255,255,.06); border-radius: 6px; padding: 12px 14px; }
 
-/* ── DAYS COUNTDOWN ── */
+/* ── DAYS COUNTDOWN — 3-tier ── */
 .days-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: .75rem; font-weight: 700; }
-.dp-danger { background: rgba(140,31,31,.15); color: var(--red); border: 1px solid rgba(140,31,31,.25); }
-.dp-warn { background: rgba(201,150,12,.12); color: #7a5a00; border: 1px solid rgba(201,150,12,.25); }
-.dp-ok { background: rgba(26,92,46,.1); color: var(--green); border: 1px solid rgba(26,92,46,.2); }
+/* OVERDUE / 0-60 days — RED pulsing */
+.dp-red { background: rgba(140,31,31,.15); color: #b91c1c; border: 1.5px solid rgba(140,31,31,.4); animation: pill-pulse 1.8s ease-in-out infinite; }
+@keyframes pill-pulse { 0%,100%{ box-shadow:0 0 0 0 rgba(140,31,31,.35); } 50%{ box-shadow:0 0 0 5px rgba(140,31,31,0); } }
+/* 61-90 days — ORANGE */
+.dp-orange { background: rgba(234,120,20,.12); color: #b45309; border: 1.5px solid rgba(234,120,20,.35); }
+/* 90+ days — GREEN */
+.dp-green { background: rgba(26,92,46,.1); color: #15803d; border: 1.5px solid rgba(26,92,46,.25); }
+/* keep old names as aliases for backward compat */
+.dp-danger { background: rgba(140,31,31,.15); color: #b91c1c; border: 1.5px solid rgba(140,31,31,.4); }
+.dp-warn   { background: rgba(234,120,20,.12); color: #b45309; border: 1.5px solid rgba(234,120,20,.35); }
+.dp-ok     { background: rgba(26,92,46,.1);    color: #15803d; border: 1.5px solid rgba(26,92,46,.25); }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
@@ -2087,6 +2095,15 @@ function renderExpiringTable() {
 }
 
 /* ═══ RENT MANAGER TABLE ══════════════════════════════ */
+
+function fmtTableDate(d) {
+  if (!d) return '—';
+  try {
+    var dt = new Date(d);
+    return dt.toLocaleDateString('en-NG', {day:'2-digit', month:'short', year:'numeric'});
+  } catch(e) { return d; }
+}
+
 function renderRentManager() {
   const tbody = document.getElementById('rmBody');
   if(!tbody) return;
@@ -2101,7 +2118,12 @@ function renderRentManager() {
     const exp = e.expiry ? new Date(e.expiry) : null;
     if(exp) exp.setHours(0,0,0,0);
     const isOverdue = exp && exp < today;
-    const matchFilter = !filter || (filter==='overdue' && isOverdue) || (filter==='active' && !isOverdue);
+    const daysRem = exp ? Math.round((exp - today) / 864e5) : null;
+    const matchFilter = !filter
+      || (filter === 'overdue'   && isOverdue)
+      || (filter === 'active'    && !isOverdue && (daysRem === null || daysRem > 90))
+      || (filter === 'expiring'  && !isOverdue && daysRem !== null && daysRem <= 60)
+      || (filter === 'due_soon'  && !isOverdue && daysRem !== null && daysRem > 60 && daysRem <= 90);
     return matchSearch && matchFilter;
   });
 
@@ -2116,13 +2138,38 @@ function renderRentManager() {
     const isOverdue = exp && exp < today2;
     const label = getPropertyLabel(e.unitId||e.unit);
     const idx = rentLogs.indexOf(e);
-    return `<tr>
-      <td style="max-width:180px"><div style="font-weight:600;font-size:.82rem">${label}</div></td>
-      <td>${e.tenant}</td>
-      <td>₦${Number(e.amount).toLocaleString()}</td>
-      <td>${e.start||'—'}</td>
-      <td>${e.expiry||'—'}</td>
-      <td><span class="badge ${isOverdue?'badge-overdue':'badge-active'}">${isOverdue?'Overdue':'Active'}</span></td>
+    // Calculate days left for colour coding
+    const daysLeft2 = exp ? Math.round((exp - today2) / 864e5) : null;
+    const rowBg = daysLeft2 !== null
+      ? (daysLeft2 < 0   ? 'background:rgba(140,31,31,.06);'
+      : daysLeft2 <= 60  ? 'background:rgba(140,31,31,.04);'
+      : daysLeft2 <= 90  ? 'background:rgba(234,120,20,.04);' : '')
+      : '';
+    const expiryCell = e.expiry
+      ? `<span style="font-size:.82rem">${fmtTableDate(e.expiry)}</span>`
+        + (daysLeft2 !== null ? `<br><span style="font-size:.68rem;font-weight:700;${
+            daysLeft2 < 0   ? 'color:#b91c1c'
+          : daysLeft2 <= 60 ? 'color:#b91c1c'
+          : daysLeft2 <= 90 ? 'color:#b45309'
+          : 'color:#15803d'}">${
+            daysLeft2 < 0   ? '🔴 ' + Math.abs(daysLeft2) + 'd overdue'
+          : daysLeft2 <= 60 ? '🔴 ' + daysLeft2 + 'd left'
+          : daysLeft2 <= 90 ? '🟠 ' + daysLeft2 + 'd left'
+          : '🟢 ' + daysLeft2 + 'd left'
+          }</span>` : '')
+      : '<span style="color:var(--dim);font-size:.8rem">—</span>';
+
+    return `<tr style="${rowBg}">
+      <td style="max-width:180px"><div style="font-weight:600;font-size:.82rem">${label}</div>
+        <div style="font-size:.7rem;color:var(--dim)">${e.tenantEmail||''}</div></td>
+      <td><div style="font-size:.84rem">${e.tenant}</div>
+        <div style="font-size:.7rem;color:var(--dim)">${e.tenantPhone||''}</div></td>
+      <td><strong>₦${Number(e.amount).toLocaleString()}</strong></td>
+      <td style="font-size:.82rem">${e.start ? fmtTableDate(e.start) : '<span style="color:var(--dim)">—</span>'}</td>
+      <td>${expiryCell}</td>
+      <td><span class="badge ${daysLeft2 !== null && daysLeft2 < 0 ? 'badge-overdue' : daysLeft2 !== null && daysLeft2 <= 60 ? 'badge-overdue' : daysLeft2 !== null && daysLeft2 <= 90 ? '' : 'badge-active'}" style="${daysLeft2 !== null && daysLeft2 <= 90 && daysLeft2 >= 0 && daysLeft2 > 60 ? 'background:rgba(234,120,20,.12);color:#b45309;border-color:rgba(234,120,20,.3)' : ''}">${
+        isOverdue ? 'Overdue' : daysLeft2 !== null && daysLeft2 <= 60 ? 'Expiring' : daysLeft2 !== null && daysLeft2 <= 90 ? 'Due Soon' : 'Active'
+      }</span></td>
       <td style="white-space:nowrap">
         <button class="btn btn-sm btn-outline" onclick="editRentRecord(${idx})" title="Edit">✏️</button>
         <button class="btn btn-sm btn-blue" onclick="generateReceiptByIdx(${idx})" title="Receipt">🧾</button>
@@ -2770,7 +2817,13 @@ function renderProperties() {
     const isOverdue = daysLeft !== null && daysLeft < 0;
     const docCount = _docCounts[p.id] || 0;
 
-    return `<div class="unit-card" style="position:relative">
+    return `<div class="unit-card" style="position:relative;${
+      occupied && daysLeft !== null
+        ? (daysLeft <= 60 ? 'border-left:4px solid #b91c1c;'
+          : daysLeft <= 90 ? 'border-left:4px solid #ea7814;'
+          : 'border-left:4px solid #15803d;')
+        : occupied ? 'border-left:4px solid var(--rule);' : ''
+    }">
       <div class="uc-top">
         <div class="uc-type-row">
           <span class="uc-icon">${icons[p.type]||'🏠'}</span>
@@ -2785,7 +2838,20 @@ function renderProperties() {
           <div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--rule)">
             <div style="font-size:.84rem;font-weight:600;color:var(--ink)">${rec.tenant}</div>
             <div style="font-size:.72rem;color:var(--dim);margin-top:1px">${rec.tenantEmail||''}</div>
-            ${daysLeft !== null ? `<div style="margin-top:5px"><span class="days-pill ${daysLeft<0?'dp-danger':daysLeft<=30?'dp-warn':'dp-ok'}">${daysLeft<0?Math.abs(daysLeft)+' days overdue':daysLeft+' days left'}</span></div>` : ''}
+            ${rec.expiry ? `<div style="font-size:.7rem;color:var(--dim);margin-top:2px">Expires: ${new Date(rec.expiry).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})}</div>` : ''}
+            ${daysLeft !== null ? `<div style="margin-top:6px"><span class="days-pill ${
+  daysLeft < 0          ? 'dp-red'    :
+  daysLeft <= 60        ? 'dp-red'    :
+  daysLeft <= 90        ? 'dp-orange' : 'dp-green'
+}">${
+  daysLeft < 0
+    ? '🔴 ' + Math.abs(daysLeft) + ' days overdue'
+    : daysLeft <= 60
+      ? '🔴 ' + daysLeft + ' days left'
+      : daysLeft <= 90
+        ? '🟠 ' + daysLeft + ' days left'
+        : '🟢 ' + daysLeft + ' days left'
+}</span></div>` : ''}
           </div>` : ''}
         ${docCount > 0 ? `<div style="margin-top:6px"><span class="doc-count-pill">📁 ${docCount} doc${docCount>1?'s':''}</span></div>` : ''}
       </div>
@@ -2816,17 +2882,22 @@ const _docCounts = {};
 ════════════════════════════════════════════════════ */
 
 function downloadCSVTemplate() {
-  const headers = 'unit_id,unit_label,location,city,type,tenant_name,tenant_email,tenant_phone,rent_amount,start_date,expiry_date,vacancy,notes';
-  const sample  = 'OJ-1A,2BDR Flat 1A,11 Jibewa Somorin Close Ojodu,Ojodu,2 Bedroom Flat,John Doe,john@email.com,+2348012345678,500000,2025-01-01,2026-01-01,occupied,';
-  const sample2 = 'OJ-2A,2BDR Flat 2A,11 Jibewa Somorin Close Ojodu,Ojodu,2 Bedroom Flat,,,,350000,,,vacant,Available from Feb';
-  const blob = new Blob([headers+'\n'+sample+'\n'+sample2], {type:'text/csv'});
-  const a = document.createElement('a');
+  var hdrs = 'unit_id,unit_label,location,city,type,tenant_name,tenant_email,tenant_phone,rent_amount,start_date,expiry_date,vacancy,notes,tenant_nin';
+  var rows = [
+    'OJ-1A,2BDR Flat 1A,11 Jibewa Somorin Close Ojodu,Ojodu,2 Bedroom Flat,Mr. Ekene Iheme,ekene@gmail.com,+2348001234567,800000,01/06/2025,31/05/2026,occupied,,12345678901',
+    'OJ-2A,2BDR Flat 2A,11 Jibewa Somorin Close Ojodu,Ojodu,2 Bedroom Flat,Ms Adelodun Christiana Jimoh,adelodun@gmail.com,+2348007654321,1600000,01/07/2025,30/06/2026,occupied,,',
+    'OJ-3A,2BDR Flat 3A,11 Jibewa Somorin Close Ojodu,Ojodu,2 Bedroom Flat,Mrs Bologun,bolog@gmail.com,+2348009876543,750000,01/08/2025,31/07/2026,occupied,,',
+    'IB-2B,2 Bedroom Flat,Ababeji Engrs Residence Zone C Ibadan,Ibadan,2 Bedroom Flat,Mr & Mrs Bamiro Kehinde,kennytemmy2010@gmail.com,+2348012345678,200000,01/09/2025,31/08/2026,occupied,,',
+    'EN-2B,2BDR Flat,Enugu,Enugu,2 Bedroom Flat,,,, 300000,,,vacant,,'
+  ];
+  var csv = hdrs + '\n' + rows.join('\n');
+  var blob = new Blob([csv], {type:'text/csv'});
+  var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'CRS_Rent_Import_Template.csv';
+  a.download = 'CRS_RentImport_Template.csv';
   a.click();
-  toast('✓ CSV template downloaded');
+  if (typeof toast === 'function') toast('\u2713 CSV template downloaded — fill your data and import');
 }
-
 function clearImport() {
   document.getElementById('importProgress').style.display = 'none';
   document.getElementById('importSummary').style.display = 'none';
