@@ -4402,6 +4402,26 @@ function renderTenantDashboard() {
 
   var stepsEl = document.getElementById('appTrackerSteps');
   if (stepsEl) stepsEl.innerHTML = stepsHtml;
+
+  // Update Renew QA card based on active workflow
+  loadTenantWorkflow().then(function(wf) {
+    var subEl = document.getElementById('renewQASub');
+    var cardEl = document.getElementById('renewQACard');
+    if (!subEl || !cardEl) return;
+    if (!wf || wf.status === 'complete' || wf.status === 'rejected') {
+      subEl.textContent = 'Request renewal';
+      cardEl.style.opacity = '1';
+    } else if (wf.status === 'amendment') {
+      subEl.innerHTML = '<span style="color:var(--gold);font-weight:700">✏️ Amendment needed</span>';
+      cardEl.style.border = '2px solid var(--gold)';
+    } else {
+      var steps = wf.type === 'new_tenant' ? WF_STEPS_NEW : WF_STEPS_RENEWAL;
+      var cur   = steps.find(function(s){ return s.id === wf.currentStep; });
+      subEl.innerHTML = '<span style="color:#b45309;font-weight:600">⏳ ' + (cur ? cur.label : 'Pending') + '</span>';
+      cardEl.style.border = '2px solid rgba(201,150,12,.4)';
+      cardEl.style.background = 'rgba(201,150,12,.04)';
+    }
+  });
 }
 
 function _setText(id, val) {
@@ -4539,15 +4559,78 @@ var PORTAL_BASE = 'https://enjanih-stack.github.io/crestville-portal';
 /* ── OPEN RENEWAL MODAL — check for existing pending workflow ── */
 async function openRenewalModalWithCheck() {
   var wf = await loadTenantWorkflow();
-  if (wf && wf.status !== 'complete' && wf.status !== 'rejected') {
-    toast('⚠ You have a pending renewal request (Step: ' + (wf.currentStep||'submitted').replace(/_/g,' ') + '). Please wait for admin review before submitting again.', 5000);
-    renderTenantWorkflowTracker(wf);
-    // scroll to tracker
-    var el = document.getElementById('wfTrackerContainer');
-    if (el) el.scrollIntoView({behavior:'smooth'});
+  if (wf && wf.status !== 'complete' && wf.status !== 'rejected' && wf.status !== 'amendment') {
+    // Show the pending status modal instead of just a toast
+    showPendingWorkflowModal(wf);
     return;
   }
+  // If rejected or amendment — allow resubmission
   openRenewalModal();
+}
+
+function showPendingWorkflowModal(wf) {
+  var steps   = wf.type === 'new_tenant' ? WF_STEPS_NEW : WF_STEPS_RENEWAL;
+  var curIdx  = steps.findIndex(function(s){ return s.id === wf.currentStep; });
+  var curStep = steps[curIdx] || {};
+  var nextStep= steps[curIdx+1] || null;
+  var isPendingAdmin = curStep.adminReview;
+
+  var stepsHtml = steps.map(function(step, i) {
+    var done   = i < curIdx;
+    var active = i === curIdx;
+    var locked = i > curIdx;
+    var dot    = done ? '✓' : (i+1);
+    var cls    = done ? 'wf-done' : active ? 'wf-active' : 'wf-locked';
+    return '<div class="wft-step ' + cls + '" style="padding-bottom:14px">'
+      + '<div class="wft-dot">' + dot + '</div>'
+      + '<div class="wft-info">'
+        + '<div class="wft-name">' + step.label + '</div>'
+        + (active ? '<span class="wft-badge wfb-active">▶ Current step</span>' : '')
+        + (done   ? '<span class="wft-badge wfb-done">✓ Complete</span>'       : '')
+        + (locked ? '<span class="wft-badge wfb-locked">🔒 Locked</span>'      : '')
+      + '</div>'
+    + '</div>';
+  }).join('');
+
+  var adminMsg = isPendingAdmin
+    ? '<div style="background:rgba(201,150,12,.1);border:1px solid rgba(201,150,12,.25);border-radius:8px;padding:12px 14px;font-size:.82rem;color:#b45309;line-height:1.65;margin-bottom:14px">'
+      + '⏳ <strong>Awaiting admin review.</strong> Crestechnologies IS Ltd is reviewing your request at this step. You will be notified by email when action is taken.</div>'
+    : '<div style="background:rgba(26,92,46,.08);border:1px solid rgba(26,92,46,.2);border-radius:8px;padding:12px 14px;font-size:.82rem;color:#15803d;line-height:1.65;margin-bottom:14px">'
+      + '▶ <strong>Action required from you.</strong> '
+      + (wf.currentStep === 'payment_submitted' ? 'Please submit your payment receipt using the button below.' : 'Please complete the required action for the current step.')
+      + '</div>';
+
+  // Show in a modal
+  var overlay = document.getElementById('pendingWfOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'pendingWfOverlay';
+    overlay.className = 'modal-overlay on';
+    overlay.innerHTML = '<div class="modal" style="max-width:480px;padding:0;overflow:hidden">'
+      + '<div class="modal-head"><h3>\ud83d\udccb Your Renewal Request Status</h3>'
+      + '<button class="modal-close" onclick="closePendingWfModal()">\u2715</button></div>'
+      + '<div class="modal-body" id="pendingWfBody"></div>'
+      + '<div class="modal-foot" style="display:flex;gap:8px;justify-content:flex-end" id="pendingWfFoot"></div>'
+      + '</div>';
+    document.body.appendChild(overlay);
+  }
+
+  overlay.classList.add('on');
+
+  var body = document.getElementById('pendingWfBody');
+  body.innerHTML = adminMsg
+    + '<div style="font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">Request Progress</div>'
+    + '<div class="wf-tracker" style="margin-bottom:0"><div class="wft-steps">' + stepsHtml + '</div></div>';
+
+  var foot = document.getElementById('pendingWfFoot');
+  foot.innerHTML = '<button class="btn btn-outline" onclick="closePendingWfModal()">Close</button>';
+
+  // Add action button if tenant needs to do something
+  if (wf.currentStep === 'payment_submitted') {
+    foot.innerHTML += '<button class="btn btn-gold" onclick="closePendingWfModal();openPaymentSubmitModal()">\ud83d\udcb3 Submit Payment Receipt</button>';
+  } else if (wf.currentStep === 'eform_sent') {
+    foot.innerHTML += '<a href="https://enjanih-stack.github.io/crestville-portal/CRS_Tenancy_EForm_v3.html" target="_blank" class="btn btn-gold">\ud83d\udcdd Complete eForm</a>';
+  }
 }
 
 /* ── SUBMIT RENEWAL WITH WORKFLOW + GUARANTORS ── */
@@ -5208,6 +5291,11 @@ setTimeout(function() {
   }
 }, 2500);
 
+
+function closePendingWfModal() {
+  var el = document.getElementById('pendingWfOverlay');
+  if (el) el.classList.remove('on');
+}
 </script>
 
 <!-- ═══ ROLE SELECTOR ═══ -->
