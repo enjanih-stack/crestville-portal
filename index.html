@@ -1837,42 +1837,64 @@ async function continueWithRole() {
   }
 
   if (_selectedRole === 'existing_tenant') {
-    // Verify identity against rentLogs
-    const fullName = document.getElementById('etFullName').value.trim().toLowerCase();
-    const unitInput = document.getElementById('etUnit').value.trim().toLowerCase();
-    const addrInput = document.getElementById('etAddress').value.trim().toLowerCase();
-    const errEl = document.getElementById('etVerifyErr');
+    const inputName  = document.getElementById('etFullName').value.trim();
+    const inputEmail = (document.getElementById('etTenantEmail') ? document.getElementById('etTenantEmail').value.trim() : '').toLowerCase() || email;
+    const errEl      = document.getElementById('etVerifyErr');
 
-    if (!fullName || !unitInput) {
-      errEl.textContent = '⚠ Enter your full name and apartment number to verify.';
+    if (!inputName || !inputEmail) {
+      errEl.textContent = '⚠ Please enter both your full name and email address.';
+      errEl.style.cssText = 'background:rgba(140,31,31,.1);color:#b91c1c;display:block;padding:7px 10px;border-radius:5px;font-size:.76rem';
       return;
     }
 
-    // Match against rentLogs — fuzzy match name + unit
-    const match = rentLogs.find(r => {
-      const rName = (r.tenant||'').toLowerCase();
-      const rUnit = (getPropertyLabel(r.unitId||r.unit)||'').toLowerCase();
-      const rLoc  = (r.location||r.unit||'').toLowerCase();
-      const nameMatch = rName.includes(fullName) || fullName.includes(rName.split(' ')[0]);
-      const unitMatch = rUnit.includes(unitInput.split(' ')[0]) ||
-                        unitInput.split(' ').some(w => w.length > 2 && rUnit.includes(w));
-      return nameMatch && unitMatch;
+    const strip = n => (n||'').toLowerCase().replace(/^(mr\.?|mrs\.?|ms\.?|dr\.?|prof\.?)\s+/i,'').trim();
+    const nameLower = strip(inputName);
+
+    // Match: STRICT email + name match
+    let match = rentLogs.find(function(r) {
+      const rEmail    = (r.tenantEmail||'').toLowerCase();
+      const rName     = strip(r.tenant);
+      const rContract = strip(r.contractName||r.tenant);
+      const emailMatch = rEmail === inputEmail || rEmail === email;
+      const nameMatch  = rName === nameLower || rContract === nameLower
+        || rName.includes(nameLower) || nameLower.includes(rName)
+        || rContract.includes(nameLower) || nameLower.includes(rContract)
+        || rName.split(' ').filter(w=>w.length>3).some(w => nameLower.includes(w));
+      return emailMatch && nameMatch;
     });
 
+    // Fallback: email-only match (tenant may have different name spelling)
     if (!match) {
-      errEl.textContent = '⚠ Details do not match our records. Check your name and apartment number.';
+      match = rentLogs.find(function(r) {
+        return (r.tenantEmail||'').toLowerCase() === inputEmail
+            || (r.tenantEmail||'').toLowerCase() === email;
+      });
+      if (match) {
+        errEl.style.cssText = 'background:rgba(201,150,12,.1);color:#b45309;display:block;padding:7px 10px;border-radius:5px;font-size:.76rem';
+        errEl.textContent = '⚠ Email matched but name differs from our record. Proceeding — contact admin to update your name on file.';
+      }
+    }
+
+    if (!match) {
+      errEl.style.cssText = 'background:rgba(140,31,31,.1);color:#b91c1c;display:block;padding:7px 10px;border-radius:5px;font-size:.76rem';
+      errEl.innerHTML = '⚠ No tenancy record found for these details.<br><span style="font-size:.73rem">Check: (1) Name is exactly as on your agreement &nbsp;(2) Email matches our records.<br>Contact <a href="mailto:crestechnologies@outlook.com" style="color:inherit">crestechnologies@outlook.com</a> for help.</span>';
       return;
     }
 
-    // Also check email match if tenant has email on file
-    if (match.tenantEmail && match.tenantEmail.toLowerCase() !== email) {
-      // Email mismatch — may be a different user, warn but allow if name+unit match
-      errEl.textContent = '⚠ Verified by name/unit. Note: email differs from record — contact admin if issues arise.';
-    } else {
-      errEl.textContent = '';
+    // Link email to record if not set
+    if (!match.tenantEmail && inputEmail) {
+      const ridx = rentLogs.findIndex(function(r){ return r.id === match.id; });
+      if (ridx >= 0) {
+        rentLogs[ridx].tenantEmail = inputEmail;
+        match = rentLogs[ridx];
+        saveLocal();
+        if (window._db) window._db.collection('rentRecords').doc(match.id).update({tenantEmail: inputEmail}).catch(function(){});
+      }
     }
 
-    // Grant access — set as tenant (non-admin regardless of who logged in)
+    errEl.style.cssText = 'background:rgba(26,92,46,.08);color:#15803d;display:block;padding:7px 10px;border-radius:5px;font-size:.76rem';
+    errEl.textContent = '✓ Identity verified — loading your portal…';
+
     window._myRecord = match;
     isAdmin = false;
     document.getElementById('roleSelectorOverlay').classList.remove('on');
@@ -2451,10 +2473,12 @@ async function loadMyProperty(userData) {
       <div class="t-hero-unit">${getPropertyLabel(myRecord.unitId||myRecord.unit)}</div>
       <div class="t-hero-loc">📍 ${locStr}</div>
       <div class="t-hero-grid">
-        <div class="t-stat"><div class="t-stat-label">Annual Rent</div><div class="t-stat-value">₦${Number(myRecord.amount||0).toLocaleString()}</div><div class="t-stat-sub">Per year</div></div>
+        <div class="t-stat"><div class="t-stat-label">Annual Rent</div><div class="t-stat-value">₦${Number(myRecord.amount||0).toLocaleString()}</div><div class="t-stat-sub">${myRecord.newRent?'New: ₦'+Number(myRecord.newRent).toLocaleString():'Per year'}</div></div>
         <div class="t-stat"><div class="t-stat-label">Start Date</div><div class="t-stat-value" style="font-size:.92rem">${fmt(myRecord.start)}</div><div class="t-stat-sub">Tenancy began</div></div>
         <div class="t-stat"><div class="t-stat-label">Expiry Date</div><div class="t-stat-value" style="font-size:.92rem">${fmt(myRecord.expiry)}</div><div class="t-stat-sub">${daysLeft!==null?(isOverdue?Math.abs(daysLeft)+' days ago':daysLeft+' days left'):'—'}</div></div>
         <div class="t-stat"><div class="t-stat-label">Status</div><div class="t-stat-value" style="font-size:.92rem">${isOverdue?'🔴 Expired':isExpiring?'🟡 Expiring':'🟢 Active'}</div><div class="t-stat-sub">${isOverdue?'Renewal required':isExpiring?'Renewal due':'In good standing'}</div></div>
+        ${myRecord.lastPayment?`<div class="t-stat"><div class="t-stat-label">Last Payment</div><div class="t-stat-value" style="font-size:.9rem">${fmt(myRecord.lastPayment)}</div><div class="t-stat-sub">Most recent payment</div></div>`:''}
+        ${myRecord.vacancy?`<div class="t-stat"><div class="t-stat-label">Occupancy</div><div class="t-stat-value" style="font-size:.9rem;text-transform:capitalize">${myRecord.vacancy}</div><div class="t-stat-sub">Current status</div></div>`:''}
       </div>
       <div style="margin-top:18px;position:relative;z-index:1">
         <div style="display:flex;justify-content:space-between;font-size:.62rem;color:#7a6e62;margin-bottom:5px">
@@ -2471,6 +2495,71 @@ async function loadMyProperty(userData) {
       <div class="qa-card" onclick="window.open('https://enjanih-stack.github.io/crestville-portal/tenancy_deviation_requisition_v2.html','_blank')"><span class="qa-icon">📝</span><div class="qa-label">Deviation Request</div><div class="qa-sub">Mid-tenancy changes</div></div>
       <div class="qa-card" onclick="generateReceiptByRecord(window._myRecord)"><span class="qa-icon">🧾</span><div class="qa-label">Print Receipt</div><div class="qa-sub">Rent receipt</div></div>
       <div class="qa-card" onclick="showPage('pgNotices',document.getElementById('navNotices'))"><span class="qa-icon">📋</span><div class="qa-label">View Notices</div><div class="qa-sub">Landlord announcements</div></div>
+    </div>
+
+    <!-- FULL TENANCY DETAILS CARD -->
+    <div class="sec-card">
+      <div class="sec-head"><h2>📋 Your Tenancy Details</h2></div>
+      <div class="sec-body">
+        <table style="width:100%;border-collapse:collapse;font-size:.84rem">
+          <tr style="border-bottom:1px solid var(--rule)">
+            <td style="padding:9px 0;color:var(--dim);width:45%;font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Tenant Name (Portal)</td>
+            <td style="padding:9px 0;font-weight:600;color:var(--ink)">${myRecord.tenant||'—'}</td>
+          </tr>
+          ${myRecord.contractName && myRecord.contractName !== myRecord.tenant ? `<tr style="border-bottom:1px solid var(--rule)">
+            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Name on Agreement</td>
+            <td style="padding:9px 0;font-weight:600;color:var(--gold)">${myRecord.contractName}</td>
+          </tr>` : ''}
+          <tr style="border-bottom:1px solid var(--rule)">
+            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Email on Record</td>
+            <td style="padding:9px 0">${myRecord.tenantEmail||'—'}</td>
+          </tr>
+          ${myRecord.tenantPhone ? `<tr style="border-bottom:1px solid var(--rule)">
+            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Phone</td>
+            <td style="padding:9px 0">${myRecord.tenantPhone}</td>
+          </tr>` : ''}
+          <tr style="border-bottom:1px solid var(--rule)">
+            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Property / Unit</td>
+            <td style="padding:9px 0;font-weight:600">${getPropertyLabel(myRecord.unitId||myRecord.unit)}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--rule)">
+            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Location</td>
+            <td style="padding:9px 0">${myRecord.location||locStr||'—'}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--rule)">
+            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Unit ID</td>
+            <td style="padding:9px 0;font-family:monospace;font-size:.82rem">${myRecord.unitId||myRecord.unit||'—'}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--rule)">
+            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Annual Rent</td>
+            <td style="padding:9px 0;font-weight:700;color:var(--ink)">₦${Number(myRecord.amount||0).toLocaleString()}</td>
+          </tr>
+          ${myRecord.newRent ? `<tr style="border-bottom:1px solid var(--rule)">
+            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">New / Proposed Rent</td>
+            <td style="padding:9px 0;font-weight:700;color:var(--gold)">₦${Number(myRecord.newRent).toLocaleString()}</td>
+          </tr>` : ''}
+          <tr style="border-bottom:1px solid var(--rule)">
+            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Tenancy Start</td>
+            <td style="padding:9px 0">${fmt(myRecord.start)}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--rule)">
+            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Tenancy Expiry</td>
+            <td style="padding:9px 0;font-weight:600;color:${isOverdue?'var(--red)':isExpiring?'#b45309':'var(--green)'}">${fmt(myRecord.expiry)}${daysLeft!==null?' ('+Math.abs(daysLeft)+(isOverdue?' days overdue':' days remaining')+')'  :''}</td>
+          </tr>
+          ${myRecord.lastPayment ? `<tr style="border-bottom:1px solid var(--rule)">
+            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Last Payment Date</td>
+            <td style="padding:9px 0">${fmt(myRecord.lastPayment)}</td>
+          </tr>` : ''}
+          ${myRecord.tenantNIN ? `<tr style="border-bottom:1px solid var(--rule)">
+            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">NIN (on file)</td>
+            <td style="padding:9px 0;font-family:monospace">••••••${myRecord.tenantNIN.slice(-4)}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Term</td>
+            <td style="padding:9px 0;font-weight:700;color:var(--gold)">TERM CERTAIN</td>
+          </tr>
+        </table>
+      </div>
     </div>
 
     ${myRecord.notes?`<div class="sec-card"><div class="sec-head"><h2>📌 Notes from Landlord</h2></div><div class="sec-body" style="font-size:.84rem;color:var(--dim);line-height:1.75">${myRecord.notes}</div></div>`:''}
@@ -4718,11 +4807,21 @@ function submitRenewalViaWorkflow() {
     <div class="rc-body">
       <div class="role-options" id="roleOptions"></div>
       <div id="etVerifyPanel">
-        <div style="font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">Verify your identity</div>
-        <div class="fg" style="margin-bottom:10px"><label>Full Legal Name *</label><input type="text" id="etFullName" placeholder="As it appears on your tenancy agreement"/></div>
-        <div class="fg" style="margin-bottom:10px"><label>Apartment / Unit *</label><input type="text" id="etUnit" placeholder="e.g. 2BDR Flat 1A, Ojodu"/></div>
-        <div class="fg" style="margin-bottom:10px"><label>Residential Address</label><input type="text" id="etAddress" placeholder="Estate address as on your agreement"/></div>
-        <div class="verify-err" id="etVerifyErr"></div>
+        <div style="margin-bottom:14px">
+          <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;opacity:.85">Verify Your Tenancy</div>
+          <div style="font-size:.78rem;color:var(--dim);line-height:1.65">Enter your details <strong>exactly as on your tenancy agreement</strong> to access your portal.</div>
+        </div>
+        <div class="fg" style="margin-bottom:10px">
+          <label style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)">Full Name — as on Tenancy Agreement <span style="color:var(--red)">*</span></label>
+          <input type="text" id="etFullName" placeholder="e.g. Mr. Emmanuel Anih (include title)"/>
+          <div style="font-size:.67rem;color:var(--dim);margin-top:3px">Include Mr/Mrs/Ms exactly as written on your agreement</div>
+        </div>
+        <div class="fg" style="margin-bottom:10px">
+          <label style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)">Email Address on Record <span style="color:var(--red)">*</span></label>
+          <input type="email" id="etTenantEmail" placeholder="Email registered with Crestechnologies IS Ltd"/>
+          <div style="font-size:.67rem;color:var(--dim);margin-top:3px">The email address we have on file for your tenancy</div>
+        </div>
+        <div class="verify-err" id="etVerifyErr" style="font-size:.76rem;padding:7px 10px;border-radius:5px;margin-top:2px"></div>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--rule);margin-top:4px">
         <button class="btn btn-outline" onclick="signOutAndReturn()">← Sign Out</button>

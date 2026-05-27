@@ -776,7 +776,7 @@ function quickApply(id) {
 /* ── EXISTING TENANT ── */
 function openExisting() { document.getElementById('existingOverlay').classList.add('open'); document.body.style.overflow='hidden'; }
 function closeExisting() { document.getElementById('existingOverlay').classList.remove('open'); document.body.style.overflow=''; }
-document.getElementById('existingOverlay').addEventListener('click', e => { if(e.target===document.getElementById('existingOverlay'))closeExisting(); });
+(function(){var __x=document.getElementById('existingOverlay');if(__x){var __el_existingOverlay=document.getElementById('existingOverlay');if(__el_existingOverlay)document.getElementById('existingOverlay').addEventListener('click', e => { if(e.target===document.getElementById('existingOverlay'))closeExisting(); });;}})();
 
 function atab(name) {
   document.querySelectorAll('.atab').forEach(t => t.classList.remove('on'));
@@ -882,7 +882,7 @@ async function doRegister() {
 /* ── ADMIN LOGIN ── */
 function openAdmin()  { document.getElementById('adminOverlay').classList.add('open'); document.body.style.overflow='hidden'; }
 function closeAdmin() { document.getElementById('adminOverlay').classList.remove('open'); document.body.style.overflow=''; }
-document.getElementById('adminOverlay').addEventListener('click', e => { if(e.target===document.getElementById('adminOverlay'))closeAdmin(); });
+(function(){var __x=document.getElementById('adminOverlay');if(__x){var __el_adminOverlay=document.getElementById('adminOverlay');if(__el_adminOverlay)document.getElementById('adminOverlay').addEventListener('click', e => { if(e.target===document.getElementById('adminOverlay'))closeAdmin(); });;}})();
 
 async function doAdminLogin() {
   const errEl = 'adErr';
@@ -931,7 +931,7 @@ function showVerifyModal(email, isNew=false) {
   document.getElementById('verifyOverlay').classList.add('open');
 }
 function closeVerify() { document.getElementById('verifyOverlay').classList.remove('open'); document.body.style.overflow=''; }
-document.getElementById('verifyOverlay').addEventListener('click', e => { if(e.target===document.getElementById('verifyOverlay'))closeVerify(); });
+(function(){var __x=document.getElementById('verifyOverlay');if(__x){var __el_verifyOverlay=document.getElementById('verifyOverlay');if(__el_verifyOverlay)document.getElementById('verifyOverlay').addEventListener('click', e => { if(e.target===document.getElementById('verifyOverlay'))closeVerify(); });;}})();
 
 async function resendVerification() {
   if (window._auth?.currentUser) {
@@ -948,7 +948,7 @@ function openNew() {
   goStep(1);
 }
 function closeNew() { document.getElementById('flowOverlay').classList.remove('open'); document.body.style.overflow = ''; }
-document.getElementById('flowOverlay').addEventListener('click', e => { if(e.target===document.getElementById('flowOverlay'))closeNew(); });
+(function(){var __x=document.getElementById('flowOverlay');if(__x){var __el_flowOverlay=document.getElementById('flowOverlay');if(__el_flowOverlay)document.getElementById('flowOverlay').addEventListener('click', e => { if(e.target===document.getElementById('flowOverlay'))closeNew(); });;}})();
 
 function buildPropGrid() {
   const grid = document.getElementById('propGrid');
@@ -1053,6 +1053,10 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => loader.style.display = 'none', 900);
     }
   }, 1000);
+});
+
+document.addEventListener('DOMContentLoaded',function(){
+
 });
 </script>
 
