@@ -4611,10 +4611,10 @@ function renderAdminWorkflowQueue(workflows) {
 
     var actionBtns = '';
     if (needsAdminAction) {
-      actionBtns = '<button class="btn btn-sm" style="background:rgba(26,92,46,.12);border:1px solid rgba(26,92,46,.3);color:#4aaf6e" onclick="showAdminActionModal('' + wf.id + '','approve')">✓ Approve</button>'
-        + '<button class="btn btn-sm" style="background:rgba(140,31,31,.1);border:1px solid rgba(140,31,31,.3);color:#e05c5c;margin-left:6px" onclick="showAdminActionModal('' + wf.id + '','reject')">✗ Reject</button>';
+      actionBtns = '<button class="btn btn-sm" style="background:rgba(26,92,46,.12);border:1px solid rgba(26,92,46,.3);color:#4aaf6e" onclick="showAdminActionModal(\'' + wf.id + '\',\'approve\')">\u2713 Approve</button>'
+        + '<button class="btn btn-sm" style="background:rgba(140,31,31,.1);border:1px solid rgba(140,31,31,.3);color:#e05c5c;margin-left:6px" onclick="showAdminActionModal(\'' + wf.id + '\',\'reject\')">\u2717 Reject</button>';
     } else if (canIssueSlip) {
-      actionBtns = '<button class="btn btn-gold btn-sm" onclick="adminIssuePaymentSlip('' + wf.id + '')">📄 Issue Payment Slip</button>';
+      actionBtns = '<button class="btn btn-gold btn-sm" onclick="adminIssuePaymentSlip(\'' + wf.id + '\')">\ud83d\udcc4 Issue Payment Slip</button>';
     }
 
     return '<div class="wf-queue-card">'
