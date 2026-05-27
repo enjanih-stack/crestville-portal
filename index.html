@@ -2701,7 +2701,7 @@ async function loadMyProperty(userData) {
 }
 
 /* ═══ RENEWAL MODAL ═══════════════════════════════ */
-function openRenewalModal() {
+function _openRenewalModalInner() {
   const rec = window._myRecord;
   const info = document.getElementById('renewRecordInfo');
   if(info && rec) {
@@ -4585,7 +4585,7 @@ function renderTenantWorkflowTracker(wf) {
 var PORTAL_BASE = 'https://enjanih-stack.github.io/crestville-portal';
 
 /* ── OPEN RENEWAL MODAL — check for existing pending workflow ── */
-async function openRenewalModalWithCheck() {
+async function openRenewalModal() {
   var wf = await loadTenantWorkflow();
   if (wf && wf.status !== 'complete' && wf.status !== 'rejected' && wf.status !== 'amendment') {
     // Show the pending status modal instead of just a toast
@@ -4593,7 +4593,7 @@ async function openRenewalModalWithCheck() {
     return;
   }
   // If rejected or amendment — allow resubmission
-  openRenewalModal();
+  _openRenewalModalInner();
 }
 
 function showPendingWorkflowModal(wf) {
@@ -4967,10 +4967,7 @@ async function adminIssuePaymentSlip(wfId) {
   }, 3000);
 }
 
-/* ── HOOK: update openRenewalModal to check for existing workflow ── */
-// Store original function
-var _origOpenRenewal = openRenewalModal;
-openRenewalModal = openRenewalModalWithCheck;
+/* openRenewalModal now directly includes the workflow check (no override needed) */
 
 
 function submitRenewalViaWorkflow() {
