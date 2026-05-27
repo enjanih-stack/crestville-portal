@@ -921,6 +921,59 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .wf-locked-overlay{position:relative}
 .wf-locked-overlay::after{content:'🔒 Complete previous step first';position:absolute;inset:0;background:rgba(244,241,234,.92);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;color:var(--dim);border-radius:inherit;pointer-events:all;cursor:not-allowed}
 
+
+/* ════════════════════════════════════════════════
+   APPLICATION STATUS TAB
+════════════════════════════════════════════════ */
+.status-tabs{display:flex;gap:0;border-bottom:2px solid var(--rule);margin-bottom:18px;overflow-x:auto}
+.st-tab{padding:10px 18px;border:none;background:none;font-family:inherit;font-size:.84rem;font-weight:600;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .2s}
+.st-tab:hover{color:var(--ink)}
+.st-tab.on{color:var(--gold);border-bottom-color:var(--gold)}
+.st-tab .tab-badge{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-size:.65rem;font-weight:700;margin-left:5px}
+.st-tab .tb-red{background:rgba(140,31,31,.15);color:var(--red)}
+.st-tab .tb-green{background:rgba(26,92,46,.12);color:var(--green)}
+.st-tab .tb-gold{background:rgba(201,150,12,.12);color:var(--gold)}
+
+/* STATUS CARDS */
+.status-list{display:flex;flex-direction:column;gap:10px}
+.status-card{background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden;transition:box-shadow .2s}
+.status-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.sc-head{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--rule)}
+.sc-left{display:flex;align-items:center;gap:10px}
+.sc-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.sc-title{font-size:.88rem;font-weight:600;color:var(--ink);margin-bottom:2px}
+.sc-ref{font-size:.7rem;color:var(--dim);font-family:monospace}
+.sc-status-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:.72rem;font-weight:700;white-space:nowrap;flex-shrink:0}
+.ssp-pending{background:rgba(201,150,12,.12);color:#b45309;border:1px solid rgba(201,150,12,.3)}
+.ssp-approved{background:rgba(26,92,46,.1);color:#15803d;border:1px solid rgba(26,92,46,.25)}
+.ssp-rejected{background:rgba(140,31,31,.1);color:#b91c1c;border:1px solid rgba(140,31,31,.25)}
+.ssp-amendment{background:rgba(30,58,95,.12);color:#1e40af;border:1px solid rgba(30,58,95,.25)}
+.ssp-complete{background:rgba(26,92,46,.15);color:#15803d;border:1px solid rgba(26,92,46,.3)}
+.sc-body{padding:12px 16px}
+.sc-meta{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+.sc-meta-item{font-size:.76rem;color:var(--dim)}
+.sc-meta-item strong{color:var(--ink);font-weight:600}
+.sc-timeline{display:flex;gap:0;margin-top:10px;overflow-x:auto;padding-bottom:2px}
+.sct-step{display:flex;flex-direction:column;align-items:center;min-width:80px;position:relative}
+.sct-step:not(:last-child)::after{content:'';position:absolute;top:10px;left:50%;width:100%;height:2px;z-index:0}
+.sct-step.done::after{background:var(--green)}
+.sct-step.active::after{background:linear-gradient(to right,var(--gold),var(--rule))}
+.sct-step.pending::after{background:var(--rule)}
+.sct-dot{width:20px;height:20px;border-radius:50%;z-index:1;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;margin-bottom:4px}
+.sct-step.done .sct-dot{background:var(--green);color:#fff}
+.sct-step.active .sct-dot{background:var(--gold);color:#fff;animation:dot-pulse 2s ease-in-out infinite}
+.sct-step.rejected .sct-dot{background:var(--red);color:#fff}
+.sct-step.pending .sct-dot{background:#e0d8c8;color:#b8a888}
+.sct-label{font-size:.6rem;color:var(--dim);text-align:center;line-height:1.3;max-width:72px}
+.sct-step.active .sct-label{color:var(--gold);font-weight:600}
+.sct-step.done .sct-label{color:var(--green)}
+.sc-rejection-note{background:#fff8f8;border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:8px 12px;font-size:.78rem;color:#5c1a1a;line-height:1.6;margin-top:8px}
+.sc-amendment-note{background:#f0f4ff;border-left:3px solid #3b82f6;border-radius:0 6px 6px 0;padding:8px 12px;font-size:.78rem;color:#1e3a8a;line-height:1.6;margin-top:8px}
+.sc-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--rule)}
+.status-empty{text-align:center;padding:40px 20px;color:var(--dim)}
+.status-empty .se-icon{font-size:2.5rem;margin-bottom:10px}
+.status-empty .se-msg{font-size:.88rem;line-height:1.65}
+
 </style>
 </head>
 <body>
@@ -1174,6 +1227,27 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
             </div>
           </div>
 
+          <!-- APPLICATION STATUS (admin) -->
+          <div class="sec-card admin-only">
+            <div class="sec-head" style="display:flex;align-items:center;justify-content:space-between">
+              <h2>📋 Application &amp; Request Status</h2>
+              <button class="btn btn-sm btn-outline" onclick="loadAllStatusCards()">⟳ Refresh</button>
+            </div>
+            <div class="sec-body">
+              <div class="status-tabs">
+                <button class="st-tab on" onclick="filterStatusCards('all',this)">All <span class="tab-badge tb-gold" id="sCountAll">0</span></button>
+                <button class="st-tab" onclick="filterStatusCards('pending',this)">⏳ Pending <span class="tab-badge tb-gold" id="sCountPending">0</span></button>
+                <button class="st-tab" onclick="filterStatusCards('approved',this)">✅ Approved <span class="tab-badge tb-green" id="sCountApproved">0</span></button>
+                <button class="st-tab" onclick="filterStatusCards('rejected',this)">❌ Rejected <span class="tab-badge tb-red" id="sCountRejected">0</span></button>
+                <button class="st-tab" onclick="filterStatusCards('amendment',this)">✏️ Amendment <span class="tab-badge tb-red" id="sCountAmendment">0</span></button>
+                <button class="st-tab" onclick="filterStatusCards('complete',this)">🏆 Complete <span class="tab-badge tb-green" id="sCountComplete">0</span></button>
+              </div>
+              <div id="adminStatusList" class="status-list">
+                <div class="status-empty"><div class="se-icon">📋</div><div class="se-msg">Loading workflows…</div></div>
+              </div>
+            </div>
+          </div>
+
           <!-- Quick links (tenant) -->
           <div class="sec-card tenant-only">
             <div class="sec-head"><h2>Quick Actions</h2></div>
@@ -1181,6 +1255,26 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
               <button class="btn btn-gold" onclick="showPage('pgMyProperty',document.querySelector('.nav-item'))">🔑 My Property</button>
               <button class="btn btn-blue" onclick="showPage('pgVacant',document.querySelector('.nav-item'))">🏠 View Vacant Units</button>
               <button class="btn btn-outline" onclick="openForm('https://enjanih-stack.github.io/crestville-portal/tenancy_deviation_requisition_v2.html')">🔄 Submit Deviation Request</button>
+            </div>
+          </div>
+
+          <!-- APPLICATION STATUS (tenant) -->
+          <div class="sec-card tenant-only">
+            <div class="sec-head" style="display:flex;align-items:center;justify-content:space-between">
+              <h2>📋 My Applications &amp; Requests</h2>
+              <button class="btn btn-sm btn-outline" onclick="loadTenantStatusCards()">⟳ Refresh</button>
+            </div>
+            <div class="sec-body">
+              <div class="status-tabs">
+                <button class="st-tab on" onclick="filterTenantStatus('all',this)">All</button>
+                <button class="st-tab" onclick="filterTenantStatus('pending',this)">⏳ Pending</button>
+                <button class="st-tab" onclick="filterTenantStatus('approved',this)">✅ Approved</button>
+                <button class="st-tab" onclick="filterTenantStatus('rejected',this)">❌ Rejected</button>
+                <button class="st-tab" onclick="filterTenantStatus('amendment',this)">✏️ Needs Amendment</button>
+              </div>
+              <div id="tenantStatusList" class="status-list">
+                <div class="status-empty"><div class="se-icon">📋</div><div class="se-msg">Loading your requests…</div></div>
+              </div>
             </div>
           </div>
         </div>
@@ -4794,6 +4888,325 @@ function submitRenewalViaWorkflow() {
   };
   submitRenewalWithWorkflow(formData);
 }
+
+
+/* ════════════════════════════════════════════════════════════
+   APPLICATION STATUS SYSTEM
+════════════════════════════════════════════════════════════ */
+
+var _allWorkflows  = [];   // cache for admin
+var _adminFilter   = 'all';
+var _tenantFilter  = 'all';
+
+var WF_TYPE_LABELS = {
+  new_tenant:       {icon:'🏠', label:'New Tenant Application'},
+  existing_tenant:  {icon:'🔑', label:'Tenancy Renewal Request'},
+};
+
+var WF_STATUS_CONFIG = {
+  active:          {pill:'ssp-pending',  label:'In Progress',    icon:'⏳'},
+  pending_admin:   {pill:'ssp-pending',  label:'Awaiting Admin', icon:'⏳'},
+  rejected:        {pill:'ssp-rejected', label:'Rejected',       icon:'❌'},
+  amendment:       {pill:'ssp-amendment',label:'Amendment Required', icon:'✏️'},
+  complete:        {pill:'ssp-complete', label:'Complete',        icon:'✅'},
+  approved:        {pill:'ssp-approved', label:'Approved',        icon:'✅'},
+};
+
+function getWfStatusKey(wf) {
+  if (wf.status === 'complete')    return 'complete';
+  if (wf.status === 'rejected')    return 'rejected';
+  if (wf.status === 'amendment')   return 'amendment';
+  // Derive from current step
+  var steps = wf.type === 'new_tenant' ? WF_STEPS_NEW : WF_STEPS_RENEWAL;
+  var step  = steps.find(function(s){ return s.id === wf.currentStep; });
+  if (step && step.adminReview)    return 'pending_admin';
+  return 'active';
+}
+
+function getFilterKey(wf) {
+  var k = getWfStatusKey(wf);
+  if (k === 'complete' || k === 'approved') return 'complete';
+  if (k === 'rejected')   return 'rejected';
+  if (k === 'amendment')  return 'amendment';
+  return 'pending';
+}
+
+/* ── BUILD ONE STATUS CARD ── */
+function buildStatusCard(wf, isAdmin) {
+  var typeInfo   = WF_TYPE_LABELS[wf.type] || {icon:'📋', label:'Application'};
+  var statusKey  = getWfStatusKey(wf);
+  var statusConf = WF_STATUS_CONFIG[statusKey] || WF_STATUS_CONFIG.active;
+  var steps      = wf.type === 'new_tenant' ? WF_STEPS_NEW : WF_STEPS_RENEWAL;
+  var curIdx     = steps.findIndex(function(s){ return s.id === wf.currentStep; });
+
+  var createdStr = wf.createdAt
+    ? new Date(wf.createdAt).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})
+    : '—';
+  var updatedStr = wf.updatedAt
+    ? new Date(wf.updatedAt).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})
+    : '—';
+
+  // Timeline dots
+  var timelineHtml = steps.map(function(step, i) {
+    var isDone     = i < curIdx;
+    var isActive   = i === curIdx && wf.status !== 'rejected';
+    var isRejected = wf.status === 'rejected' && i === curIdx;
+    var state      = isDone ? 'done' : isRejected ? 'rejected' : isActive ? 'active' : 'pending';
+    var dot        = isDone ? '✓' : isRejected ? '✗' : (i+1);
+    return '<div class="sct-step ' + state + '">'
+      + '<div class="sct-dot">' + dot + '</div>'
+      + '<div class="sct-label">' + step.label.replace(' &amp; ','/').split(' ').slice(0,3).join(' ') + '</div>'
+      + '</div>';
+  }).join('');
+
+  // Rejection / amendment note
+  var noteHtml = '';
+  if (wf.status === 'rejected' && wf.rejectionReason) {
+    noteHtml = '<div class="sc-rejection-note">❌ <strong>Rejection reason:</strong> ' + wf.rejectionReason + '</div>';
+  } else if (wf.status === 'amendment' && wf.amendmentNote) {
+    noteHtml = '<div class="sc-amendment-note">✏️ <strong>Amendment required:</strong> ' + wf.amendmentNote + '</div>';
+  }
+
+  // Current step description
+  var curStep = steps[curIdx] || {};
+  var stepDesc = wf.status === 'complete' ? 'All steps completed successfully'
+    : wf.status === 'rejected' ? 'Request has been declined'
+    : curStep.desc || '—';
+
+  // Action buttons
+  var actionsHtml = '';
+  if (isAdmin) {
+    var canApprove = curStep.adminReview;
+    var canIssue   = wf.currentStep === 'payment_slip_issued';
+    if (canApprove) {
+      actionsHtml += '<button class="btn btn-sm" style="background:rgba(26,92,46,.1);border:1px solid rgba(26,92,46,.25);color:#15803d" onclick="showAdminActionModal(\'' + wf.id + '\',\'approve\')">\u2713 Approve</button>'
+        + '<button class="btn btn-sm" style="background:rgba(140,31,31,.08);border:1px solid rgba(140,31,31,.2);color:#b91c1c;margin-left:6px" onclick="showAdminActionModal(\'' + wf.id + '\',\'reject\')">\u2717 Reject</button>'
+        + '<button class="btn btn-sm btn-outline" style="margin-left:6px" onclick="showAmendmentModal(\'' + wf.id + '\')">\u270f\ufe0f Request Amendment</button>';
+    }
+    if (canIssue) {
+      actionsHtml += '<button class="btn btn-gold btn-sm" onclick="adminIssuePaymentSlip(\'' + wf.id + '\')">\ud83d\udcc4 Issue Payment Slip</button>';
+    }
+    if (wf.status === 'rejected' || wf.status === 'amendment') {
+      actionsHtml += '<button class="btn btn-sm btn-outline" onclick="showAdminActionModal(\'' + wf.id + '\',\'reopen\')">\u21a9 Re-open</button>';
+    }
+    if (wf.status === 'complete') {
+      actionsHtml += '<span style="font-size:.76rem;color:var(--green);font-weight:600">✅ Process complete</span>';
+    }
+  } else {
+    // Tenant actions
+    if (wf.currentStep === 'payment_submitted' && wf.status !== 'rejected') {
+      actionsHtml += '<button class="btn btn-gold btn-sm" onclick="openPaymentSubmitModal()">💳 Submit Payment Receipt</button>';
+    }
+    if (wf.currentStep === 'eform_sent' && wf.status !== 'rejected') {
+      actionsHtml += '<a href="https://enjanih-stack.github.io/crestville-portal/CRS_Tenancy_EForm_v3.html" target="_blank" class="btn btn-gold btn-sm">📝 Complete eForm</a>';
+    }
+    if (wf.status === 'rejected') {
+      actionsHtml += '<button class="btn btn-outline btn-sm" onclick="openRenewalModal()">↩ Submit New Request</button>';
+    }
+    if (wf.status === 'amendment') {
+      actionsHtml += '<button class="btn btn-gold btn-sm" onclick="openRenewalModal()">✏️ Resubmit with Amendments</button>';
+    }
+    if (wf.status === 'complete') {
+      actionsHtml += '<button class="btn btn-gold btn-sm" onclick="downloadApprovedEForm()">⬇ Download Approved eForm</button>';
+    }
+  }
+
+  return '<div class="status-card" data-filter="' + getFilterKey(wf) + '">'
+    + '<div class="sc-head">'
+      + '<div class="sc-left">'
+        + '<div class="sc-icon" style="background:rgba(201,150,12,.1)">' + typeInfo.icon + '</div>'
+        + '<div>'
+          + '<div class="sc-title">' + typeInfo.label + (isAdmin ? ' — ' + (wf.tenantName||wf.tenantEmail||'') : '') + '</div>'
+          + '<div class="sc-ref">' + (wf.unitLabel||wf.unitId||'') + (wf.id ? ' · ' + wf.id.split('_').pop() : '') + '</div>'
+        + '</div>'
+      + '</div>'
+      + '<span class="sc-status-pill ' + statusConf.pill + '">' + statusConf.icon + ' ' + statusConf.label + '</span>'
+    + '</div>'
+    + '<div class="sc-body">'
+      + '<div class="sc-meta">'
+        + '<div class="sc-meta-item">Submitted: <strong>' + createdStr + '</strong></div>'
+        + '<div class="sc-meta-item">Updated: <strong>' + updatedStr + '</strong></div>'
+        + '<div class="sc-meta-item">Current: <strong>' + (curStep.label || (wf.status==='complete'?'Complete':'—')) + '</strong></div>'
+        + (wf.guarantors && wf.guarantors.length ? '<div class="sc-meta-item">Guarantors: <strong>' + wf.guarantors.length + '</strong></div>' : '')
+      + '</div>'
+      + '<div style="font-size:.76rem;color:var(--dim);margin-bottom:8px">' + stepDesc + '</div>'
+      + '<div class="sc-timeline">' + timelineHtml + '</div>'
+      + noteHtml
+      + (actionsHtml ? '<div class="sc-actions">' + actionsHtml + '</div>' : '')
+    + '</div>'
+  + '</div>';
+}
+
+/* ── ADMIN: LOAD ALL STATUS CARDS ── */
+async function loadAllStatusCards() {
+  var container = document.getElementById('adminStatusList');
+  if (!container) return;
+  container.innerHTML = '<div class="status-empty"><div class="se-icon">⏳</div><div class="se-msg">Loading…</div></div>';
+
+  try {
+    var snap = await window._db.collection('workflows').orderBy('updatedAt','desc').limit(100).get();
+    _allWorkflows = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+    renderAdminStatusCards(_adminFilter);
+  } catch(e) {
+    container.innerHTML = '<div class="status-empty"><div class="se-icon">⚠️</div><div class="se-msg">Could not load — check connection</div></div>';
+  }
+}
+
+function renderAdminStatusCards(filter) {
+  _adminFilter = filter;
+  var container = document.getElementById('adminStatusList');
+  if (!container) return;
+
+  var filtered = filter === 'all' ? _allWorkflows
+    : _allWorkflows.filter(function(wf){ return getFilterKey(wf) === filter; });
+
+  // Update badge counts
+  var counts = {all:_allWorkflows.length, pending:0, approved:0, rejected:0, amendment:0, complete:0};
+  _allWorkflows.forEach(function(wf){
+    var k = getFilterKey(wf);
+    if (counts[k] !== undefined) counts[k]++;
+    if (k === 'complete') counts.approved++;
+  });
+  Object.keys(counts).forEach(function(k){
+    var el = document.getElementById('sCount' + k.charAt(0).toUpperCase() + k.slice(1));
+    if (el) el.textContent = counts[k];
+  });
+
+  if (!filtered.length) {
+    container.innerHTML = '<div class="status-empty"><div class="se-icon">📋</div><div class="se-msg">No ' + (filter === 'all' ? '' : filter + ' ') + 'applications</div></div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(function(wf){ return buildStatusCard(wf, true); }).join('');
+}
+
+function filterStatusCards(filter, btn) {
+  _adminFilter = filter;
+  document.querySelectorAll('#adminStatusList').forEach(function(){});
+  var tabs = document.querySelectorAll('.sec-card.admin-only .st-tab');
+  tabs.forEach(function(t){ t.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  renderAdminStatusCards(filter);
+}
+
+/* ── TENANT: LOAD STATUS CARDS ── */
+async function loadTenantStatusCards() {
+  var container = document.getElementById('tenantStatusList');
+  if (!container || !currentUser) return;
+  container.innerHTML = '<div class="status-empty"><div class="se-icon">⏳</div><div class="se-msg">Loading…</div></div>';
+
+  try {
+    var snap = await window._db.collection('workflows')
+      .where('tenantEmail','==', currentUser.email)
+      .orderBy('updatedAt','desc').get();
+    var workflows = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+
+    if (!workflows.length) {
+      container.innerHTML = '<div class="status-empty"><div class="se-icon">📋</div><div class="se-msg">No applications or requests yet.<br>Use the buttons above to submit a renewal or KYT application.</div></div>';
+      return;
+    }
+    renderTenantStatusCards(workflows, 'all');
+    window._tenantWorkflows = workflows;
+  } catch(e) {
+    // Fallback: try without orderBy (no composite index needed)
+    try {
+      var snap2 = await window._db.collection('workflows').get();
+      var wfs = snap2.docs.map(function(d){ return Object.assign({id:d.id},d.data()); })
+        .filter(function(w){ return w.tenantEmail === currentUser.email; });
+      wfs.sort(function(a,b){ return (b.updatedAt||'') > (a.updatedAt||'') ? 1:-1; });
+      window._tenantWorkflows = wfs;
+      renderTenantStatusCards(wfs, 'all');
+    } catch(e2){
+      container.innerHTML = '<div class="status-empty"><div class="se-icon">⚠️</div><div class="se-msg">Could not load — check connection</div></div>';
+    }
+  }
+}
+
+function renderTenantStatusCards(workflows, filter) {
+  var container = document.getElementById('tenantStatusList');
+  if (!container) return;
+  var filtered = filter === 'all' ? workflows
+    : workflows.filter(function(wf){ return getFilterKey(wf) === filter; });
+  if (!filtered.length) {
+    container.innerHTML = '<div class="status-empty"><div class="se-icon">📋</div><div class="se-msg">No ' + filter + ' applications</div></div>';
+    return;
+  }
+  container.innerHTML = filtered.map(function(wf){ return buildStatusCard(wf, false); }).join('');
+}
+
+function filterTenantStatus(filter, btn) {
+  _tenantFilter = filter;
+  var tabs = document.querySelectorAll('.sec-card.tenant-only .st-tab');
+  tabs.forEach(function(t){ t.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  renderTenantStatusCards(window._tenantWorkflows || [], filter);
+}
+
+/* ── AMENDMENT MODAL (admin) ── */
+function showAmendmentModal(wfId) {
+  var modal = document.getElementById('adminActionModal');
+  if (!modal) return;
+  document.getElementById('aaWfId').value   = wfId;
+  document.getElementById('aaAction').value = 'amendment';
+  document.getElementById('aaTitle').textContent       = '✏️ Request Amendment';
+  document.getElementById('aaNotesLabel').textContent  = 'What needs to be amended? *';
+  document.getElementById('aaNotes').value = '';
+  modal.classList.add('on');
+}
+
+/* ── HOOK INTO BOOT ── */
+var _origLoadAdminWorkflows = typeof loadAdminWorkflows === 'function' ? loadAdminWorkflows : null;
+async function loadAdminWorkflows() {
+  if (_origLoadAdminWorkflows) await _origLoadAdminWorkflows();
+  loadAllStatusCards();
+}
+
+/* ── EXTEND adminAdvanceWorkflow to handle amendment ── */
+var _origAdminAdvance = typeof adminAdvanceWorkflow === 'function' ? adminAdvanceWorkflow : null;
+async function adminAdvanceWorkflow(wfId, action, notes) {
+  if (action === 'amendment') {
+    try {
+      var doc = await window._db.collection('workflows').doc(wfId).get();
+      if (!doc.exists) { toast('⚠ Workflow not found'); return; }
+      var wf = Object.assign({id:wfId}, doc.data());
+      wf.status = 'amendment';
+      wf.amendmentNote = notes;
+      wf.steps = (wf.steps||[]).concat([{id:wf.currentStep, completedAt:new Date().toISOString(), by:'admin', action:'amendment_requested', notes}]);
+      await saveWorkflow(wf);
+      // Notify tenant
+      if (wf.tenantEmail) {
+        await window._db.collection('mail').add({
+          to:[wf.tenantEmail],
+          message:{
+            subject:'[CRS] Amendment Required — ' + wf.unitLabel,
+            html:'<div style="font-family:Arial;max-width:600px;background:#0f0e0c;padding:20px">'
+              +'<div style="font-family:Georgia;font-size:18px;color:#c9960c">Amendment Required</div>'
+              +'<p style="color:#9a8a6a;font-size:14px;margin-top:14px">Dear '+wf.tenantName+',</p>'
+              +'<p style="color:#9a8a6a;font-size:14px;line-height:1.75">Your application for <strong style="color:#e8dfc8">'+wf.unitLabel+'</strong> requires the following amendment:</p>'
+              +'<div style="background:#1a1612;border-left:3px solid #3b82f6;padding:12px 16px;margin:14px 0;color:#93c5fd;font-size:14px">'+notes+'</div>'
+              +'<p style="color:#9a8a6a;font-size:13px">Please sign in to your tenant portal, review the note and resubmit.</p>'
+              +'<a href="https://enjanih-stack.github.io/crestville-portal/index.html" style="display:inline-block;margin-top:14px;background:#c9960c;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:700">Open Tenant Portal →</a>'
+              +'</div>'
+          }
+        }).catch(function(){});
+      }
+      toast('✏️ Amendment request sent to tenant');
+      await loadAllStatusCards();
+    } catch(e) { toast('✗ Error: ' + e.message); }
+    return;
+  }
+  if (_origAdminAdvance) await _origAdminAdvance(wfId, action, notes);
+  await loadAllStatusCards();
+}
+
+/* ── AUTO LOAD on boot ── */
+setTimeout(function() {
+  if (isAdmin) {
+    loadAllStatusCards();
+  } else if (currentUser) {
+    loadTenantStatusCards();
+  }
+}, 2500);
 
 </script>
 
