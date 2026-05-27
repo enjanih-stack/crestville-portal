@@ -305,6 +305,66 @@ footer{background:#060504;padding:48px 24px 24px;border-top:1px solid rgba(201,1
 </style>
 </head>
 <body>
+<script>
+// ── Handle Firebase verifyEmail action URL ──────────────────────
+(function() {
+  var p = new URLSearchParams(window.location.search);
+  var mode = p.get('mode');
+  var oobCode = p.get('oobCode');
+  if (mode !== 'verifyEmail' || !oobCode) return;
+
+  // Show verification overlay
+  document.addEventListener('DOMContentLoaded', function() {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,9,8,.9);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(12px)';
+    overlay.innerHTML = '<div style="background:#faf8f4;border-radius:16px;padding:36px 32px;max-width:420px;width:100%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.5)">'
+      + '<div style="font-size:2.5rem;margin-bottom:12px" id="voIcon">⏳</div>'
+      + '<div style="font-family:Cormorant Garamond,serif;font-size:1.3rem;font-weight:700;color:#0f0e0c;margin-bottom:8px" id="voTitle">Verifying your email…</div>'
+      + '<div style="font-size:.84rem;color:#8a7a60;margin-bottom:22px;line-height:1.65" id="voMsg">Please wait a moment.</div>'
+      + '<button id="voBtn" style="display:none;width:100%;padding:14px;background:linear-gradient(135deg,#7a5800,#c9960c);color:#fff;border:none;border-radius:8px;font-size:.92rem;font-weight:700;cursor:pointer;letter-spacing:.04em">'
+      + 'Sign In to Tenant Portal →</button>'
+      + '<div style="margin-top:12px;font-size:.74rem;color:#b8a888">Crestechnologies IS Ltd · Crestville Properties</div>'
+      + '</div>';
+    document.body.appendChild(overlay);
+
+    // Need Firebase — wait for it
+    function tryApply(attempts) {
+      var auth = (typeof firebase !== 'undefined') ? firebase.auth() : null;
+      if (!auth && attempts > 0) { setTimeout(function(){ tryApply(attempts-1); }, 400); return; }
+      if (!auth) {
+        document.getElementById('voTitle').textContent = 'Error';
+        document.getElementById('voMsg').textContent = 'Could not load authentication. Please try again.';
+        return;
+      }
+      auth.applyActionCode(oobCode)
+        .then(function() {
+          document.getElementById('voIcon').textContent = '✅';
+          document.getElementById('voTitle').textContent = 'Email Verified!';
+          document.getElementById('voMsg').innerHTML = 'Your email has been successfully verified.<br>You can now sign in to the Crestville Tenant Portal.';
+          var btn = document.getElementById('voBtn');
+          btn.style.display = 'block';
+          btn.onclick = function() {
+            window.location.href = 'https://enjanih-stack.github.io/crestville-portal/index.html';
+          };
+        })
+        .catch(function(err) {
+          document.getElementById('voIcon').textContent = err.code === 'auth/invalid-action-code' ? '⚠️' : '✗';
+          document.getElementById('voTitle').textContent = err.code === 'auth/invalid-action-code' ? 'Link Already Used' : 'Verification Failed';
+          document.getElementById('voMsg').innerHTML = err.code === 'auth/invalid-action-code'
+            ? 'This link has already been used or has expired. If your email is still unverified, sign in and request a new link.'
+            : 'Error: ' + (err.message || err.code);
+          var btn = document.getElementById('voBtn');
+          btn.textContent = 'Go to Sign In →';
+          btn.style.display = 'block';
+          btn.onclick = function() {
+            window.location.href = 'https://enjanih-stack.github.io/crestville-portal/index.html';
+          };
+        });
+    }
+    tryApply(10);
+  });
+})();
+</script>
 
 <!-- LOADER -->
 <div id="pgLoader">
@@ -748,12 +808,11 @@ function waitFB(cb) { if(window._fbReady) cb(); else window.addEventListener('fb
 
 async function _afterAuth(user, errElId) {
   const fns = window._fbFns;
-  // Check email verification
+  // Email verification — NON-BLOCKING soft reminder only
+  // Tenants can still access portal regardless of verification status
   if (!user.emailVerified) {
-    // Send verification if not sent
-    await fns.sendEmailVerification(user).catch(()=>{});
-    showVerifyModal(user.email);
-    return;
+    // Just mark for soft reminder — don't block access
+    window._emailUnverified = user.email;
   }
   const isAdmin = fns.ADMINS.includes((user.email||'').toLowerCase());
   // Save/update user in Firestore
