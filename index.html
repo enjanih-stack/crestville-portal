@@ -974,6 +974,21 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .status-empty .se-icon{font-size:2.5rem;margin-bottom:10px}
 .status-empty .se-msg{font-size:.88rem;line-height:1.65}
 
+
+/* ── IDLE TIMEOUT ── */
+#idleOverlay{position:fixed;inset:0;background:rgba(10,9,8,.92);z-index:99999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
+#idleOverlay.on{display:flex}
+.idle-card{background:linear-gradient(135deg,#1a1612,#0f0e0c);border:1px solid #2a2620;border-top:3px solid var(--gold);border-radius:14px;max-width:380px;width:90%;padding:32px 28px;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.7)}
+.idle-icon{font-size:2.8rem;margin-bottom:14px}
+.idle-title{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:700;color:#fff;margin-bottom:8px}
+.idle-msg{font-size:.84rem;color:#9a8a6a;line-height:1.65;margin-bottom:20px}
+.idle-countdown{font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:700;color:var(--gold);margin-bottom:20px;line-height:1}
+.idle-countdown.urgent{color:#e05c5c;animation:dot-pulse 1s ease-in-out infinite}
+.idle-btns{display:flex;flex-direction:column;gap:8px}
+.idle-btn-stay{padding:13px;background:linear-gradient(135deg,#7a5800,var(--gold));color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.04em}
+.idle-btn-out{padding:10px;background:none;border:1px solid rgba(255,255,255,.08);color:#7a6e62;border-radius:8px;font-size:.82rem;cursor:pointer;font-family:inherit}
+.idle-btn-stay:hover{transform:translateY(-1px)}
+
 </style>
 </head>
 <body>
@@ -2008,6 +2023,8 @@ async function continueWithRole() {
 }
 
 function signOutAndReturn() {
+  stopIdleTimer();
+  localStorage.removeItem(SESSION_STATE_KEY);  // clear saved state on manual sign out
   document.getElementById('roleSelectorOverlay').classList.remove('on');
   firebase.auth().signOut().then(() => {
     window.location.href = BASE_URL + '/landing.html';
@@ -2039,6 +2056,15 @@ async function _bootApp(user, userData, adminMode) {
   var startPage = adminMode ? 'pgDashboard' : 'pgMyProperty';
   _pushHistory(startPage);
   sessionStorage.setItem('crs_from_landing', '1');
+
+  // Start idle timer
+  startIdleTimer();
+
+  // Restore last session state if returning from idle timeout
+  var savedState = restoreSessionState();
+  if (savedState) {
+    setTimeout(function() { applySessionState(savedState); }, 800);
+  }
 
   // Pull cloud data in background — does NOT block the UI
   pullFromCloud(true).catch(e => console.warn('pullFromCloud:', e));
@@ -2156,6 +2182,8 @@ function showPage(pgId, btn) {
   if(pgId === 'pgVacant') renderVacant();
   if(pgId === 'pgProperties') renderProperties();
   if(pgId === 'pgRentManager') renderRentManager();
+  // Save state on every page navigation
+  if (typeof saveSessionState === 'function') saveSessionState();
 }
 function openForm(url) { window.open(url, '_blank'); }
 function toggleSidebar() {
@@ -5296,6 +5324,173 @@ function closePendingWfModal() {
   var el = document.getElementById('pendingWfOverlay');
   if (el) el.classList.remove('on');
 }
+
+/* ════════════════════════════════════════════════════════════
+   IDLE TIMEOUT SYSTEM — 2 min inactivity → 30s warning → sign out
+════════════════════════════════════════════════════════════ */
+var IDLE_TIMEOUT_MS  = 2 * 60 * 1000;  // 2 minutes inactivity
+var IDLE_WARNING_MS  = 30 * 1000;       // 30 second countdown warning
+var _idleTimer       = null;
+var _idleCountdown   = null;
+var _idleActive      = false;
+var _lastActivity    = Date.now();
+var SESSION_STATE_KEY = 'crs_session_state';
+
+/* ── SAVE SESSION STATE ── */
+function saveSessionState() {
+  if (!currentUser) return;
+  var state = {
+    page:       _pageHistory[_historyIndex] || 'pgDashboard',
+    history:    _pageHistory.slice(-10),    // last 10 pages
+    histIdx:    Math.min(_historyIndex, 9),
+    isAdmin:    isAdmin,
+    role:       isAdmin ? 'admin' : 'tenant',
+    unitId:     window._myRecord ? (window._myRecord.unitId||window._myRecord.unit) : null,
+    timestamp:  Date.now(),
+    userEmail:  currentUser.email
+  };
+  try {
+    localStorage.setItem(SESSION_STATE_KEY, JSON.stringify(state));
+  } catch(e) {}
+}
+
+/* ── RESTORE SESSION STATE ── */
+function restoreSessionState() {
+  try {
+    var raw = localStorage.getItem(SESSION_STATE_KEY);
+    if (!raw) return null;
+    var state = JSON.parse(raw);
+    // Only restore if saved within last 30 minutes and same user
+    if (!state || !state.timestamp) return null;
+    if (Date.now() - state.timestamp > 30 * 60 * 1000) {
+      localStorage.removeItem(SESSION_STATE_KEY);
+      return null;
+    }
+    if (currentUser && state.userEmail && state.userEmail !== currentUser.email) {
+      localStorage.removeItem(SESSION_STATE_KEY);
+      return null;
+    }
+    return state;
+  } catch(e) { return null; }
+}
+
+function applySessionState(state) {
+  if (!state || !state.page) return;
+  // Restore page history
+  if (state.history && state.history.length) {
+    _pageHistory   = state.history;
+    _historyIndex  = Math.min(state.histIdx || state.history.length-1, _pageHistory.length-1);
+  }
+  // Navigate to last page
+  var pgEl = document.getElementById(state.page);
+  if (pgEl) {
+    document.querySelectorAll('.pg').forEach(function(p){ p.classList.remove('on'); });
+    pgEl.classList.add('on');
+    _updateNavBtns();
+    // Trigger renders
+    if (state.page === 'pgProperties')  renderProperties();
+    if (state.page === 'pgRentManager') renderRentManager();
+    if (state.page === 'pgVacant')      renderVacant();
+  }
+  // Clean up
+  localStorage.removeItem(SESSION_STATE_KEY);
+  toast('✓ Welcome back — restored to where you left off', 3000);
+}
+
+/* ── START IDLE WATCHER ── */
+function startIdleTimer() {
+  _idleActive = true;
+  _lastActivity = Date.now();
+
+  // Activity events — reset timer on any interaction
+  var events = ['mousemove','mousedown','keypress','touchstart','scroll','click','keydown'];
+  events.forEach(function(ev) {
+    document.addEventListener(ev, onUserActivity, {passive:true});
+  });
+
+  scheduleIdleCheck();
+}
+
+function stopIdleTimer() {
+  _idleActive = false;
+  clearTimeout(_idleTimer);
+  clearInterval(_idleCountdown);
+  var events = ['mousemove','mousedown','keypress','touchstart','scroll','click','keydown'];
+  events.forEach(function(ev) {
+    document.removeEventListener(ev, onUserActivity);
+  });
+  var overlay = document.getElementById('idleOverlay');
+  if (overlay) overlay.classList.remove('on');
+}
+
+function onUserActivity() {
+  _lastActivity = Date.now();
+  // If warning is showing, hide it and reset
+  var overlay = document.getElementById('idleOverlay');
+  if (overlay && overlay.classList.contains('on')) {
+    resetIdleTimer();
+  }
+}
+
+function scheduleIdleCheck() {
+  clearTimeout(_idleTimer);
+  _idleTimer = setTimeout(function() {
+    if (!_idleActive) return;
+    var elapsed = Date.now() - _lastActivity;
+    if (elapsed >= IDLE_TIMEOUT_MS) {
+      showIdleWarning();
+    } else {
+      scheduleIdleCheck();
+    }
+  }, IDLE_TIMEOUT_MS - (Date.now() - _lastActivity) + 100);
+}
+
+function showIdleWarning() {
+  if (!_idleActive) return;
+  // Save session state before warning
+  saveSessionState();
+
+  var overlay = document.getElementById('idleOverlay');
+  var cdEl    = document.getElementById('idleCountdown');
+  if (!overlay || !cdEl) { idleSignOut(); return; }
+
+  overlay.classList.add('on');
+  var secs = Math.ceil(IDLE_WARNING_MS / 1000);
+  cdEl.textContent = secs;
+  cdEl.className   = 'idle-countdown';
+
+  clearInterval(_idleCountdown);
+  _idleCountdown = setInterval(function() {
+    secs--;
+    if (!cdEl) return;
+    cdEl.textContent = secs;
+    if (secs <= 10) cdEl.className = 'idle-countdown urgent';
+    if (secs <= 0) {
+      clearInterval(_idleCountdown);
+      idleSignOut();
+    }
+  }, 1000);
+}
+
+function resetIdleTimer() {
+  clearInterval(_idleCountdown);
+  var overlay = document.getElementById('idleOverlay');
+  if (overlay) overlay.classList.remove('on');
+  _lastActivity = Date.now();
+  scheduleIdleCheck();
+}
+
+function idleSignOut() {
+  stopIdleTimer();
+  // State was already saved when warning appeared
+  firebase.auth().signOut().then(function() {
+    window.location.href = (typeof BASE_URL !== 'undefined' ? BASE_URL : 'https://enjanih-stack.github.io/crestville-portal') + '/landing.html';
+  });
+}
+
+/* ── HOOK INTO _bootApp — start timer + restore state ── */
+var _origBootApp = typeof _bootApp === 'function' ? _bootApp : null;
+
 </script>
 
 <!-- ═══ ROLE SELECTOR ═══ -->
@@ -5570,6 +5765,21 @@ function closePendingWfModal() {
     <div class="modal-foot" style="display:flex;gap:10px;justify-content:flex-end">
       <button class="btn btn-outline" onclick="closeAdminActionModal()">Cancel</button>
       <button class="btn btn-gold" onclick="confirmAdminAction()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- IDLE TIMEOUT OVERLAY -->
+<div id="idleOverlay">
+  <div class="idle-card">
+    <div class="idle-icon">⏱️</div>
+    <div class="idle-title">Session Expiring</div>
+    <div class="idle-msg">You have been inactive. For your security, you will be signed out and returned to the home page in:</div>
+    <div class="idle-countdown" id="idleCountdown">30</div>
+    <div class="idle-btns">
+      <button class="idle-btn-stay" onclick="resetIdleTimer()">&#10003; I'm still here — Stay signed in</button>
+      <button class="idle-btn-out" onclick="idleSignOut()">Sign out now</button>
     </div>
   </div>
 </div>
