@@ -1196,6 +1196,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
             <button class="btn btn-blue" onclick="sendAllRenewalReminders()" title="Send renewal reminders to all tenants within 60 days of expiry">📧 Send Reminders</button>
             <button class="btn btn-outline" onclick="syncToCloud()">☁️ Sync</button>
             <button class="btn btn-blue btn-sm" onclick="pullFromCloud()">⬇ Pull</button>
+            <button class="btn btn-outline" onclick="exportAllCSV()" style="background:rgba(26,92,46,.08);border-color:rgba(26,92,46,.3);color:var(--green);font-size:.8rem">⬆ Export CSV</button>
           </div>
         </div>
         <div class="page-body">
@@ -1244,6 +1245,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
             <button class="btn btn-outline" onclick="showPropTab('tabAmenities',this)">🏷️ Amenities</button>
             <button class="btn btn-outline" onclick="showPropTab('tabImport',this)">⬆ Import CSV</button>
             <button class="btn btn-outline" onclick="downloadCSVTemplate()">⬇ CSV Template</button>
+            <button class="btn btn-outline" onclick="exportAllCSV()" style="background:rgba(26,92,46,.08);border-color:rgba(26,92,46,.3);color:var(--green)">⬇ Export CSV</button>
           </div>
         </div>
         <div class="page-body">
@@ -1299,8 +1301,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 
               <div class="csv-template-row">
                 <div style="font-size:.78rem;color:#9a8a6a;flex:1;line-height:1.6">
-                  <strong style="color:#e8dfc8">Required columns:</strong> unit_id, unit_label, location, city, type, tenant_name, tenant_email, rent_amount, start_date, expiry_date, vacancy<br>
-                  <strong style="color:#e8dfc8">Optional:</strong> tenant_phone, tenant_nin, notes
+                  <strong style="color:#e8dfc8">Required columns:</strong> Unit, Use, Address_Location, Tenant, Email, Amount, Tenancy_Expiry_Date, Tenancy_Start_Date, vacancy<br>
+                  <strong style="color:#e8dfc8">Optional:</strong> New_Rent, Last_Payment_Date, Phone, NIN, Contract_Name, Notes<br>
+                  <span style="color:#9a8a6a;font-size:.7rem">&#9432; Old format (unit_id, unit_label...) is also accepted</span>
                 </div>
               </div>
             </div>
@@ -1427,15 +1430,32 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
         </div>
         <div class="fg" style="grid-column:1/-1">
           <label>Tenant Full Name <span style="color:var(--red)">*</span></label>
-          <input type="text" id="rmTenant" placeholder="Full legal name"/>
+          <input type="text" id="rmTenant" placeholder="Full legal name (as used in portal)"/>
+        </div>
+        <div class="fg" style="grid-column:1/-1">
+          <label>Name as Appeared on Contract</label>
+          <input type="text" id="rmContractName" placeholder="Exact name on tenancy agreement (if different)"/>
+          <small style="font-size:.68rem;color:var(--dim);margin-top:3px;display:block">Used to match records across forms. Leave blank if same as above.</small>
         </div>
         <div class="fg">
-          <label>Tenant Email (for portal link)</label>
+          <label>Tenant Email</label>
           <input type="email" id="rmTenantEmail" placeholder="tenant@email.com"/>
         </div>
         <div class="fg">
-          <label>Rent Amount (₦) <span style="color:var(--red)">*</span></label>
+          <label>Tenant Phone</label>
+          <input type="tel" id="rmTenantPhone" placeholder="+234..."/>
+        </div>
+        <div class="fg">
+          <label>Current Rent Amount (₦) <span style="color:var(--red)">*</span></label>
           <input type="number" id="rmAmount" placeholder="500000"/>
+        </div>
+        <div class="fg">
+          <label>New / Proposed Rent (₦)</label>
+          <input type="number" id="rmNewRent" placeholder="Leave blank if unchanged"/>
+        </div>
+        <div class="fg">
+          <label>Last Payment Date</label>
+          <input type="date" id="rmLastPayment"/>
         </div>
         <div class="fg">
           <label>Tenancy Start Date</label>
@@ -2162,10 +2182,16 @@ function renderRentManager() {
     return `<tr style="${rowBg}">
       <td style="max-width:180px"><div style="font-weight:600;font-size:.82rem">${label}</div>
         <div style="font-size:.7rem;color:var(--dim)">${e.tenantEmail||''}</div></td>
-      <td><div style="font-size:.84rem">${e.tenant}</div>
-        <div style="font-size:.7rem;color:var(--dim)">${e.tenantPhone||''}</div></td>
+      <td>
+        <div style="font-size:.84rem;font-weight:600">${e.tenant}</div>
+        ${e.contractName && e.contractName !== e.tenant ? '<div style="font-size:.68rem;color:var(--gold);margin-top:1px">Contract: '+e.contractName+'</div>' : ''}
+        <div style="font-size:.7rem;color:var(--dim)">${e.tenantPhone||''}</div>
+      </td>
       <td><strong>₦${Number(e.amount).toLocaleString()}</strong></td>
-      <td style="font-size:.82rem">${e.start ? fmtTableDate(e.start) : '<span style="color:var(--dim)">—</span>'}</td>
+      <td style="font-size:.82rem">
+        ${e.start ? fmtTableDate(e.start) : '<span style="color:var(--dim)">—</span>'}
+        ${e.lastPayment ? '<div style="font-size:.68rem;color:var(--dim);margin-top:1px">Last paid: '+fmtTableDate(e.lastPayment)+'</div>' : ''}
+      </td>
       <td>${expiryCell}</td>
       <td><span class="badge ${daysLeft2 !== null && daysLeft2 < 0 ? 'badge-overdue' : daysLeft2 !== null && daysLeft2 <= 60 ? 'badge-overdue' : daysLeft2 !== null && daysLeft2 <= 90 ? '' : 'badge-active'}" style="${daysLeft2 !== null && daysLeft2 <= 90 && daysLeft2 >= 0 && daysLeft2 > 60 ? 'background:rgba(234,120,20,.12);color:#b45309;border-color:rgba(234,120,20,.3)' : ''}">${
         isOverdue ? 'Overdue' : daysLeft2 !== null && daysLeft2 <= 60 ? 'Expiring' : daysLeft2 !== null && daysLeft2 <= 90 ? 'Due Soon' : 'Active'
@@ -2218,10 +2244,14 @@ async function saveRentRecord() {
     unitId,
     unit: getPropertyLabel(unitId),
     tenant,
+    contractName: (document.getElementById('rmContractName') ? document.getElementById('rmContractName').value.trim() : '') || tenant,
     tenantEmail: document.getElementById('rmTenantEmail').value.trim(),
+    tenantPhone: document.getElementById('rmTenantPhone') ? document.getElementById('rmTenantPhone').value.trim() : '',
     amount: document.getElementById('rmAmount').value,
+    newRent: document.getElementById('rmNewRent') ? document.getElementById('rmNewRent').value : '',
     start: document.getElementById('rmStart').value,
     expiry: document.getElementById('rmExpiry').value,
+    lastPayment: document.getElementById('rmLastPayment') ? document.getElementById('rmLastPayment').value : '',
     vacancy: document.getElementById('rmVacancy').value,
     notes: document.getElementById('rmNotes').value.trim(),
     updatedAt: new Date().toISOString()
@@ -2881,14 +2911,50 @@ const _docCounts = {};
    CSV IMPORT
 ════════════════════════════════════════════════════ */
 
+
+/* ── EXPORT ALL RECORDS AS CSV ── */
+function exportAllCSV() {
+  var hdrs = ['Unit','Use','Address_Location','Tenant','Email','Amount','New_Rent','Tenancy_Expiry_Date','Tenancy_Start_Date','vacancy','Last_Payment_Date','Notes','Phone','NIN','Contract_Name'];
+  var rows = rentLogs.map(function(r) {
+    var label = getPropertyLabel(r.unitId||r.unit);
+    var prop  = PROPERTIES.find(function(p){ return p.id === r.unitId; });
+    var loc   = r.location || (prop ? prop.location : '');
+    return [
+      r.unitId||'',
+      label,
+      loc,
+      r.tenant||'',
+      r.tenantEmail||'',
+      r.amount||'',
+      r.newRent||'',
+      r.expiry||'',
+      r.start||'',
+      r.vacancy||'occupied',
+      r.lastPayment||'',
+      r.notes||'',
+      r.tenantPhone||'',
+      r.tenantNIN||'',
+      r.contractName||r.tenant||''
+    ].map(function(v){ return String(v).includes(',') ? '"'+v+'"' : v; });
+  });
+  var csv = [hdrs.join(',')].concat(rows.map(function(r){ return r.join(','); })).join('\n');
+  var blob = new Blob([csv], {type:'text/csv'});
+  var a    = document.createElement('a');
+  a.href   = URL.createObjectURL(blob);
+  a.download = 'CRS_TenancyRecords_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('\u2713 Exported ' + rows.length + ' records to CSV');
+}
+
 function downloadCSVTemplate() {
-  var hdrs = 'unit_id,unit_label,location,city,type,tenant_name,tenant_email,tenant_phone,rent_amount,start_date,expiry_date,vacancy,notes,tenant_nin';
+  var hdrs = 'Unit,Use,Address_Location,Tenant,Email,Amount,New_Rent,Tenancy_Expiry_Date,Tenancy_Start_Date,vacancy,Last_Payment_Date,Notes,Phone,NIN,Contract_Name';
   var rows = [
-    'OJ-1A,2BDR Flat 1A,11 Jibewa Somorin Close Ojodu,Ojodu,2 Bedroom Flat,Mr. Ekene Iheme,ekene@gmail.com,+2348001234567,800000,01/06/2025,31/05/2026,occupied,,12345678901',
-    'OJ-2A,2BDR Flat 2A,11 Jibewa Somorin Close Ojodu,Ojodu,2 Bedroom Flat,Ms Adelodun Christiana Jimoh,adelodun@gmail.com,+2348007654321,1600000,01/07/2025,30/06/2026,occupied,,',
-    'OJ-3A,2BDR Flat 3A,11 Jibewa Somorin Close Ojodu,Ojodu,2 Bedroom Flat,Mrs Bologun,bolog@gmail.com,+2348009876543,750000,01/08/2025,31/07/2026,occupied,,',
-    'IB-2B,2 Bedroom Flat,Ababeji Engrs Residence Zone C Ibadan,Ibadan,2 Bedroom Flat,Mr & Mrs Bamiro Kehinde,kennytemmy2010@gmail.com,+2348012345678,200000,01/09/2025,31/08/2026,occupied,,',
-    'EN-2B,2BDR Flat,Enugu,Enugu,2 Bedroom Flat,,,, 300000,,,vacant,,'
+    'OJ-1A,2BDR Flat 1A,11 Jibewa Somorin Close Ojodu,Mr. Ekene Iheme,ekeneiheme02@gmail.com,800000,,31/05/2026,01/06/2025,occupied,01/06/2025,,+2348001234567,12345678901,Ekene Iheme',
+    'OJ-2A,2BDR Flat 2A,11 Jibewa Somorin Close Ojodu,Ms Adelodun Christiana Jimoh,adedolaiodun@gmail.com,1600000,,30/06/2026,01/07/2025,occupied,01/07/2025,,+2348007654321,,Adelodun Christiana Jimoh',
+    'OJ-3A,2BDR Flat 3A,11 Jibewa Somorin Close Ojodu,Mrs Balogun,morohunke2@gmail.com,750000,,31/07/2026,01/08/2025,occupied,01/08/2025,,+2348009876543,,Balogun',
+    'IB-RP,Room & Parlour Self Contain,Ababeji Engrs Residence Zone C Ibadan,Mr & Mrs Bamiro Kehinde,kennytemmy2010@gmail.com,200000,,31/08/2026,01/09/2025,occupied,01/09/2025,,+2348012345678,,Kehinde Bamiro',
+    'EN-2B,2BDR Flat,Enugu,,,300000,,,,,vacant,,,'
   ];
   var csv = hdrs + '\n' + rows.join('\n');
   var blob = new Blob([csv], {type:'text/csv'});
@@ -2942,21 +3008,28 @@ async function handleCSVImport(input) {
     }
     return -1;
   };
+  // ── Column aliases: supports BOTH old format (unit_id, unit_label...) AND new format
+  // New format: Unit | Use | Address_Location | Tenant | Email | Amount | New_Rent |
+  //             Tenancy_Expiry_Date | Tenancy_Start_Date | vacancy | Last_Payment_Date |
+  //             Notes | Phone | NIN | Contract_Name
   const cols = {
-    unitId:      col(['unit_id','id','unit id']),
-    unitLabel:   col(['unit_label','label','unit','property']),
-    location:    col(['location','address']),
-    city:        col(['city']),
-    type:        col(['type','property_type','unit_type']),
-    tenantName:  col(['tenant_name','tenant','name','full_name']),
-    tenantEmail: col(['tenant_email','email']),
-    tenantPhone: col(['tenant_phone','phone','mobile']),
-    amount:      col(['rent_amount','amount','rent','annual_rent']),
-    start:       col(['start_date','start','tenancy_start','from']),
-    expiry:      col(['expiry_date','expiry','end_date','end','tenure_end']),
-    vacancy:     col(['vacancy','status','vacant']),
-    notes:       col(['notes','note','remarks']),
-    nin:         col(['nin','tenant_nin','national_id']),
+    unitId:       col(['unit','unit_id','unit id']),
+    unitLabel:    col(['use','unit_label','label','unit_use_address_location','property']),
+    location:     col(['address_location','location','address']),
+    city:         col(['city']),
+    type:         col(['type','property_type','unit_type']),
+    tenantName:   col(['tenant','tenant_name','name','full_name']),
+    tenantEmail:  col(['email','tenant_email']),
+    tenantPhone:  col(['phone','tenant_phone','mobile']),
+    contractName: col(['contract_name','name_on_contract','full_name']),
+    amount:       col(['amount','rent_amount','rent','annual_rent']),
+    newRent:      col(['new_rent','new rent','proposed_rent']),
+    start:        col(['tenancy_start_date','tenancy start date','start_date','start','tenancy_start']),
+    expiry:       col(['tenancy_expiry_date','tenancy expiry date','expiry_date','expiry','end_date']),
+    lastPayment:  col(['last_payment_date','last payment date','last_payment']),
+    vacancy:      col(['vacancy','status','vacant']),
+    notes:        col(['notes','note','remarks']),
+    nin:          col(['nin','tenant_nin','national_id']),
   };
 
   let added=0, updated=0, skipped=0;
@@ -2982,13 +3055,16 @@ async function handleCSVImport(input) {
       location: get(cols.location),
       city: get(cols.city),
       type: get(cols.type),
-      tenant: get(cols.tenantName),
+      tenant: get(cols.tenantName) || get(cols.contractName),
+      contractName: get(cols.contractName) || get(cols.tenantName),
       tenantEmail: get(cols.tenantEmail),
       tenantPhone: get(cols.tenantPhone),
       tenantNIN: get(cols.nin),
       amount: get(cols.amount).replace(/[^0-9.]/g,''),
+      newRent: get(cols.newRent).replace(/[^0-9.]/g,''),
       start: normaliseDate(get(cols.start)),
       expiry: normaliseDate(get(cols.expiry)),
+      lastPayment: normaliseDate(get(cols.lastPayment)),
       vacancy: (get(cols.vacancy)||'').toLowerCase().includes('vacant') ? 'vacant' : 'occupied',
       notes: get(cols.notes),
       importedAt: new Date().toISOString(),
@@ -3956,6 +4032,9 @@ function renderTenantDashboard() {
 
   if (rec) {
     var propLabel = getPropertyLabel(rec.unitId||rec.unit);
+    var contractDisplay = rec.contractName && rec.contractName !== rec.tenant
+      ? rec.tenant + ' <span style="font-size:.7rem;color:#9a8a6a">(Contract: ' + rec.contractName + ')</span>'
+      : null;
     var propObj   = PROPERTIES.find(function(p){return p.id===(rec.unitId||rec.unit);});
     var loc       = rec.location || (propObj ? propObj.location : '') || '';
 
