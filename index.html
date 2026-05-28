@@ -3123,44 +3123,46 @@ async function saveRentRecord() {
 
   // ── Validate ──
   const v = _validateFields([
-    {id:'rmUnit',        label:'Unit',         msg:'Please select a property unit'},
-    {id:'rmTenant',      label:'Tenant Name',  msg:'Tenant name is required'},
-    {id:'rmAmount',      label:'Rent Amount',  msg:'Annual rent amount is required',
+    {id:'rmUnit',        label:'Unit',        msg:'Please select a property unit'},
+    {id:'rmTenant',      label:'Tenant Name', msg:'Tenant name is required'},
+    {id:'rmAmount',      label:'Rent Amount', msg:'Annual rent amount is required',
       test: val => val && Number(val) > 0},
-    {id:'rmTenantEmail', label:'Email',        msg:'Email format is invalid',
+    {id:'rmTenantEmail', label:'Email',       msg:'Email format is invalid',
       test: val => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)},
-    {id:'rmExpiry',      label:'Expiry Date',  msg:'Tenancy expiry date is required'},
+    {id:'rmExpiry',      label:'Expiry Date', msg:'Tenancy expiry date is required'},
   ]);
-
   if(!v.valid) {
     notify('error', 'Cannot Save Record', 'Please fix the following before saving:', v.errors);
     return;
   }
 
-  _setBtnLoading(btn, true);
+  // Brief visual feedback only — do NOT wait for network
+  if(btn) { btn.innerHTML = '💾 Saving…'; btn.disabled = true; }
 
   const unitId = document.getElementById('rmUnit').value;
   const tenant = document.getElementById('rmTenant').value.trim();
+  const editIdx = document.getElementById('rmEditId').value;
+  const isEdit  = editIdx !== '';
+
   const record = {
-    id: 'REC-' + Date.now(),
+    id: isEdit ? (rentLogs[parseInt(editIdx)].id || 'REC-'+Date.now()) : 'REC-'+Date.now(),
     unitId,
-    unit: getPropertyLabel(unitId),
+    unit:         getPropertyLabel(unitId),
     tenant,
     contractName: (document.getElementById('rmContractName') ? document.getElementById('rmContractName').value.trim() : '') || tenant,
-    tenantEmail: document.getElementById('rmTenantEmail').value.trim(),
-    tenantPhone: document.getElementById('rmTenantPhone') ? document.getElementById('rmTenantPhone').value.trim() : '',
-    amount: document.getElementById('rmAmount').value,
-    newRent: document.getElementById('rmNewRent') ? document.getElementById('rmNewRent').value : '',
-    start: document.getElementById('rmStart').value,
-    expiry: document.getElementById('rmExpiry').value,
-    lastPayment: document.getElementById('rmLastPayment') ? document.getElementById('rmLastPayment').value : '',
-    vacancy: document.getElementById('rmVacancy') ? document.getElementById('rmVacancy').value : 'occupied',
-    notes: document.getElementById('rmNotes').value.trim(),
-    updatedAt: new Date().toISOString()
+    tenantEmail:  document.getElementById('rmTenantEmail').value.trim(),
+    tenantPhone:  document.getElementById('rmTenantPhone')  ? document.getElementById('rmTenantPhone').value.trim()  : '',
+    amount:       document.getElementById('rmAmount').value,
+    newRent:      document.getElementById('rmNewRent')      ? document.getElementById('rmNewRent').value      : '',
+    start:        document.getElementById('rmStart').value,
+    expiry:       document.getElementById('rmExpiry').value,
+    lastPayment:  document.getElementById('rmLastPayment')  ? document.getElementById('rmLastPayment').value  : '',
+    vacancy:      document.getElementById('rmVacancy')      ? document.getElementById('rmVacancy').value      : 'occupied',
+    notes:        document.getElementById('rmNotes').value.trim(),
+    updatedAt:    new Date().toISOString()
   };
 
-  const editIdx = document.getElementById('rmEditId').value;
-  const isEdit = editIdx !== '';
+  // ── STEP 1: Save locally immediately ──
   if(isEdit) {
     rentLogs[parseInt(editIdx)] = {...rentLogs[parseInt(editIdx)], ...record};
   } else {
@@ -3168,32 +3170,41 @@ async function saveRentRecord() {
   }
   saveLocal();
 
-  // Firestore sync
-  let cloudOk = false;
-  try {
-    await window._db.collection('rentRecords').doc(record.id).set(record);
-    cloudOk = true;
-  } catch(e) {}
-
+  // ── STEP 2: Close modal + re-enable button RIGHT NOW ──
   _setBtnLoading(btn, false);
   closeRentModal();
   renderAll();
   renderRentManager();
 
-  const details = [
-    `Unit: ${getPropertyLabel(unitId)}`,
-    `Tenant: ${tenant}`,
-    `Rent: ₦${Number(record.amount||0).toLocaleString()}`,
-    record.expiry ? `Expiry: ${record.expiry}` : null,
-    cloudOk ? '☁ Synced to cloud' : '📴 Saved locally (cloud unavailable)',
-  ].filter(Boolean);
-
   notify('success',
     isEdit ? 'Record Updated' : 'Record Added',
-    isEdit ? `${getPropertyLabel(unitId)} tenancy record has been updated.`
-           : `New tenancy record created for ${tenant}.`,
-    details
+    `${getPropertyLabel(unitId)} — ${tenant}`,
+    [
+      `Rent: ₦${Number(record.amount||0).toLocaleString()}`,
+      record.expiry ? `Expiry: ${record.expiry}` : null,
+      '💾 Saved locally — syncing to cloud…',
+    ].filter(Boolean)
   );
+
+  // ── STEP 3: Sync to Firestore in background with 5s timeout ──
+  // Never blocks the UI
+  (async () => {
+    try {
+      if(!window._db) return;
+      const controller = { aborted: false };
+      const timeout = setTimeout(() => { controller.aborted = true; }, 5000);
+      await Promise.race([
+        window._db.collection('rentRecords').doc(record.id).set(record),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+      ]);
+      clearTimeout(timeout);
+      if(!controller.aborted)
+        notify('success', 'Cloud Sync Complete', `${getPropertyLabel(unitId)} saved to Firestore.`, ['Available on all devices now']);
+    } catch(e) {
+      // Silent — data is already saved locally, user is not blocked
+      console.warn('Background Firestore sync:', e.message);
+    }
+  })();
 }
 
 /* ═══ VACANT UNITS ════════════════════════════════════ */
@@ -4492,25 +4503,29 @@ async function smartDoImport() {
   _impShowStage(4);
   document.getElementById('impStage4').scrollIntoView({behavior:'smooth',block:'nearest'});
 
-  // Firestore sync
+  // Firestore sync — background with timeout
   log('☁ Syncing to Firestore...','info');
-  try {
-    if(!window._db) throw new Error('Firestore not initialised');
-    const batch=window._db.batch(); let bc=0;
-    for(const rec of rentLogs){
-      batch.set(window._db.collection('rentRecords').doc(rec.id),rec); bc++;
-      if(bc>=499) break;
+  (async () => {
+    try {
+      if(!window._db) throw new Error('Firestore not initialised');
+      const batch=window._db.batch(); let bc=0;
+      for(const rec of rentLogs){
+        batch.set(window._db.collection('rentRecords').doc(rec.id),rec); bc++;
+        if(bc>=499) break;
+      }
+      await Promise.race([
+        batch.commit(),
+        new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),8000))
+      ]);
+      log(`✓ Firestore sync complete — ${Math.min(rentLogs.length,499)} records saved`,'ok');
+      toast('✓ Import + cloud sync complete: '+rentLogs.length+' records');
+    } catch(e) {
+      log('⚠ Firestore sync skipped — '+(e.message||'check connection'),'warn');
     }
-    await batch.commit();
-    log(`✓ Firestore sync complete — ${Math.min(rentLogs.length,499)} records saved`,'ok');
-    toast('✓ Import + cloud sync complete: '+rentLogs.length+' records');
-  } catch(e) {
-    log('⚠ Firestore sync skipped — '+(e.message||'check connection'),'warn');
-  }
+  })();
 }
 
 function smartDownloadCSV() {
-  const keys=_IMP_FIELDS.map(f=>f.key);
   const rows=[keys.join(','),..._impMapped.map(r=>keys.map(k=>`"${(r[k]||'').replace(/"/g,'""')}"`).join(','))];
   const blob=new Blob([rows.join('\n')],{type:'text/csv'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
@@ -4691,16 +4706,21 @@ async function rmSmartDoImport() {
   toast(`✓ Import complete: ${added+updated} records`);
   _rmShowStage(4);
   document.getElementById('rmImpStage4').scrollIntoView({behavior:'smooth',block:'nearest'});
-  // Firestore sync
+  // Firestore sync — background with timeout
   log('☁ Syncing to Firestore...','info');
-  try{
-    if(!window._db)throw new Error('Firestore not initialised');
-    const batch=window._db.batch();let bc=0;
-    for(const rec of rentLogs){batch.set(window._db.collection('rentRecords').doc(rec.id),rec);bc++;if(bc>=499)break;}
-    await batch.commit();
-    log(`✓ Firestore sync complete — ${Math.min(rentLogs.length,499)} records saved`,'ok');
-    toast('✓ Import + cloud sync complete: '+rentLogs.length+' records');
-  }catch(e){log('⚠ Firestore sync skipped — '+(e.message||'check connection'),'warn');}
+  (async () => {
+    try{
+      if(!window._db)throw new Error('Firestore not initialised');
+      const batch=window._db.batch();let bc=0;
+      for(const rec of rentLogs){batch.set(window._db.collection('rentRecords').doc(rec.id),rec);bc++;if(bc>=499)break;}
+      await Promise.race([
+        batch.commit(),
+        new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),8000))
+      ]);
+      log(`✓ Firestore sync complete — ${Math.min(rentLogs.length,499)} records saved`,'ok');
+      toast('✓ Import + cloud sync complete: '+rentLogs.length+' records');
+    }catch(e){log('⚠ Firestore sync skipped — '+(e.message||'check connection'),'warn');}
+  })();
 }
 
 function rmSmartDownloadCSV(){
@@ -5496,11 +5516,17 @@ function savePropEdit() {
     }
   }
 
-  // ── 6. Sync to Firestore ──
-  if (window._db) {
-    const rec = rentLogs[recIdx];
-    window._db.collection('rentRecords').doc(rec.id).set(rec, {merge:true}).catch(e=>{});
-  }
+  // ── 6. Sync to Firestore — background, never blocks UI ──
+  const _syncRec = rentLogs[recIdx];
+  (async () => {
+    try {
+      if(!window._db) return;
+      await Promise.race([
+        window._db.collection('rentRecords').doc(_syncRec.id).set(_syncRec, {merge:true}),
+        new Promise((_,r) => setTimeout(() => r(new Error('timeout')), 5000))
+      ]);
+    } catch(e) { console.warn('savePropEdit Firestore:', e.message); }
+  })();
 
   // ── 7. Refresh all views ──
   closePropEdit();
