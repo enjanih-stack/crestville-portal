@@ -2660,7 +2660,11 @@ async function _bootApp(user, userData, adminMode) {
 
   try {
     await _pullFromFirestore(hasLocal); // primary — Firestore rentRecords collection
-  } catch(e) {
+  } catch(firestoreErr) {
+    const isPermission = (firestoreErr.message||'').toLowerCase().includes('permission');
+    if (isPermission) {
+      console.warn('Firestore permissions — fix: Firebase Console → Firestore → Rules → publish "allow read, write: if request.auth != null"');
+    }
     // Firestore failed — try Apps Script backup
     try {
       await pullFromCloud(true);
@@ -3686,30 +3690,40 @@ async function syncToCloud() {
     errors.push('Firestore: ' + (e.message||'failed'));
   }
 
-  // ── 2. Push to Apps Script backup ──
+  // ── 2. Push to Apps Script backup (15s timeout — cold start can take 10-15s) ──
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-    await fetch(CLOUD_URL, { method:'POST', body: JSON.stringify(rentLogs), signal: controller.signal });
-    clearTimeout(timer);
+    const controller2 = new AbortController();
+    const timer2 = setTimeout(() => controller2.abort(), 15000);
+    await fetch(CLOUD_URL, { method:'POST', body: JSON.stringify(rentLogs), signal: controller2.signal });
+    clearTimeout(timer2);
     appsScriptOk = true;
   } catch(e) {
-    errors.push('Apps Script: ' + (e.message||'failed'));
+    const isTimeout = e.name === 'AbortError';
+    errors.push('Apps Script: ' + (isTimeout ? 'timed out (cold start — retry in 30s)' : (e.message||'failed')));
   }
 
   _setBtnLoading(btn, false);
 
-  if (firestoreOk || appsScriptOk) {
+  if (firestoreOk) {
+    // Firestore is the primary source — success even if Apps Script failed
     notify('success', 'Synced to Cloud',
-      `${rentLogs.length} records pushed — now accessible on all devices.`, [
-        firestoreOk ? '✓ Firestore database updated' : '✗ Firestore unavailable',
-        appsScriptOk ? '✓ Apps Script backup updated' : '✗ Apps Script unavailable',
+      `${rentLogs.length} records saved to Firestore — available on all devices.`, [
+        '✓ Firestore database updated (primary)',
+        appsScriptOk ? '✓ Apps Script backup updated' : '⚠ Apps Script backup skipped — ' + (errors.find(e=>e.startsWith('Apps'))||'unavailable'),
         `Sync time: ${new Date().toLocaleTimeString('en-NG')}`,
+        'Mobile and other devices will load this data on next login',
+      ]);
+  } else if (appsScriptOk) {
+    notify('warning', 'Partially Synced',
+      `${rentLogs.length} records saved to Apps Script backup only.`, [
+        '✗ Firestore unavailable — ' + (errors.find(e=>e.startsWith('Fire'))||'check Firebase Console permissions'),
+        '✓ Apps Script backup updated',
+        'Fix Firestore rules in Firebase Console → Firestore → Rules',
       ]);
   } else {
     notify('error', 'Sync Failed', 'Could not reach any cloud service.', [
       ...errors,
-      'Check your internet connection',
+      'Fix: Firebase Console → Firestore → Rules → publish "allow read, write: if request.auth != null"',
       'Data is safely saved on this device',
     ]);
   }
