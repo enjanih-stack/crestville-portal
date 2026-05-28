@@ -227,14 +227,29 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── TOAST ── */
-.toast {
-  position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-80px);
-  background: #0f0e0c; color: #fff; padding: 10px 20px; border-radius: 4px;
-  font-size: .82rem; z-index: 8000; transition: transform .3s cubic-bezier(.34,1.56,.64,1);
-  border-bottom: 3px solid var(--gold); max-width: 88vw; text-align: center;
-  pointer-events: none;
-}
-.toast.on { transform: translateX(-50%) translateY(0); }
+/* ── RICH NOTIFICATION SYSTEM ── */
+#crsNotifStack{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none;max-width:min(400px,92vw)}
+.crs-notif{background:#0f0e0c;color:#e8dfc8;border-radius:10px;padding:13px 16px 13px 14px;font-family:'DM Sans',sans-serif;font-size:.82rem;line-height:1.5;box-shadow:0 6px 28px rgba(0,0,0,.35);display:flex;align-items:flex-start;gap:10px;pointer-events:all;cursor:pointer;transform:translateX(120%);transition:transform .3s cubic-bezier(.34,1.4,.64,1),opacity .25s;opacity:0;max-width:100%;min-width:260px;border-left:4px solid var(--gold);position:relative;overflow:hidden}
+.crs-notif.show{transform:translateX(0);opacity:1}
+.crs-notif.hide{transform:translateX(120%);opacity:0}
+.crs-notif.n-success{border-color:#1a9a4a}
+.crs-notif.n-error  {border-color:#c0392b}
+.crs-notif.n-warning{border-color:#c9960c}
+.crs-notif.n-info   {border-color:#3b82f6}
+.crs-notif-icon{font-size:1.15rem;flex-shrink:0;margin-top:1px}
+.crs-notif-body{flex:1;min-width:0}
+.crs-notif-title{font-weight:700;color:#fff;font-size:.84rem;margin-bottom:2px}
+.crs-notif-msg{color:#b0a890;font-size:.77rem;line-height:1.55}
+.crs-notif-detail{margin-top:6px;font-size:.72rem;color:#9a7060;line-height:1.6;border-top:1px solid #2a2620;padding-top:6px}
+.crs-notif-detail li{margin-left:14px;list-style:disc}
+.crs-notif-close{background:none;border:none;color:#5a5248;cursor:pointer;font-size:.9rem;padding:0 0 0 6px;line-height:1;flex-shrink:0;align-self:flex-start;margin-top:1px}
+.crs-notif-close:hover{color:#c0392b}
+.crs-notif-progress{position:absolute;bottom:0;left:0;height:2px;background:currentColor;opacity:.35;transition:width linear}
+/* Toast kept for backward compat — hidden, redirected to new system */
+.toast{display:none!important}
+/* Form field error highlight */
+.field-error{border-bottom-color:#c0392b!important;background:rgba(192,57,43,.04)!important}
+.field-error-msg{font-size:.68rem;color:#c0392b;margin-top:3px;display:block}
 
 /* ── VIEWS ── */
 .view { display: none; }
@@ -998,6 +1013,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .eb-red .eb-days{background:rgba(140,31,31,.2);color:#f57272;animation:pulse 1.2s ease-in-out infinite}
 @keyframes bannerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* DAYS REMAINING PILL — inline in tables and cards */
 .days-pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700;white-space:nowrap}
@@ -1237,7 +1253,8 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 </div>
 
 <!-- TOAST -->
-<div class="toast" id="toast"></div>
+<div id="toast" class="toast"></div>
+<div id="crsNotifStack"></div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
@@ -2184,10 +2201,108 @@ function waitForFirebase(cb) {
 
 /* ═══ TOAST ═══════════════════════════════════════════ */
 let _tt;
-function toast(m, d=3400) {
-  const t = document.getElementById('toast');
-  t.textContent = m; t.classList.add('on');
-  clearTimeout(_tt); _tt = setTimeout(() => t.classList.remove('on'), d);
+/* ═══════════════════════════════════════════════════════════════
+   RICH NOTIFICATION SYSTEM
+   notify(type, title, message, details[], duration)
+   type: 'success' | 'error' | 'warning' | 'info'
+   Backwards-compatible: toast(msg) still works
+═══════════════════════════════════════════════════════════════ */
+const _notifIcons = {success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
+let _notifQueue = [];
+
+function notify(type='info', title='', message='', details=[], duration=4500) {
+  const stack = document.getElementById('crsNotifStack');
+  if(!stack) return;
+
+  const el = document.createElement('div');
+  el.className = `crs-notif n-${type}`;
+
+  const detailHtml = details.length
+    ? `<div class="crs-notif-detail"><ul>${details.map(d=>`<li>${d}</li>`).join('')}</ul></div>`
+    : '';
+
+  el.innerHTML = `
+    <span class="crs-notif-icon">${_notifIcons[type]||'💬'}</span>
+    <div class="crs-notif-body">
+      <div class="crs-notif-title">${title}</div>
+      ${message ? `<div class="crs-notif-msg">${message}</div>` : ''}
+      ${detailHtml}
+    </div>
+    <button class="crs-notif-close" onclick="this.closest('.crs-notif').dispatchEvent(new Event('dismiss'))">✕</button>
+    <div class="crs-notif-progress" style="width:100%;transition-duration:${duration}ms;color:${
+      type==='success'?'#1a9a4a':type==='error'?'#c0392b':type==='warning'?'#c9960c':'#3b82f6'
+    }"></div>`;
+
+  const dismiss = () => {
+    el.classList.remove('show');
+    el.classList.add('hide');
+    setTimeout(() => el.remove(), 300);
+  };
+  el.addEventListener('dismiss', dismiss);
+  el.addEventListener('click', e => { if(!e.target.classList.contains('crs-notif-close')) dismiss(); });
+
+  stack.prepend(el);
+
+  // Limit stack to 4 visible
+  const all = stack.querySelectorAll('.crs-notif');
+  if(all.length > 4) all[all.length-1].dispatchEvent(new Event('dismiss'));
+
+  requestAnimationFrame(() => {
+    el.classList.add('show');
+    const bar = el.querySelector('.crs-notif-progress');
+    if(bar) { bar.style.width='0%'; }
+  });
+
+  const timer = setTimeout(dismiss, duration);
+  el.addEventListener('mouseenter', () => clearTimeout(timer));
+
+  return el;
+}
+
+// Backward-compatible toast — maps to notify
+function toast(m='', d=3400) {
+  if(!m) return;
+  const isErr  = m.startsWith('⚠') || m.startsWith('✗') || m.toLowerCase().includes('fail') || m.toLowerCase().includes('error');
+  const isWarn = m.startsWith('⚠') || m.toLowerCase().includes('skipped') || m.toLowerCase().includes('unavailable');
+  const isOk   = m.startsWith('✓') || m.startsWith('✅') || m.startsWith('📧') || m.startsWith('☁') || m.startsWith('📋');
+  const type   = isErr && !isWarn ? 'error' : isWarn ? 'warning' : isOk ? 'success' : 'info';
+  notify(type, m.replace(/^[✓✅⚠✗📧☁📋⬆⬇🗑🔓🔒]+\s*/,''), '', [], d);
+}
+
+/* ── FORM FIELD VALIDATION HELPER ── */
+function _validateFields(rules) {
+  // rules: [{id, label, test?}]
+  // Returns {valid:bool, errors:[string], invalidIds:[string]}
+  const errors = []; const invalidIds = [];
+  for(const r of rules) {
+    const el = document.getElementById(r.id);
+    if(!el) continue;
+    const val = el.value?.trim();
+    const fail = r.test ? !r.test(val, el) : !val;
+    if(fail) {
+      errors.push(r.msg || `${r.label} is required`);
+      invalidIds.push(r.id);
+      el.classList.add('field-error');
+      // Remove highlight on input
+      el.addEventListener('input', () => el.classList.remove('field-error'), {once:true});
+    } else {
+      el.classList.remove('field-error');
+    }
+  }
+  return {valid: errors.length === 0, errors, invalidIds};
+}
+
+/* ── SAVE BUTTON STATE HELPER ── */
+function _setBtnLoading(btnEl, loading, originalText) {
+  if(!btnEl) return;
+  if(loading) {
+    btnEl._origText = btnEl.innerHTML;
+    btnEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block"></span> Saving…</span>';
+    btnEl.disabled = true;
+  } else {
+    btnEl.innerHTML = btnEl._origText || originalText || 'Save';
+    btnEl.disabled = false;
+  }
 }
 
 /* ═══ CLOCK ═══════════════════════════════════════════ */
@@ -2920,9 +3035,29 @@ function deleteRentRecord(idx) {
 }
 
 async function saveRentRecord() {
+  const btn = document.querySelector('#rentModal .btn-gold[onclick*="saveRentRecord"]') ||
+              document.querySelector('#rentModal .btn-gold');
+
+  // ── Validate ──
+  const v = _validateFields([
+    {id:'rmUnit',        label:'Unit',         msg:'Please select a property unit'},
+    {id:'rmTenant',      label:'Tenant Name',  msg:'Tenant name is required'},
+    {id:'rmAmount',      label:'Rent Amount',  msg:'Annual rent amount is required',
+      test: val => val && Number(val) > 0},
+    {id:'rmTenantEmail', label:'Email',        msg:'Email format is invalid',
+      test: val => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)},
+    {id:'rmExpiry',      label:'Expiry Date',  msg:'Tenancy expiry date is required'},
+  ]);
+
+  if(!v.valid) {
+    notify('error', 'Cannot Save Record', 'Please fix the following before saving:', v.errors);
+    return;
+  }
+
+  _setBtnLoading(btn, true);
+
   const unitId = document.getElementById('rmUnit').value;
   const tenant = document.getElementById('rmTenant').value.trim();
-  if(!unitId || !tenant) { toast('⚠ Select a unit and enter tenant name'); return; }
   const record = {
     id: 'REC-' + Date.now(),
     unitId,
@@ -2936,19 +3071,46 @@ async function saveRentRecord() {
     start: document.getElementById('rmStart').value,
     expiry: document.getElementById('rmExpiry').value,
     lastPayment: document.getElementById('rmLastPayment') ? document.getElementById('rmLastPayment').value : '',
-    vacancy: document.getElementById('rmVacancy').value,
+    vacancy: document.getElementById('rmVacancy') ? document.getElementById('rmVacancy').value : 'occupied',
     notes: document.getElementById('rmNotes').value.trim(),
     updatedAt: new Date().toISOString()
   };
+
   const editIdx = document.getElementById('rmEditId').value;
-  if(editIdx !== '') { rentLogs[parseInt(editIdx)] = {...rentLogs[parseInt(editIdx)], ...record}; }
-  else { rentLogs.push(record); }
-  closeRentModal(); renderAll(); renderRentManager();
-  toast('✓ Record saved');
-  // Save to Firestore
+  const isEdit = editIdx !== '';
+  if(isEdit) {
+    rentLogs[parseInt(editIdx)] = {...rentLogs[parseInt(editIdx)], ...record};
+  } else {
+    rentLogs.push(record);
+  }
+  saveLocal();
+
+  // Firestore sync
+  let cloudOk = false;
   try {
     await window._db.collection('rentRecords').doc(record.id).set(record);
-  } catch(e) { console.log('Firestore save:', e); }
+    cloudOk = true;
+  } catch(e) {}
+
+  _setBtnLoading(btn, false);
+  closeRentModal();
+  renderAll();
+  renderRentManager();
+
+  const details = [
+    `Unit: ${getPropertyLabel(unitId)}`,
+    `Tenant: ${tenant}`,
+    `Rent: ₦${Number(record.amount||0).toLocaleString()}`,
+    record.expiry ? `Expiry: ${record.expiry}` : null,
+    cloudOk ? '☁ Synced to cloud' : '📴 Saved locally (cloud unavailable)',
+  ].filter(Boolean);
+
+  notify('success',
+    isEdit ? 'Record Updated' : 'Record Added',
+    isEdit ? `${getPropertyLabel(unitId)} tenancy record has been updated.`
+           : `New tenancy record created for ${tenant}.`,
+    details
+  );
 }
 
 /* ═══ VACANT UNITS ════════════════════════════════════ */
@@ -3203,7 +3365,20 @@ function closeRenewModal() { document.getElementById('renewModal').classList.rem
 
 async function submitRenewalRequest() {
   const rec = window._myRecord;
-  if(!rec) { toast('⚠ No tenancy record found'); return; }
+  if(!rec) {
+    notify('error', 'Cannot Submit', 'No tenancy record found for your account.', ['Contact crestechnologies@outlook.com to link your account']);
+    return;
+  }
+
+  const v = _validateFields([
+    {id:'renewDuration', label:'Renewal Duration', msg:'Please select a renewal duration'},
+  ]);
+  if(!v.valid) { notify('error','Missing Details','',v.errors); return; }
+
+  const btn = document.querySelector('#renewModal .btn-gold[onclick*="submitRenewalRequest"]') ||
+              document.querySelector('#renewModal .btn-gold');
+  _setBtnLoading(btn, true);
+
   const duration = document.getElementById('renewDuration').value;
   const message  = document.getElementById('renewMessage').value.trim();
   const name = currentUser.displayName || currentUser.email.split('@')[0];
@@ -3224,11 +3399,30 @@ async function submitRenewalRequest() {
     </div>
     <div style="background:#0f0e0c;padding:10px 20px;text-align:center;font-size:11px;color:#888">Submitted: ${new Date().toLocaleString('en-NG')}</div>
   </div>`;
+
   let sent = false;
-  if(typeof window.sendCRSEmail === 'function')
-    sent = await window.sendCRSEmail(['crestechnologies@outlook.com','enjanih@gmail.com'],`[CRS Renewal] ${unit} — ${name}`,html);
+  let errMsg = '';
+  try {
+    if(typeof window.sendCRSEmail === 'function')
+      sent = await window.sendCRSEmail(['crestechnologies@outlook.com','enjanih@gmail.com'],`[CRS Renewal] ${unit} — ${name}`,html);
+  } catch(e) { errMsg = e.message || 'Email service unavailable'; }
+
+  _setBtnLoading(btn, false);
   closeRenewModal();
-  toast(sent ? '✓ Renewal request sent to landlord!' : '✓ Request recorded.', 4000);
+
+  if(sent) {
+    notify('success', 'Renewal Request Submitted', `Your renewal request for ${unit} has been sent to the landlord.`, [
+      `Duration: ${duration}`,
+      `Current expiry: ${fmt(rec.expiry)}`,
+      'You will receive a confirmation email shortly',
+      'Admin will review and contact you within 2–3 business days',
+    ]);
+  } else {
+    notify('warning', 'Request Recorded (Email Pending)', `Your renewal request has been logged but the email could not be sent.${errMsg?' Reason: '+errMsg:''}`, [
+      `Unit: ${unit}`, `Duration: ${duration}`,
+      'Contact crestechnologies@outlook.com directly if you do not hear back within 24 hours',
+    ]);
+  }
 }
 
 /* ═══ NOTICES ═════════════════════════════════════ */
@@ -3375,10 +3569,16 @@ function generateReceiptByRecord(raw) { try { fillReceipt(JSON.parse(raw)); wind
 
 /* ═══ CLOUD SYNC ══════════════════════════════════════ */
 async function syncToCloud() {
+  const btn = document.querySelector('[onclick="syncToCloud()"]');
+  _setBtnLoading(btn, true);
   try {
     await fetch(CLOUD_URL, {method:'POST', body: JSON.stringify(rentLogs)});
-    toast('☁️ Synced to cloud');
-  } catch(e) { toast('⚠ Sync failed'); }
+    _setBtnLoading(btn, false);
+    notify('success','Synced to Cloud',`${rentLogs.length} records pushed to cloud storage.`,[`Sync time: ${new Date().toLocaleTimeString('en-NG')}`]);
+  } catch(e) {
+    _setBtnLoading(btn, false);
+    notify('error','Sync Failed','Could not reach the cloud server.',['Check your internet connection','Try again in a few moments','Data is safely saved locally']);
+  }
 }
 async function pullFromCloud(silent=false) {
   try {
@@ -5056,6 +5256,28 @@ function savePropEdit() {
   const p = PROPERTIES.find(x => x.id === _editingPropId);
   if (!p) return;
 
+  // ── Validate ──
+  const v = _validateFields([
+    {id:'peLabel',    label:'Property Label', msg:'Property label / name is required'},
+    {id:'peRent',     label:'Annual Rent',    msg:'Annual rent must be a positive number',
+      test: val => !val || Number(val) >= 0},
+    {id:'peTenantEmail', label:'Tenant Email', msg:'Tenant email format is invalid',
+      test: val => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)},
+    {id:'peTenancyExpiry', label:'Expiry Date', msg:'Expiry date must be a valid date',
+      test: val => !val || !isNaN(new Date(val))},
+    {id:'peNewRentDate', label:'New Rent Effective Date',
+      msg:'Set an effective date when a new rent amount is entered',
+      test: (val) => {
+        const nrEl = document.getElementById('peNewRent');
+        return !(nrEl && nrEl.value.trim() && !val);
+      }
+    },
+  ]);
+  if(!v.valid) {
+    notify('error','Cannot Save Property','Please fix the following issues:',v.errors);
+    return;
+  }
+
   // Read all fields
   const newLabel       = document.getElementById('peLabel').value.trim()         || p.label;
   const newCity        = document.getElementById('peCity').value;
@@ -5161,12 +5383,25 @@ function savePropEdit() {
     setTimeout(renderTenantDashboard, 300);
   }
 
-  // Show confirmation with what changed
+  // ── 8. Rich success notification ──
   const changes = [];
-  if (newRentNew)  changes.push(`New rent ₦${Number(newRentNew).toLocaleString()}${newRentDate?' eff. '+newRentDate:''}`);
-  if (newExpiry)   changes.push(`Expiry updated to ${newExpiry}`);
+  if (newRentNew)  changes.push(`New rent: ₦${Number(newRentNew).toLocaleString()}${newRentDate?' (eff. '+newRentDate+')':''}`);
+  if (newExpiry)   changes.push(`Expiry: ${newExpiry}`);
   if (newEmail)    changes.push(`Email: ${newEmail}`);
-  toast(`✓ ${newLabel} updated${changes.length?' — '+changes.slice(0,2).join(' · '):''}`);
+  if (newStart)    changes.push(`Start: ${newStart}`);
+  if (_editVacancy === 'vacant') changes.push('Unit marked as vacant');
+
+  // Validate before finishing (non-blocking — already done above if new flow)
+  notify('success',
+    `${newLabel} — Saved`,
+    `Property and tenant details updated successfully.`,
+    [
+      `Current rent: ₦${Number(newRentAmt||0).toLocaleString()}`,
+      ...changes,
+      newTenant ? `Tenant: ${newTenant}` : null,
+      '📋 Rent Manager and all pages updated',
+    ].filter(Boolean)
+  );
 }
 
 /* ════════════════════════════════════════════════════════════
