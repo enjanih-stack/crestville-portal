@@ -3664,38 +3664,42 @@ function downloadCSVTemplate() {
 ════════════════════════════════════════════════════ */
 
 // CRS field definitions with alias lists
+// Covers: your exact headers (unit_id, unit_label, location, city, type, tenant_name,
+// tenant_email, rent_amount, start_date, expiry_date, vacancy, LastPayment Date, Notes, New rent)
+// plus old CRS field names and common spreadsheet variants.
 const _IMP_FIELDS = [
-  { key:'unit',        label:'Unit ID / Label',          required:true,
-    aliases:['unit','unit_id','unit_label','flat','property','unit_no','unitid','unitlabel'] },
-  { key:'location',    label:'Address / Location',        required:false,
-    aliases:['location','address','address_location','addr','property_address'] },
-  { key:'city',        label:'City / Area',              required:false,
+  { key:'unit',        label:'Unit ID / Label',           required:true,
+    aliases:['unit_id','unit_label','unit','flat','property','unit_no','unitid','unitlabel','unit id','unit label'] },
+  { key:'location',    label:'Address / Location',         required:false,
+    aliases:['location','address','address_location','addr','property_address','address_location'] },
+  { key:'city',        label:'City / Area',               required:false,
     aliases:['city','area','region','lga','state','city_area'] },
-  { key:'type',        label:'Property Type / Use',      required:false,
+  { key:'type',        label:'Property Type / Use',       required:false,
     aliases:['type','use','property_type','usage','category','unit_type'] },
-  { key:'tenant',      label:'Tenant Name',              required:true,
-    aliases:['tenant','tenant_name','name','full_name','occupant','renter','lessee'] },
-  { key:'tenantEmail', label:'Tenant Email',             required:false,
-    aliases:['tenant_email','email','email_address','mail','contact_email'] },
-  { key:'tenantPhone', label:'Phone Number',             required:false,
+  { key:'tenant',      label:'Tenant Name',               required:true,
+    aliases:['tenant_name','tenant','name','full_name','occupant','renter','lessee','tenant name'] },
+  { key:'tenantEmail', label:'Tenant Email',              required:false,
+    aliases:['tenant_email','email','email_address','mail','contact_email','tenant email'] },
+  { key:'tenantPhone', label:'Phone Number',              required:false,
     aliases:['phone','phone_number','mobile','tel','telephone','tenant_phone','contact'] },
-  { key:'contractName',label:'Contract Name',            required:false,
+  { key:'contractName',label:'Contract Name',             required:false,
     aliases:['contract_name','name_on_agreement','agreement_name','legal_name','name_on_contract'] },
-  { key:'amount',      label:'Rent Amount',              required:true,
-    aliases:['rent_amount','amount','rent','annual_rent','rent_pa','fee'] },
-  { key:'newRent',     label:'New / Revised Rent',       required:false,
-    aliases:['new_rent','revised_rent','next_rent','renewal_rent','new rent','proposed_rent'] },
-  { key:'start',       label:'Tenancy Start Date',       required:false,
-    aliases:['start_date','tenancy_start_date','start','commencement','from','lease_start','tenancy_start'] },
-  { key:'expiry',      label:'Tenancy Expiry / End Date',required:false,
-    aliases:['expiry_date','tenancy_expiry_date','end_date','expiry','end','lease_end','expiration'] },
-  { key:'vacancy',     label:'Vacancy / Status',         required:false,
+  { key:'amount',      label:'Rent Amount',               required:true,
+    aliases:['rent_amount','amount','rent','annual_rent','rent_pa','fee','rent amount'] },
+  { key:'newRent',     label:'New / Revised Rent',        required:false,
+    aliases:['new_rent','new_rent','revised_rent','next_rent','renewal_rent','new rent','proposed_rent','newrent'] },
+  { key:'start',       label:'Tenancy Start Date',        required:false,
+    aliases:['start_date','tenancy_start_date','start','commencement','from','lease_start','tenancy_start','start date'] },
+  { key:'expiry',      label:'Tenancy Expiry / End Date', required:false,
+    aliases:['expiry_date','tenancy_expiry_date','end_date','expiry','end','lease_end','expiration','expiry date'] },
+  { key:'vacancy',     label:'Vacancy / Status',          required:false,
     aliases:['vacancy','status','occupancy','occupancy_status','occupied','tenant_status','vacant'] },
-  { key:'lastPayment', label:'Last Payment Date',        required:false,
-    aliases:['last_payment_date','last_payment','payment_date','paid_date','last payment date'] },
-  { key:'tenantNIN',   label:'NIN (National ID)',         required:false,
+  { key:'lastPayment', label:'Last Payment Date',         required:false,
+    aliases:['lastpayment_date','last_payment_date','last_payment','payment_date','paid_date',
+             'lastpayment date','last payment date','lastpayment','last payment'] },
+  { key:'tenantNIN',   label:'NIN (National ID)',          required:false,
     aliases:['nin','national_id','national_id_number','nin_no','tenant_nin'] },
-  { key:'notes',       label:'Notes / Remarks',          required:false,
+  { key:'notes',       label:'Notes / Remarks',           required:false,
     aliases:['notes','remarks','comment','comments','additional','note'] },
 ];
 
@@ -3706,7 +3710,13 @@ let _impColMap     = {};  // field.key → raw header string
 let _impMapped     = [];  // transformed records
 
 function _impNorm(s) {
-  return (s||'').toString().replace(/[,\s]+/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'').toLowerCase();
+  return (s||'').toString()
+    .trim()
+    .replace(/^[,\s]+|[,\s]+$/g,'')  // strip leading/trailing commas & spaces
+    .replace(/[,\s]+/g,'_')           // internal commas+spaces → _
+    .replace(/_+/g,'_')               // collapse
+    .replace(/^_|_$/g,'')             // trim edges
+    .toLowerCase();
 }
 
 function _impAutoDetect(headers) {
@@ -3844,11 +3854,10 @@ async function smartDoImport() {
   logEl.innerHTML = '';
   const log = (msg,type='ok')=>{ const cls=type==='err'?'log-err':type==='warn'?'log-warn':type==='info'?'log-info':''; logEl.innerHTML+=`<div class="${cls}">${msg}</div>`; logEl.scrollTop=logEl.scrollHeight; };
 
-  let added=0, updated=0, skipped=0;
+  let added=0, updated=0, skipped=0, dupes=0;
   for(let i=0;i<_impMapped.length;i++){
     const r=_impMapped[i];
     if(!r.unit&&!r.tenant){ skipped++; continue; }
-    // Try to match an existing unitId
     const unitId = autoMatchUnitId(r.unit, r.location) || _impNorm(r.unit).replace(/_/g,' ') || r.unit;
     const record = {
       id: _impNorm(unitId)+'_'+Date.now()+'_'+i,
@@ -3862,8 +3871,8 @@ async function smartDoImport() {
       tenantEmail: r.tenantEmail,
       tenantPhone: r.tenantPhone,
       tenantNIN: r.tenantNIN,
-      amount: (r.amount||'').replace(/[^0-9.]/g,''),
-      newRent: (r.newRent||'').replace(/[^0-9.]/g,''),
+      amount: normaliseAmount(r.amount),
+      newRent: normaliseAmount(r.newRent),
       start: normaliseDate(r.start),
       expiry: normaliseDate(r.expiry),
       lastPayment: normaliseDate(r.lastPayment),
@@ -3881,7 +3890,22 @@ async function smartDoImport() {
       log(`✓ Row ${r._row}: Added — ${unitId} · ${record.tenant||'(vacant)'}`, 'ok');
     }
   }
-  log(`─── Complete: ${added} added · ${updated} updated · ${skipped} skipped ───`,'info');
+
+  // ── DEDUPLICATE: keep the most recently updated record per unitId ──
+  const seen = new Map();
+  rentLogs.forEach(r => {
+    const key = (r.unitId||r.unit||'').toLowerCase().trim();
+    if(!key) return;
+    const existing = seen.get(key);
+    if(!existing || (r.updatedAt||'') >= (existing.updatedAt||'')) seen.set(key, r);
+    else dupes++;
+  });
+  const beforeCount = rentLogs.length;
+  rentLogs = Array.from(seen.values());
+  dupes = beforeCount - rentLogs.length;
+  if(dupes > 0) log(`🗑 ${dupes} duplicate unit(s) removed — kept most recently updated`, 'warn');
+
+  log(`─── Complete: ${added} added · ${updated} updated · ${skipped} skipped · ${dupes} dupes removed ───`,'info');
 
   // Save localStorage
   localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs));
@@ -3894,7 +3918,7 @@ async function smartDoImport() {
   document.getElementById('isAdded').textContent=added;
   document.getElementById('isUpdated').textContent=updated;
   document.getElementById('isSkipped').textContent=skipped;
-  document.getElementById('impDoneSummary').textContent=`${added+updated} records imported successfully (${added} new, ${updated} updated, ${skipped} skipped).`;
+  document.getElementById('impDoneSummary').textContent=`${added+updated} records imported (${added} new · ${updated} updated · ${skipped} skipped${dupes>0?' · '+dupes+' duplicates removed':''}).`;
 
   renderAll(); renderRentManager();
   await new Promise(r=>setTimeout(r,150));
@@ -4048,7 +4072,7 @@ async function rmSmartDoImport() {
   _refreshRentLogs(); // pull latest state before merging
   const logEl=document.getElementById('rmImportLog'); logEl.innerHTML='';
   const log=(msg,type='ok')=>{const cls=type==='err'?'log-err':type==='warn'?'log-warn':type==='info'?'log-info':'';logEl.innerHTML+=`<div class="${cls}">${msg}</div>`;logEl.scrollTop=logEl.scrollHeight;};
-  let added=0,updated=0,skipped=0;
+  let added=0,updated=0,skipped=0,dupes=0;
   for(let i=0;i<_rmMapped.length;i++){
     const r=_rmMapped[i];
     if(!r.unit&&!r.tenant){skipped++;continue;}
@@ -4058,8 +4082,8 @@ async function rmSmartDoImport() {
       unit:r.unit, location:r.location, city:r.city, type:r.type||'Residential',
       tenant:r.tenant||r.contractName, contractName:r.contractName||r.tenant,
       tenantEmail:r.tenantEmail, tenantPhone:r.tenantPhone, tenantNIN:r.tenantNIN,
-      amount:(r.amount||'').replace(/[^0-9.]/g,''),
-      newRent:(r.newRent||'').replace(/[^0-9.]/g,''),
+      amount:normaliseAmount(r.amount),
+      newRent:normaliseAmount(r.newRent),
       start:normaliseDate(r.start), expiry:normaliseDate(r.expiry),
       lastPayment:normaliseDate(r.lastPayment),
       vacancy:(r.vacancy||'').toLowerCase().includes('vacant')?'vacant':(r.vacancy||'occupied'),
@@ -4069,7 +4093,22 @@ async function rmSmartDoImport() {
     if(existIdx>=0){rentLogs[existIdx]={...rentLogs[existIdx],...record,id:rentLogs[existIdx].id};updated++;log(`↻ Row ${r._row}: Updated — ${unitId} · ${record.tenant||'(vacant)'}`, 'info');}
     else{rentLogs.push(record);added++;log(`✓ Row ${r._row}: Added — ${unitId} · ${record.tenant||'(vacant)'}`, 'ok');}
   }
-  log(`─── Complete: ${added} added · ${updated} updated · ${skipped} skipped ───`,'info');
+
+  // ── DEDUPLICATE: keep the most recently updated record per unitId ──
+  const seen=new Map();
+  rentLogs.forEach(r=>{
+    const key=(r.unitId||r.unit||'').toLowerCase().trim();
+    if(!key)return;
+    const ex=seen.get(key);
+    if(!ex||(r.updatedAt||'')>=(ex.updatedAt||''))seen.set(key,r);
+    else dupes++;
+  });
+  const bc=rentLogs.length;
+  rentLogs=Array.from(seen.values());
+  dupes=bc-rentLogs.length;
+  if(dupes>0)log(`🗑 ${dupes} duplicate unit(s) removed — kept most recently updated`,'warn');
+
+  log(`─── Complete: ${added} added · ${updated} updated · ${skipped} skipped · ${dupes} dupes removed ───`,'info');
   localStorage.setItem('rentData_CRS_v3',JSON.stringify(rentLogs));
   // Re-sync current tenant's record if logged in as tenant
   if (!isAdmin && currentUser) {
@@ -4080,7 +4119,7 @@ async function rmSmartDoImport() {
   document.getElementById('rmIsAdded').textContent=added;
   document.getElementById('rmIsUpdated').textContent=updated;
   document.getElementById('rmIsSkipped').textContent=skipped;
-  document.getElementById('rmImpDoneSummary').textContent=`${added+updated} records imported (${added} new · ${updated} updated · ${skipped} skipped).`;
+  document.getElementById('rmImpDoneSummary').textContent=`${added+updated} records imported (${added} new · ${updated} updated · ${skipped} skipped${dupes>0?' · '+dupes+' duplicates removed':''}).`;
   renderAll(); renderRentManager();
   await new Promise(r=>setTimeout(r,150));
   toast(`✓ Import complete: ${added+updated} records`);
@@ -4137,12 +4176,48 @@ function parseCSVRow(line) {
 
 function normaliseDate(d) {
   if(!d) return '';
-  const dmy=d.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-  if(dmy) return `${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;
-  const mdy=d.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-  const ymd=d.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  d = (d+'').trim();
+  if(!d) return '';
+
+  // Already ISO yyyy-mm-dd
+  const ymd = d.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
   if(ymd) return `${ymd[1]}-${ymd[2].padStart(2,'0')}-${ymd[3].padStart(2,'0')}`;
-  return d;
+
+  // M/D/YYYY or MM/DD/YYYY — your CSV export format (US style)
+  // Detect: if first number > 12 it must be D/M, otherwise assume M/D (your format)
+  const slash = d.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(slash) {
+    const a = parseInt(slash[1],10), b = parseInt(slash[2],10), yr = slash[3];
+    if(a > 12) {
+      // First part can't be month → must be D/M/YYYY
+      return `${yr}-${b.toString().padStart(2,'0')}-${a.toString().padStart(2,'0')}`;
+    } else {
+      // First part ≤ 12 — treat as M/D/YYYY (your spreadsheet export style)
+      return `${yr}-${a.toString().padStart(2,'0')}-${b.toString().padStart(2,'0')}`;
+    }
+  }
+
+  // "27 Feb 2026", "Feb 27 2026", "27 February 2026"
+  const months = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,
+    january:1,february:2,march:3,april:4,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+  const long1 = d.match(/^(\d{1,2})\s+([a-zA-Z]+)\s+(\d{4})$/);
+  if(long1) { const m=months[(long1[2]||'').toLowerCase().slice(0,3)]; if(m) return `${long1[3]}-${m.toString().padStart(2,'0')}-${parseInt(long1[1]).toString().padStart(2,'0')}`; }
+  const long2 = d.match(/^([a-zA-Z]+)\s+(\d{1,2})[,\s]+(\d{4})$/);
+  if(long2) { const m=months[(long2[1]||'').toLowerCase().slice(0,3)]; if(m) return `${long2[3]}-${m.toString().padStart(2,'0')}-${parseInt(long2[2]).toString().padStart(2,'0')}`; }
+
+  // Excel serial number (rare but possible)
+  if(/^\d{5}$/.test(d)) {
+    const dt = new Date((parseInt(d)-25569)*86400000);
+    if(!isNaN(dt)) return dt.toISOString().slice(0,10);
+  }
+
+  return d; // return as-is if no pattern matched
+}
+
+/* Strip currency prefixes and commas from amount strings: "NGN 1,700,000.00" → "1700000" */
+function normaliseAmount(v) {
+  if(!v && v!==0) return '';
+  return (v+'').replace(/[^0-9.]/g,'').replace(/\.00$/,'');
 }
 
 function autoMatchUnitId(label, location) {
