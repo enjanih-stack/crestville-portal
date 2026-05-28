@@ -2639,39 +2639,57 @@ async function _bootApp(user, userData, adminMode) {
   document.querySelectorAll('.admin-only').forEach(el => { el.style.display = adminMode ? '' : 'none'; });
   document.querySelectorAll('.tenant-only').forEach(el => { el.style.display = adminMode ? 'none' : ''; });
 
-  // Show app IMMEDIATELY — never block on network
+  // Show app immediately with whatever is in localStorage
   showApp();
+  _refreshRentLogs();
   renderAll();
   restoreAutoSave();
-  // Push starting page to history
+
   var startPage = adminMode ? 'pgDashboard' : 'pgMyProperty';
   _pushHistory(startPage);
   sessionStorage.setItem('crs_from_landing', '1');
-
-  // Start idle timer
   startIdleTimer();
 
-  // Restore last session state if returning from idle timeout
   var savedState = restoreSessionState();
-  if (savedState) {
-    setTimeout(function() { applySessionState(savedState); }, 800);
+  if (savedState) setTimeout(function() { applySessionState(savedState); }, 800);
+
+  // ── AUTO SYNC: pull Firestore first, then fall back to Apps Script ──
+  // If localStorage is empty show a loading indicator while we fetch
+  const hasLocal = rentLogs.length > 0;
+  if (!hasLocal) _showSyncBanner('🔄 Loading your data from cloud…', 'info');
+
+  try {
+    await _pullFromFirestore(hasLocal); // primary — Firestore rentRecords collection
+  } catch(e) {
+    // Firestore failed — try Apps Script backup
+    try {
+      await pullFromCloud(true);
+    } catch(e2) {
+      if (!hasLocal) _showSyncBanner('📴 No internet — showing cached data', 'warn');
+    }
   }
 
-  // Pull cloud data in background — does NOT block the UI
-  pullFromCloud(true).catch(e => console.warn('pullFromCloud:', e));
+  _hideSyncBanner();
+
+  // Re-render everything with fresh data
+  _refreshRentLogs();
+  renderAll();
+  renderRentManager();
 
   if (!adminMode) {
+    // Link tenant to their record using freshest data
+    const rawRec = window._myRecord
+      ? (rentLogs.find(e => e.id === (window._myRecord.id||'')) || window._myRecord)
+      : _getTenantByEmail(user.email);
+    if (rawRec) window._myRecord = _normaliseRecord(rawRec);
+
     loadMyProperty(userData);
-    setTimeout(renderTenantDashboard, 1200);
-    setTimeout(checkTenantLockout, 1500); // check after record loads
-    // Update welcome card — always use freshest data
+    setTimeout(renderTenantDashboard, 400);
+    setTimeout(checkTenantLockout, 600);
+
+    // Update welcome card
     setTimeout(() => {
-      _refreshRentLogs();
-      const rawRec = window._myRecord
-        ? rentLogs.find(e => e.id === (window._myRecord.id || '')) || window._myRecord
-        : _getTenantByEmail(user.email);
-      const rec = rawRec ? _normaliseRecord(rawRec) : null;
-      if (rec) window._myRecord = rec; // keep normalised version
+      const rec = window._myRecord;
       const wMsg = document.getElementById('tenantWelcomeMsg');
       const wSub = document.getElementById('tenantWelcomeSub');
       if (wMsg) {
@@ -2681,18 +2699,83 @@ async function _bootApp(user, userData, adminMode) {
           const days = exp ? Math.round((exp-today)/864e5) : null;
           wMsg.textContent = getPropertyLabel(rec.unitId||rec.unit);
           wSub.textContent = days !== null
-            ? (days<0 ? '⚠ Expired '+Math.abs(days)+' days ago' : days<=60 ? '⏳ '+days+' days left — renew soon' : '✅ '+days+' days remaining')
+            ? (days<0 ? '⚠ Expired '+Math.abs(days)+' days ago'
+              : days<=60 ? '⏳ '+days+' days left — renew soon'
+              : '✅ '+days+' days remaining')
             : 'Tenancy record found';
         } else {
           wMsg.textContent = 'No tenancy record linked';
           wSub.textContent = 'Contact crestechnologies@outlook.com';
         }
       }
-    }, 1500);
+    }, 500);
   } else {
     loadTenantsTable();
     loadAllTenantDocs();
+    // Run daily email check silently in background
+    setTimeout(() => checkAndSendRenewalEmails().catch(()=>{}), 3000);
   }
+}
+
+/* ── Pull rentRecords from Firestore — primary sync source ── */
+async function _pullFromFirestore(silent) {
+  if (!window._db) throw new Error('Firestore not ready');
+  const snap = await window._db.collection('rentRecords').get();
+  if (snap.empty) return; // nothing in Firestore yet — keep local
+  const firestoreRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (!firestoreRecords.length) return;
+
+  // Merge: Firestore wins on conflict (it's the canonical source)
+  const map = {};
+  rentLogs.forEach(r => { if(r.id) map[r.id] = r; });
+  firestoreRecords.forEach(r => { if(r.id) map[r.id] = r; });
+  rentLogs = Object.values(map);
+
+  // Deduplicate by unitId keeping latest
+  const unitMap = new Map();
+  rentLogs.forEach(r => {
+    const key = (r.unitId||r.unit||'').toLowerCase().trim();
+    if(!key) return;
+    const ex = unitMap.get(key);
+    if(!ex || (r.updatedAt||'') >= (ex.updatedAt||'')) unitMap.set(key, r);
+  });
+  rentLogs = Array.from(unitMap.values());
+
+  saveLocal();
+
+  // Re-sync _myRecord
+  if (window._myRecord && window._myRecord.id) {
+    const fresh = rentLogs.find(e => e.id === window._myRecord.id);
+    if (fresh) window._myRecord = _normaliseRecord(fresh);
+  } else if (currentUser && !isAdmin) {
+    const fresh = _getTenantByEmail(currentUser.email);
+    if (fresh) window._myRecord = fresh;
+  }
+
+  if (!silent) notify('success', 'Data Synced', `${rentLogs.length} records loaded from cloud.`);
+}
+
+/* ── Sync banner helpers ── */
+function _showSyncBanner(msg, type) {
+  let el = document.getElementById('_syncBanner');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_syncBanner';
+    el.style.cssText = `position:fixed;bottom:0;left:0;right:0;z-index:8500;
+      padding:10px 20px;font-family:'DM Sans',sans-serif;font-size:.82rem;
+      display:flex;align-items:center;gap:10px;transition:transform .3s ease;
+      transform:translateY(100%)`;
+    document.body.appendChild(el);
+  }
+  const bg = type==='warn' ? '#1a1410' : '#0f0e0c';
+  const border = type==='warn' ? '#c9960c' : '#3b82f6';
+  el.style.cssText += `;background:${bg};border-top:2px solid ${border};color:#e8dfc8;transform:translateY(0)`;
+  el.innerHTML = `<span style="animation:spin .8s linear infinite;display:inline-block;width:14px;height:14px;
+    border:2px solid rgba(255,255,255,.2);border-top-color:${border};border-radius:50%"></span>${msg}`;
+}
+function _hideSyncBanner() {
+  const el = document.getElementById('_syncBanner');
+  if (el) { el.style.transform = 'translateY(100%)'; setTimeout(()=>el.remove(), 350); }
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -3571,13 +3654,53 @@ function generateReceiptByRecord(raw) { try { fillReceipt(JSON.parse(raw)); wind
 async function syncToCloud() {
   const btn = document.querySelector('[onclick="syncToCloud()"]');
   _setBtnLoading(btn, true);
+
+  let firestoreOk = false, appsScriptOk = false;
+  const errors = [];
+
+  // ── 1. Push to Firestore (primary) ──
   try {
-    await fetch(CLOUD_URL, {method:'POST', body: JSON.stringify(rentLogs)});
-    _setBtnLoading(btn, false);
-    notify('success','Synced to Cloud',`${rentLogs.length} records pushed to cloud storage.`,[`Sync time: ${new Date().toLocaleTimeString('en-NG')}`]);
+    if (!window._db) throw new Error('Firestore not initialised');
+    // Batch write — max 499 per batch
+    const batchSize = 499;
+    for (let i = 0; i < rentLogs.length; i += batchSize) {
+      const batch = window._db.batch();
+      rentLogs.slice(i, i + batchSize).forEach(rec => {
+        if (rec.id) batch.set(window._db.collection('rentRecords').doc(rec.id), rec, {merge:true});
+      });
+      await batch.commit();
+    }
+    firestoreOk = true;
   } catch(e) {
-    _setBtnLoading(btn, false);
-    notify('error','Sync Failed','Could not reach the cloud server.',['Check your internet connection','Try again in a few moments','Data is safely saved locally']);
+    errors.push('Firestore: ' + (e.message||'failed'));
+  }
+
+  // ── 2. Push to Apps Script backup ──
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    await fetch(CLOUD_URL, { method:'POST', body: JSON.stringify(rentLogs), signal: controller.signal });
+    clearTimeout(timer);
+    appsScriptOk = true;
+  } catch(e) {
+    errors.push('Apps Script: ' + (e.message||'failed'));
+  }
+
+  _setBtnLoading(btn, false);
+
+  if (firestoreOk || appsScriptOk) {
+    notify('success', 'Synced to Cloud',
+      `${rentLogs.length} records pushed — now accessible on all devices.`, [
+        firestoreOk ? '✓ Firestore database updated' : '✗ Firestore unavailable',
+        appsScriptOk ? '✓ Apps Script backup updated' : '✗ Apps Script unavailable',
+        `Sync time: ${new Date().toLocaleTimeString('en-NG')}`,
+      ]);
+  } else {
+    notify('error', 'Sync Failed', 'Could not reach any cloud service.', [
+      ...errors,
+      'Check your internet connection',
+      'Data is safely saved on this device',
+    ]);
   }
 }
 async function pullFromCloud(silent=false) {
@@ -3592,8 +3715,8 @@ async function pullFromCloud(silent=false) {
       data.forEach(e => { if(e.id) cloudMap[e.id] = e; });
       rentLogs.forEach(e => { if(e.id && !cloudMap[e.id]) cloudMap[e.id] = e; });
       rentLogs = Object.values(cloudMap);
-      saveLocal(); // persist merged result
-      // Re-sync _myRecord with fresh cloud data
+      saveLocal();
+      // Re-sync _myRecord with fresh data
       if (window._myRecord && window._myRecord.id) {
         const fresh = rentLogs.find(e => e.id === window._myRecord.id);
         if (fresh) window._myRecord = _normaliseRecord(fresh);
@@ -3602,9 +3725,15 @@ async function pullFromCloud(silent=false) {
         if (fresh) window._myRecord = fresh;
       }
       renderAll(); renderRentManager();
-      if(!silent) toast('✓ Data pulled from cloud');
+      if(!isAdmin && window._myRecord) {
+        loadMyProperty({});
+        setTimeout(renderTenantDashboard, 300);
+      }
+      if(!silent) notify('success','Data Pulled',`${rentLogs.length} records loaded from cloud.`);
     }
-  } catch(e) { if(!silent) toast('Cloud unavailable — using local data'); }
+  } catch(e) {
+    if(!silent) notify('warning','Cloud Unavailable','Using locally cached data.',['Check your internet connection','Try Pull again when back online']);
+  }
 }
 
 /* ═══ SEND EMAIL VIA FIREBASE ═════════════════════════ */
