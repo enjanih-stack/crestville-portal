@@ -485,6 +485,47 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .import-log .log-warn { color: #e8b422; }
 .import-log .log-info { color: #9a8a6a; }
 .csv-template-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+/* ── SMART IMPORTER STAGES ── */
+.imp-stage { display: none; margin-top: 16px; }
+.imp-stage.on { display: block; }
+.imp-file-pill { display: flex; align-items: center; gap: 10px; background: rgba(201,150,12,.1); border: 1px solid rgba(201,150,12,.3); border-radius: 8px; padding: 9px 14px; margin-top: 12px; font-size: .78rem; }
+.imp-file-pill-name { font-weight: 600; color: #e8dfc8; flex: 1; }
+.imp-file-pill-meta { color: #9a8a6a; }
+.imp-file-pill-clear { background: none; border: none; color: #f57272; cursor: pointer; font-size: 1rem; padding: 0 2px; line-height: 1; }
+/* Mapping grid */
+.imp-map-grid { display: grid; grid-template-columns: 1fr 28px 1fr; gap: 0; margin-top: 12px; }
+.imp-map-head { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #5a5248; padding-bottom: 6px; }
+.imp-map-head.c { text-align: center; }
+.imp-map-lbl { background: #1a1814; color: #e8dfc8; border-radius: 6px 0 0 6px; padding: 8px 12px; font-size: .76rem; font-weight: 500; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #2a2620; }
+.imp-map-lbl .req-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
+.imp-map-arr { background: #111; display: flex; align-items: center; justify-content: center; font-size: .85rem; color: var(--gold); border-bottom: 1px solid #2a2620; }
+.imp-map-sel { border: none; border-bottom: 1px solid #2a2620; border-radius: 0 6px 6px 0; padding: 8px 28px 8px 10px; font-family: 'DM Sans', sans-serif; font-size: .76rem; background: #0f0e0c; color: #e8dfc8; cursor: pointer; width: 100%; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23c9960c' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
+.imp-map-sel:focus { outline: 1px solid var(--gold); }
+.imp-map-sel.matched { background-color: rgba(26,92,46,.25); }
+.imp-map-sel.unmatched { background-color: rgba(180,83,9,.15); }
+/* Stats strip */
+.imp-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.imp-stat { background: #0f0e0c; border: 1px solid #2a2620; border-radius: 8px; padding: 10px 16px; text-align: center; min-width: 80px; }
+.imp-stat-n { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 700; color: var(--gold); line-height: 1; }
+.imp-stat-l { font-size: .62rem; text-transform: uppercase; letter-spacing: .08em; color: #5a5248; margin-top: 2px; }
+/* Preview table */
+.imp-table-wrap { overflow-x: auto; border-radius: 6px; max-height: 280px; overflow-y: auto; margin-bottom: 14px; }
+.imp-table { width: 100%; border-collapse: collapse; font-size: .74rem; min-width: 700px; }
+.imp-table thead tr { background: #0a0908; position: sticky; top: 0; z-index: 2; }
+.imp-table thead th { color: var(--gold); font-family: 'Cormorant Garamond', serif; font-size: .78rem; font-weight: 600; padding: 8px 12px; text-align: left; white-space: nowrap; border-bottom: 1px solid #2a2620; }
+.imp-table tbody tr { border-bottom: 1px solid #1a1814; transition: background .1s; }
+.imp-table tbody tr:hover { background: rgba(201,150,12,.05); }
+.imp-table tbody td { padding: 7px 12px; white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; color: #c8c0b0; }
+/* Alert boxes inside dark panel */
+.imp-alert { border-radius: 6px; padding: 10px 14px; font-size: .76rem; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 8px; line-height: 1.5; }
+.imp-alert-info { background: rgba(59,130,246,.12); border-left: 3px solid #3b82f6; color: #93c5fd; }
+.imp-alert-warn { background: rgba(180,83,9,.15); border-left: 3px solid #e8b422; color: #e8b422; }
+.imp-alert-ok { background: rgba(26,92,46,.2); border-left: 3px solid #5aaf7a; color: #5aaf7a; }
+.imp-map-warn { display: none; }
+/* Step header */
+.imp-step-head { font-family: 'Cormorant Garamond', serif; font-size: .92rem; font-weight: 700; color: #e8dfc8; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.imp-step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--gold); color: var(--ink); font-size: .7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'DM Sans', sans-serif; }
+.imp-divider { height: 1px; background: #2a2620; margin: 16px 0; }
 
 /* TENANT DETAIL DRAWER */
 .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 600; display: none; backdrop-filter: blur(2px); }
@@ -1551,39 +1592,92 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
           <div class="prop-sub-page" id="tabImport">
             <div class="import-panel">
               <h3>📤 Mass Import — Rent CSV</h3>
-              <p>Upload a CSV file exported from your existing rent spreadsheet or the template below. The system will automatically extract property unit, location, tenant name, email, rent amount, tenancy start/expiry dates, and vacancy status. Existing records with matching unit IDs will be updated.</p>
+              <p>Upload any CSV file. The system auto-detects your columns regardless of header names, spacing, or punctuation — then lets you confirm the mapping before importing.</p>
 
-              <div class="drop-zone" id="csvDropZone">
-                <input type="file" id="csvFileInput" accept=".csv,.xlsx,.xls" onchange="handleCSVImport(this)"/>
-                <span class="drop-zone-icon">📊</span>
-                <div class="drop-zone-label">Drop CSV file here or click to browse</div>
-                <div class="drop-zone-sub">Accepts: .csv · Max 5 MB · Encoding: UTF-8</div>
-              </div>
-
-              <div class="import-progress" id="importProgress">
-                <div class="import-progress-bar"><div class="import-progress-fill" id="importProgressFill" style="width:0%"></div></div>
-                <div class="import-log" id="importLog"></div>
-              </div>
-
-              <div class="import-summary" id="importSummary">
-                <div style="font-size:.82rem;font-weight:600;color:var(--ink);margin-bottom:10px">Import Complete</div>
-                <div class="is-grid">
-                  <div class="is-item"><div class="is-num" id="isTotal">0</div><div class="is-lbl">Rows processed</div></div>
-                  <div class="is-item"><div class="is-num" id="isAdded">0</div><div class="is-lbl">Records added</div></div>
-                  <div class="is-item"><div class="is-num" id="isUpdated">0</div><div class="is-lbl">Updated</div></div>
-                  <div class="is-item"><div class="is-num" id="isSkipped">0</div><div class="is-lbl">Skipped / errors</div></div>
+              <!-- ── STAGE 1: DROP ZONE ── -->
+              <div class="imp-stage on" id="impStage1">
+                <div class="drop-zone" id="csvDropZone">
+                  <input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" onchange="smartImportFile(this.files[0])"/>
+                  <span class="drop-zone-icon">📊</span>
+                  <div class="drop-zone-label">Drop CSV file here or click to browse</div>
+                  <div class="drop-zone-sub">Any header format accepted · Max 5 MB · UTF-8</div>
                 </div>
-                <div style="margin-top:12px;display:flex;gap:8px">
+                <div class="imp-file-pill" id="impFilePill" style="display:none">
+                  <span>📎</span>
+                  <span class="imp-file-pill-name" id="impFileName">—</span>
+                  <span class="imp-file-pill-meta" id="impFileMeta">—</span>
+                  <button class="imp-file-pill-clear" onclick="resetSmartImport()">✕</button>
+                </div>
+                <div class="import-progress" id="importProgress" style="margin-top:10px">
+                  <div class="import-progress-bar"><div class="import-progress-fill" id="importProgressFill" style="width:0%"></div></div>
+                </div>
+              </div>
+
+              <!-- ── STAGE 2: COLUMN MAPPING ── -->
+              <div class="imp-stage" id="impStage2">
+                <div class="imp-divider"></div>
+                <div class="imp-step-head"><div class="imp-step-num">2</div> Confirm Column Mapping</div>
+                <div class="imp-alert imp-alert-warn imp-map-warn" id="impMapWarn">
+                  <span>⚠️</span><span id="impMapWarnText">—</span>
+                </div>
+                <p style="font-size:.74rem;color:#9a8a6a;margin-bottom:10px">Auto-detected below. Adjust any incorrect mappings. <span style="color:var(--gold)">●</span> = required.</p>
+                <div class="imp-map-grid" id="impMapGrid">
+                  <div class="imp-map-head">CRS Field</div>
+                  <div class="imp-map-head c">→</div>
+                  <div class="imp-map-head">Your Column</div>
+                </div>
+                <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+                  <button class="btn btn-gold" onclick="smartApplyMapping()">✓ Apply &amp; Preview</button>
+                  <button class="btn btn-outline" onclick="resetSmartImport()">← Start Over</button>
+                </div>
+              </div>
+
+              <!-- ── STAGE 3: PREVIEW ── -->
+              <div class="imp-stage" id="impStage3">
+                <div class="imp-divider"></div>
+                <div class="imp-step-head"><div class="imp-step-num">3</div> Preview &amp; Validate</div>
+                <div class="imp-stats" id="impStats"></div>
+                <div class="imp-alert imp-alert-ok" id="impAlertOk" style="display:none"><span>✅</span><span id="impAlertOkText">—</span></div>
+                <div class="imp-alert imp-alert-warn" id="impAlertWarn" style="display:none"><span>⚠️</span><span id="impAlertWarnText">—</span></div>
+                <div class="imp-table-wrap">
+                  <table class="imp-table">
+                    <thead id="impPreviewHead"></thead>
+                    <tbody id="impPreviewBody"></tbody>
+                  </table>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <button class="btn btn-gold" onclick="smartDoImport()">⬆ Import to Portal</button>
+                  <button class="btn btn-outline" onclick="smartDownloadCSV()">⬇ Download Mapped CSV</button>
+                  <button class="btn btn-outline" onclick="resetSmartImport()">✕ Cancel</button>
+                </div>
+              </div>
+
+              <!-- ── STAGE 4: DONE ── -->
+              <div class="imp-stage" id="impStage4">
+                <div class="imp-divider"></div>
+                <div class="imp-step-head"><div class="imp-step-num">4</div> Import Complete</div>
+                <div class="imp-alert imp-alert-ok"><span>✅</span><span id="impDoneSummary">—</span></div>
+                <div class="import-log" id="importLog" style="margin-top:10px"></div>
+                <div class="import-summary" id="importSummary" style="margin-top:12px">
+                  <div class="is-grid">
+                    <div class="is-item"><div class="is-num" id="isTotal">0</div><div class="is-lbl">Rows processed</div></div>
+                    <div class="is-item"><div class="is-num" id="isAdded">0</div><div class="is-lbl">Records added</div></div>
+                    <div class="is-item"><div class="is-num" id="isUpdated">0</div><div class="is-lbl">Updated</div></div>
+                    <div class="is-item"><div class="is-num" id="isSkipped">0</div><div class="is-lbl">Skipped / errors</div></div>
+                  </div>
+                </div>
+                <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
                   <button class="btn btn-gold" onclick="showPropTab('tabUnits',null);renderProperties()">View All Properties →</button>
-                  <button class="btn btn-outline" onclick="clearImport()">Clear & Import Again</button>
+                  <button class="btn btn-outline" onclick="resetSmartImport()">Import Another File</button>
                 </div>
               </div>
 
-              <div class="csv-template-row">
-                <div style="font-size:.78rem;color:#9a8a6a;flex:1;line-height:1.6">
-                  <strong style="color:#e8dfc8">Required columns:</strong> Unit, Use, Address_Location, Tenant, Email, Amount, Tenancy_Expiry_Date, Tenancy_Start_Date, vacancy<br>
-                  <strong style="color:#e8dfc8">Optional:</strong> New_Rent, Last_Payment_Date, Phone, NIN, Contract_Name, Notes<br>
-                  <span style="color:#9a8a6a;font-size:.7rem">&#9432; Old format (unit_id, unit_label...) is also accepted</span>
+              <!-- ── COLUMN REFERENCE ── -->
+              <div class="csv-template-row" style="margin-top:16px">
+                <div style="font-size:.72rem;color:#9a8a6a;flex:1;line-height:1.7">
+                  <strong style="color:#e8dfc8">Required:</strong> Unit, Tenant, Amount<br>
+                  <strong style="color:#e8dfc8">Optional:</strong> Use, Address_Location, Email, Phone, Tenancy_Start_Date, Tenancy_Expiry_Date, vacancy, New_Rent, Last_Payment_Date, NIN, Contract_Name, Notes<br>
+                  <span style="font-size:.67rem;color:#5a5248">&#9432; Any column naming style accepted — spaces, commas, underscores all handled automatically</span>
                 </div>
               </div>
             </div>
@@ -3346,184 +3440,300 @@ function downloadCSVTemplate() {
   a.click();
   if (typeof toast === 'function') toast('\u2713 CSV template downloaded — fill your data and import');
 }
-function clearImport() {
-  document.getElementById('importProgress').style.display = 'none';
-  document.getElementById('importSummary').style.display = 'none';
-  document.getElementById('importLog').innerHTML = '';
-  document.getElementById('csvFileInput').value = '';
+/* ════════════════════════════════════════════════════
+   SMART CSV IMPORTER  (replaces legacy handleCSVImport)
+════════════════════════════════════════════════════ */
+
+// CRS field definitions with alias lists
+const _IMP_FIELDS = [
+  { key:'unit',        label:'Unit ID / Label',          required:true,
+    aliases:['unit','unit_id','unit_label','flat','property','unit_no','unitid','unitlabel'] },
+  { key:'location',    label:'Address / Location',        required:false,
+    aliases:['location','address','address_location','addr','property_address'] },
+  { key:'city',        label:'City / Area',              required:false,
+    aliases:['city','area','region','lga','state','city_area'] },
+  { key:'type',        label:'Property Type / Use',      required:false,
+    aliases:['type','use','property_type','usage','category','unit_type'] },
+  { key:'tenant',      label:'Tenant Name',              required:true,
+    aliases:['tenant','tenant_name','name','full_name','occupant','renter','lessee'] },
+  { key:'tenantEmail', label:'Tenant Email',             required:false,
+    aliases:['tenant_email','email','email_address','mail','contact_email'] },
+  { key:'tenantPhone', label:'Phone Number',             required:false,
+    aliases:['phone','phone_number','mobile','tel','telephone','tenant_phone','contact'] },
+  { key:'contractName',label:'Contract Name',            required:false,
+    aliases:['contract_name','name_on_agreement','agreement_name','legal_name','name_on_contract'] },
+  { key:'amount',      label:'Rent Amount',              required:true,
+    aliases:['rent_amount','amount','rent','annual_rent','rent_pa','fee'] },
+  { key:'newRent',     label:'New / Revised Rent',       required:false,
+    aliases:['new_rent','revised_rent','next_rent','renewal_rent','new rent','proposed_rent'] },
+  { key:'start',       label:'Tenancy Start Date',       required:false,
+    aliases:['start_date','tenancy_start_date','start','commencement','from','lease_start','tenancy_start'] },
+  { key:'expiry',      label:'Tenancy Expiry / End Date',required:false,
+    aliases:['expiry_date','tenancy_expiry_date','end_date','expiry','end','lease_end','expiration'] },
+  { key:'vacancy',     label:'Vacancy / Status',         required:false,
+    aliases:['vacancy','status','occupancy','occupancy_status','occupied','tenant_status','vacant'] },
+  { key:'lastPayment', label:'Last Payment Date',        required:false,
+    aliases:['last_payment_date','last_payment','payment_date','paid_date','last payment date'] },
+  { key:'tenantNIN',   label:'NIN (National ID)',         required:false,
+    aliases:['nin','national_id','national_id_number','nin_no','tenant_nin'] },
+  { key:'notes',       label:'Notes / Remarks',          required:false,
+    aliases:['notes','remarks','comment','comments','additional','note'] },
+];
+
+// State
+let _impRawHeaders = [];
+let _impRawRows    = [];
+let _impColMap     = {};  // field.key → raw header string
+let _impMapped     = [];  // transformed records
+
+function _impNorm(s) {
+  return (s||'').toString().replace(/[,\s]+/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'').toLowerCase();
 }
 
-function logImport(msg, type='ok') {
-  const el = document.getElementById('importLog');
-  const cls = type === 'err' ? 'log-err' : type === 'warn' ? 'log-warn' : type === 'info' ? 'log-info' : '';
-  el.innerHTML += `<div class="${cls}">${msg}</div>`;
-  el.scrollTop = el.scrollHeight;
-}
-
-function setImportProgress(pct) {
-  document.getElementById('importProgressFill').style.width = pct + '%';
-}
-
-async function handleCSVImport(input) {
-  const file = input.files[0];
-  if(!file) return;
-  document.getElementById('importProgress').style.display = 'block';
-  document.getElementById('importSummary').style.display = 'none';
-  document.getElementById('importLog').innerHTML = '';
-  setImportProgress(5);
-  logImport(`📂 Reading: ${file.name} (${(file.size/1024).toFixed(1)} KB)`, 'info');
-
-  const text = await file.text();
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
-  if(lines.length < 2) { logImport('✗ File appears empty or has no data rows', 'err'); return; }
-
-  // Parse header — flexible, case-insensitive
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z0-9_]/g,'_'));
-  logImport(`✓ Columns detected: ${headers.join(', ')}`, 'info');
-  setImportProgress(15);
-
-  // Column mapping (flexible)
-  const col = (names) => {
-    for(const n of names) {
-      const idx = headers.indexOf(n);
-      if(idx >= 0) return idx;
+function _impAutoDetect(headers) {
+  const map = {}; const used = new Set();
+  for(const f of _IMP_FIELDS) {
+    let best='', bestScore=-1;
+    for(const raw of headers) {
+      if(used.has(raw)) continue;
+      const norm = _impNorm(raw);
+      if(f.aliases.includes(norm)) { if(bestScore<10){best=raw;bestScore=10;} continue; }
+      for(const a of f.aliases) {
+        if(norm.includes(a)||a.includes(norm)) { if(bestScore<5){best=raw;bestScore=5;} }
+      }
     }
-    return -1;
+    if(best) used.add(best);
+    map[f.key] = best;
+  }
+  return map;
+}
+
+function _impParseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l=>l.trim());
+  const parse = line => {
+    const out=[]; let cur=''; let inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'&&!inQ){inQ=true;continue;}
+      if(c==='"'&&inQ){inQ=false;continue;}
+      if(c===','&&!inQ){out.push(cur.trim());cur='';continue;}
+      cur+=c;
+    }
+    out.push(cur.trim()); return out;
   };
-  // ── Column aliases: supports BOTH old format (unit_id, unit_label...) AND new format
-  // New format: Unit | Use | Address_Location | Tenant | Email | Amount | New_Rent |
-  //             Tenancy_Expiry_Date | Tenancy_Start_Date | vacancy | Last_Payment_Date |
-  //             Notes | Phone | NIN | Contract_Name
-  const cols = {
-    unitId:       col(['unit','unit_id','unit id']),
-    unitLabel:    col(['use','unit_label','label','unit_use_address_location','property']),
-    location:     col(['address_location','location','address']),
-    city:         col(['city']),
-    type:         col(['type','property_type','unit_type']),
-    tenantName:   col(['tenant','tenant_name','name','full_name']),
-    tenantEmail:  col(['email','tenant_email']),
-    tenantPhone:  col(['phone','tenant_phone','mobile']),
-    contractName: col(['contract_name','name_on_contract','full_name']),
-    amount:       col(['amount','rent_amount','rent','annual_rent']),
-    newRent:      col(['new_rent','new rent','proposed_rent']),
-    start:        col(['tenancy_start_date','tenancy start date','start_date','start','tenancy_start']),
-    expiry:       col(['tenancy_expiry_date','tenancy expiry date','expiry_date','expiry','end_date']),
-    lastPayment:  col(['last_payment_date','last payment date','last_payment']),
-    vacancy:      col(['vacancy','status','vacant']),
-    notes:        col(['notes','note','remarks']),
-    nin:          col(['nin','tenant_nin','national_id']),
+  _impRawHeaders = parse(lines[0]);
+  _impRawRows = lines.slice(1).map(l=>parse(l)).filter(r=>r.some(c=>c.trim()));
+}
+
+function smartImportFile(file) {
+  if(!file) return;
+  if(!file.name.match(/\.(csv|tsv|txt)$/i)) { toast('Please upload a .csv file'); return; }
+  document.getElementById('importProgressFill').style.width='0%';
+  document.getElementById('importProgress').style.display='block';
+  let p=0; const t=setInterval(()=>{p=Math.min(p+Math.random()*20,80);document.getElementById('importProgressFill').style.width=p+'%';},80);
+  const reader=new FileReader();
+  reader.onload=e=>{
+    clearInterval(t);
+    document.getElementById('importProgressFill').style.width='100%';
+    setTimeout(()=>{document.getElementById('importProgress').style.display='none';document.getElementById('importProgressFill').style.width='0%';},350);
+    _impParseCSV(e.target.result);
+    document.getElementById('impFileName').textContent = file.name;
+    document.getElementById('impFileMeta').textContent = `${_impRawRows.length} records · ${_impRawHeaders.length} columns · ${(file.size/1024).toFixed(1)} KB`;
+    document.getElementById('impFilePill').style.display='flex';
+    _impColMap = _impAutoDetect(_impRawHeaders);
+    _impBuildMappingUI();
+    _impShowStage(2);
   };
+  reader.readAsText(file);
+}
+
+function _impBuildMappingUI() {
+  const grid = document.getElementById('impMapGrid');
+  grid.innerHTML = `<div class="imp-map-head">CRS Field</div><div class="imp-map-head c">→</div><div class="imp-map-head">Your Column</div>`;
+  const unmapped = _IMP_FIELDS.filter(f=>f.required && !_impColMap[f.key]);
+  const warn = document.getElementById('impMapWarn');
+  if(unmapped.length) {
+    document.getElementById('impMapWarnText').textContent = 'Could not auto-detect: ' + unmapped.map(f=>f.label).join(', ') + '. Please set manually.';
+    warn.style.display='flex';
+  } else { warn.style.display='none'; }
+  for(const f of _IMP_FIELDS) {
+    const lbl = document.createElement('div'); lbl.className='imp-map-lbl';
+    lbl.innerHTML = f.label + (f.required?'<span class="req-dot"></span>':'');
+    const arr = document.createElement('div'); arr.className='imp-map-arr'; arr.textContent='→';
+    const sel = document.createElement('select'); sel.className='imp-map-sel '+((_impColMap[f.key])?'matched':'unmatched');
+    sel.id='impMap_'+f.key;
+    sel.innerHTML=`<option value="">— skip —</option>`;
+    _impRawHeaders.forEach(h=>{
+      const o=document.createElement('option'); o.value=h; o.textContent=h;
+      if(h===_impColMap[f.key]) o.selected=true;
+      sel.appendChild(o);
+    });
+    sel.onchange=()=>{ _impColMap[f.key]=sel.value; sel.className='imp-map-sel '+(sel.value?'matched':'unmatched'); };
+    grid.appendChild(lbl); grid.appendChild(arr); grid.appendChild(sel);
+  }
+}
+
+function smartApplyMapping() {
+  // Read final selections
+  for(const f of _IMP_FIELDS){ const s=document.getElementById('impMap_'+f.key); if(s) _impColMap[f.key]=s.value; }
+  const missing = _IMP_FIELDS.filter(f=>f.required&&!_impColMap[f.key]);
+  if(missing.length){ toast('Map required fields: '+missing.map(f=>f.label).join(', ')); return; }
+  const idx={}; _impRawHeaders.forEach((h,i)=>idx[h]=i);
+  _impMapped = _impRawRows.map((row,ri)=>{
+    const get=k=>{ const h=_impColMap[k]; return h?(row[idx[h]]||'').trim():''; };
+    const obj={_row:ri+2};
+    for(const f of _IMP_FIELDS) obj[f.key]=get(f.key);
+    return obj;
+  }).filter(r=>r.unit||r.tenant);
+  _impBuildPreview();
+  _impShowStage(3);
+  document.getElementById('impStage3').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function _impBuildPreview() {
+  const cols = ['unit','tenant','tenantEmail','amount','start','expiry','vacancy'];
+  const labels = {unit:'Unit',tenant:'Tenant',tenantEmail:'Email',amount:'Rent Amount',start:'Start',expiry:'Expiry',vacancy:'Status'};
+  document.getElementById('impPreviewHead').innerHTML='<tr>'+cols.map(k=>`<th>${labels[k]||k}</th>`).join('')+'</tr>';
+  document.getElementById('impPreviewBody').innerHTML=_impMapped.map(r=>'<tr>'+cols.map(k=>{
+    let v=r[k]||'—';
+    if(k==='vacancy'){
+      const lv=v.toLowerCase();
+      const cls=lv.includes('occup')?'#5aaf7a':lv.includes('terminat')?'#e8b422':'#f57272';
+      v=`<span style="color:${cls};font-weight:600;font-size:.7rem;text-transform:uppercase">${v}</span>`;
+    }
+    return `<td title="${r[k]||''}">${v}</td>`;
+  }).join('')+'</tr>').join('');
+  const occ=_impMapped.filter(r=>(r.vacancy||'').toLowerCase().includes('occup')).length;
+  const ter=_impMapped.filter(r=>(r.vacancy||'').toLowerCase().includes('terminat')).length;
+  const vac=_impMapped.length-occ-ter;
+  const noEmail=_impMapped.filter(r=>!r.tenantEmail).length;
+  document.getElementById('impStats').innerHTML=
+    `<div class="imp-stat"><div class="imp-stat-n">${_impMapped.length}</div><div class="imp-stat-l">Total</div></div>`+
+    `<div class="imp-stat"><div class="imp-stat-n">${occ}</div><div class="imp-stat-l">Occupied</div></div>`+
+    `<div class="imp-stat"><div class="imp-stat-n" style="color:#e8b422">${ter}</div><div class="imp-stat-l">Terminated</div></div>`+
+    `<div class="imp-stat"><div class="imp-stat-n" style="color:#f57272">${vac}</div><div class="imp-stat-l">Vacant</div></div>`+
+    `<div class="imp-stat"><div class="imp-stat-n">${_impMapped.length-noEmail}</div><div class="imp-stat-l">Have Email</div></div>`;
+  const okEl=document.getElementById('impAlertOk'); const warnEl=document.getElementById('impAlertWarn');
+  okEl.style.display='flex'; document.getElementById('impAlertOkText').textContent=`${_impMapped.length} records ready to import. Review below.`;
+  if(noEmail>0){ warnEl.style.display='flex'; document.getElementById('impAlertWarnText').textContent=`${noEmail} record(s) have no email — workflow notifications won't reach them.`; }
+  else warnEl.style.display='none';
+}
+
+async function smartDoImport() {
+  const logEl = document.getElementById('importLog');
+  logEl.innerHTML = '';
+  const log = (msg,type='ok')=>{ const cls=type==='err'?'log-err':type==='warn'?'log-warn':type==='info'?'log-info':''; logEl.innerHTML+=`<div class="${cls}">${msg}</div>`; logEl.scrollTop=logEl.scrollHeight; };
 
   let added=0, updated=0, skipped=0;
-  const dataRows = lines.slice(1);
-
-  for(let i=0; i<dataRows.length; i++) {
-    const row = parseCSVRow(dataRows[i]);
-    if(!row.length || row.every(c => !c.trim())) continue;
-    setImportProgress(15 + Math.round((i/dataRows.length)*70));
-
-    const get = (c) => c >= 0 && c < row.length ? row[c].trim() : '';
-    const unitId = get(cols.unitId) || autoMatchUnitId(get(cols.unitLabel), get(cols.location));
-
-    if(!unitId) {
-      logImport(`⚠ Row ${i+2}: Could not identify unit — skipping (label: "${get(cols.unitLabel)}")`, 'warn');
-      skipped++; continue;
-    }
-
+  for(let i=0;i<_impMapped.length;i++){
+    const r=_impMapped[i];
+    if(!r.unit&&!r.tenant){ skipped++; continue; }
+    // Try to match an existing unitId
+    const unitId = autoMatchUnitId(r.unit, r.location) || _impNorm(r.unit).replace(/_/g,' ') || r.unit;
     const record = {
-      id: unitId + '_' + Date.now() + '_' + i,
+      id: _impNorm(unitId)+'_'+Date.now()+'_'+i,
       unitId,
-      unit: get(cols.unitLabel) || getPropertyLabel(unitId),
-      location: get(cols.location),
-      city: get(cols.city),
-      type: get(cols.type),
-      tenant: get(cols.tenantName) || get(cols.contractName),
-      contractName: get(cols.contractName) || get(cols.tenantName),
-      tenantEmail: get(cols.tenantEmail),
-      tenantPhone: get(cols.tenantPhone),
-      tenantNIN: get(cols.nin),
-      amount: get(cols.amount).replace(/[^0-9.]/g,''),
-      newRent: get(cols.newRent).replace(/[^0-9.]/g,''),
-      start: normaliseDate(get(cols.start)),
-      expiry: normaliseDate(get(cols.expiry)),
-      lastPayment: normaliseDate(get(cols.lastPayment)),
-      vacancy: (get(cols.vacancy)||'').toLowerCase().includes('vacant') ? 'vacant' : 'occupied',
-      notes: get(cols.notes),
+      unit: r.unit,
+      location: r.location,
+      city: r.city,
+      type: r.type||'Residential',
+      tenant: r.tenant||r.contractName,
+      contractName: r.contractName||r.tenant,
+      tenantEmail: r.tenantEmail,
+      tenantPhone: r.tenantPhone,
+      tenantNIN: r.tenantNIN,
+      amount: (r.amount||'').replace(/[^0-9.]/g,''),
+      newRent: (r.newRent||'').replace(/[^0-9.]/g,''),
+      start: normaliseDate(r.start),
+      expiry: normaliseDate(r.expiry),
+      lastPayment: normaliseDate(r.lastPayment),
+      vacancy: (r.vacancy||'').toLowerCase().includes('vacant')?'vacant':(r.vacancy||'occupied'),
+      notes: r.notes,
       importedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-
-    // Check for existing record with same unitId
-    const existIdx = rentLogs.findIndex(e => e.unitId === unitId);
-    if(existIdx >= 0) {
-      rentLogs[existIdx] = {...rentLogs[existIdx], ...record, id: rentLogs[existIdx].id};
-      updated++;
-      logImport(`↻ Row ${i+2}: Updated — ${unitId} · ${record.tenant||'(vacant)'}`, 'info');
+    const existIdx = rentLogs.findIndex(e=>e.unitId===unitId);
+    if(existIdx>=0){
+      rentLogs[existIdx]={...rentLogs[existIdx],...record,id:rentLogs[existIdx].id};
+      updated++; log(`↻ Row ${r._row}: Updated — ${unitId} · ${record.tenant||'(vacant)'}`, 'info');
     } else {
-      rentLogs.push(record);
-      added++;
-      logImport(`✓ Row ${i+2}: Added — ${unitId} · ${record.tenant||'(vacant)'}`, 'ok');
+      rentLogs.push(record); added++;
+      log(`✓ Row ${r._row}: Added — ${unitId} · ${record.tenant||'(vacant)'}`, 'ok');
     }
   }
+  log(`─── Complete: ${added} added · ${updated} updated · ${skipped} skipped ───`,'info');
 
-  setImportProgress(100);
-  logImport(`─── Import complete: ${added} added · ${updated} updated · ${skipped} skipped ───`, 'info');
+  // Save localStorage
+  localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs));
+  document.getElementById('isTotal').textContent=_impMapped.length;
+  document.getElementById('isAdded').textContent=added;
+  document.getElementById('isUpdated').textContent=updated;
+  document.getElementById('isSkipped').textContent=skipped;
+  document.getElementById('impDoneSummary').textContent=`${added+updated} records imported successfully (${added} new, ${updated} updated, ${skipped} skipped).`;
 
-  // Update summary
-  document.getElementById('isTotal').textContent = dataRows.length;
-  document.getElementById('isAdded').textContent = added;
-  document.getElementById('isUpdated').textContent = updated;
-  document.getElementById('isSkipped').textContent = skipped;
-  document.getElementById('importSummary').style.display = 'block';
+  renderAll(); renderRentManager();
+  await new Promise(r=>setTimeout(r,150));
+  toast(`✓ Import complete: ${added+updated} records`);
+  _impShowStage(4);
+  document.getElementById('impStage4').scrollIntoView({behavior:'smooth',block:'nearest'});
 
-  // Show feedback immediately — don't wait for Firestore
-  renderAll();
-  renderRentManager();
-
-  // Small delay so UI renders before showing toast
-  await new Promise(resolve => setTimeout(resolve, 150));
-  toast('✓ Import complete: ' + (added+updated) + ' records processed');
-
-  // Sync to Firestore — using compat SDK
-  logImport('☁ Syncing to Firestore...', 'info');
+  // Firestore sync
+  log('☁ Syncing to Firestore...','info');
   try {
-    if (!window._db) throw new Error('Firestore not initialised');
-    const batch = window._db.batch();
-    let batchCount = 0;
-    for (const rec of rentLogs) {
-      const ref = window._db.collection('rentRecords').doc(rec.id);
-      batch.set(ref, rec);
-      batchCount++;
-      // Firestore batch limit is 500
-      if (batchCount >= 499) break;
+    if(!window._db) throw new Error('Firestore not initialised');
+    const batch=window._db.batch(); let bc=0;
+    for(const rec of rentLogs){
+      batch.set(window._db.collection('rentRecords').doc(rec.id),rec); bc++;
+      if(bc>=499) break;
     }
     await batch.commit();
-    logImport('✓ Firestore sync complete — ' + Math.min(rentLogs.length, 499) + ' records saved to cloud', 'ok');
-    toast('✓ Import + cloud sync complete: ' + rentLogs.length + ' records');
+    log(`✓ Firestore sync complete — ${Math.min(rentLogs.length,499)} records saved`,'ok');
+    toast('✓ Import + cloud sync complete: '+rentLogs.length+' records');
   } catch(e) {
-    logImport('⚠ Firestore sync skipped — ' + (e.message||'check internet connection'), 'warn');
-    toast('✓ Import complete (offline — data saved locally)');
+    log('⚠ Firestore sync skipped — '+(e.message||'check connection'),'warn');
   }
 }
 
+function smartDownloadCSV() {
+  const keys=_IMP_FIELDS.map(f=>f.key);
+  const rows=[keys.join(','),..._impMapped.map(r=>keys.map(k=>`"${(r[k]||'').replace(/"/g,'""')}"`).join(','))];
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='CRS_Mapped_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Mapped CSV downloaded');
+}
+
+function resetSmartImport() {
+  _impRawHeaders=[];_impRawRows=[];_impColMap={};_impMapped=[];
+  const fi=document.getElementById('csvFileInput'); if(fi) fi.value='';
+  document.getElementById('impFilePill').style.display='none';
+  document.getElementById('importLog').innerHTML='';
+  document.getElementById('impMapGrid').innerHTML=`<div class="imp-map-head">CRS Field</div><div class="imp-map-head c">→</div><div class="imp-map-head">Your Column</div>`;
+  _impShowStage(1);
+}
+
+function _impShowStage(n) {
+  [1,2,3,4].forEach(i=>{ const el=document.getElementById('impStage'+i); if(el) el.classList.toggle('on',i<=n); });
+}
+
+// Keep these helpers for backward compat
+function clearImport() { resetSmartImport(); }
+function logImport(msg,type='ok'){const el=document.getElementById('importLog');const cls=type==='err'?'log-err':type==='warn'?'log-warn':type==='info'?'log-info':'';el.innerHTML+=`<div class="${cls}">${msg}</div>`;el.scrollTop=el.scrollHeight;}
+function setImportProgress(pct){document.getElementById('importProgressFill').style.width=pct+'%';}
+
 function parseCSVRow(line) {
-  const result = []; let cur = ''; let inQ = false;
-  for(let i=0; i<line.length; i++) {
-    const ch = line[i];
-    if(ch === '"') { inQ = !inQ; }
-    else if(ch === ',' && !inQ) { result.push(cur); cur = ''; }
-    else { cur += ch; }
-  }
-  result.push(cur);
-  return result;
+  const result=[]; let cur=''; let inQ=false;
+  for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){result.push(cur);cur='';}else{cur+=ch;}}
+  result.push(cur); return result;
 }
 
 function normaliseDate(d) {
   if(!d) return '';
-  // Handle dd/mm/yyyy, dd-mm-yyyy, mm/dd/yyyy, yyyy-mm-dd
-  const dmy = d.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  const dmy=d.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if(dmy) return `${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;
-  const ymd = d.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+  const mdy=d.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  const ymd=d.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
   if(ymd) return `${ymd[1]}-${ymd[2].padStart(2,'0')}-${ymd[3].padStart(2,'0')}`;
   return d;
 }
@@ -3750,7 +3960,7 @@ async function loadAllTenantDocs() {
     zone.addEventListener('drop', e => {
       e.preventDefault(); zone.classList.remove('drag-over');
       const files = e.dataTransfer.files;
-      if(files[0]) { document.getElementById('csvFileInput').files = files; handleCSVImport(document.getElementById('csvFileInput')); }
+      if(files[0]) smartImportFile(files[0]);
     });
   };
   if(document.readyState === 'complete') ready();
