@@ -782,6 +782,8 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .pec-section{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--rule)}
 .pec-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
 .pec-section-title{font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+.pec-body .span2{grid-column:1/-1 !important}
+.pec-new-rent-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(201,150,12,.1);border:1px solid rgba(201,150,12,.3);color:#7a5c00;font-size:.68rem;font-weight:700;padding:2px 10px;border-radius:20px;margin-left:8px}
 .vacancy-toggle{display:flex;border-radius:7px;overflow:hidden;border:1.5px solid var(--rule)}
 .vt-btn{flex:1;padding:10px;border:none;font-size:.84rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;background:var(--card);color:var(--dim)}
 .vt-occupied.active{background:var(--green);color:#fff}
@@ -2089,6 +2091,7 @@ function _normaliseRecord(r) {
     tenantNIN:    r.tenantNIN    || r.NIN    || '',
     amount:       r.amount  || r.Amount  || '',
     newRent:      r.newRent || r.New_Rent || '',
+    newRentDate:  r.newRentDate || r.New_Rent_Date || '',
     start:        r.start   || r.Tenancy_Start_Date  || '',
     expiry:       r.expiry  || r.Tenancy_Expiry_Date || '',
     lastPayment:  r.lastPayment || r.Last_Payment_Date || '',
@@ -2865,7 +2868,7 @@ function renderRentManager() {
         ${e.contractName && e.contractName !== e.tenant ? '<div style="font-size:.68rem;color:var(--gold);margin-top:1px">Contract: '+e.contractName+'</div>' : ''}
         <div style="font-size:.7rem;color:var(--dim)">${e.tenantPhone||''}</div>
       </td>
-      <td><strong>₦${Number(e.amount).toLocaleString()}</strong></td>
+      <td><strong>₦${Number(e.amount||0).toLocaleString()}</strong>${e.newRent?`<div style="font-size:.68rem;color:var(--gold);margin-top:2px;font-weight:600">→ ₦${Number(e.newRent).toLocaleString()}${e.newRentDate?' eff. '+fmtTableDate(e.newRentDate):''}</div>`:''}</td>
       <td style="font-size:.82rem">
         ${e.start ? fmtTableDate(e.start) : '<span style="color:var(--dim)">—</span>'}
         ${e.lastPayment ? '<div style="font-size:.68rem;color:var(--dim);margin-top:1px">Last paid: '+fmtTableDate(e.lastPayment)+'</div>' : ''}
@@ -3080,7 +3083,7 @@ async function loadMyProperty(userData) {
       <div class="t-hero-unit">${getPropertyLabel(myRecord.unitId||myRecord.unit)}</div>
       <div class="t-hero-loc">📍 ${locStr}</div>
       <div class="t-hero-grid">
-        <div class="t-stat"><div class="t-stat-label">Annual Rent</div><div class="t-stat-value">₦${Number(myRecord.amount||0).toLocaleString()}</div><div class="t-stat-sub">${myRecord.newRent?'New: ₦'+Number(myRecord.newRent).toLocaleString():'Per year'}</div></div>
+        <div class="t-stat"><div class="t-stat-label">Annual Rent</div><div class="t-stat-value">₦${Number(myRecord.amount||0).toLocaleString()}</div><div class="t-stat-sub">${myRecord.newRent?'→ ₦'+Number(myRecord.newRent).toLocaleString()+(myRecord.newRentDate?' eff. '+fmt(myRecord.newRentDate):''):'Per year'}</div></div>
         <div class="t-stat"><div class="t-stat-label">Start Date</div><div class="t-stat-value" style="font-size:.92rem">${fmt(myRecord.start)}</div><div class="t-stat-sub">Tenancy began</div></div>
         <div class="t-stat"><div class="t-stat-label">Expiry Date</div><div class="t-stat-value" style="font-size:.92rem">${fmt(myRecord.expiry)}</div><div class="t-stat-sub">${daysLeft!==null?(isOverdue?Math.abs(daysLeft)+' days ago':daysLeft+' days left'):'—'}</div></div>
         <div class="t-stat"><div class="t-stat-label">Status</div><div class="t-stat-value" style="font-size:.92rem">${isOverdue?'🔴 Expired':isExpiring?'🟡 Expiring':'🟢 Active'}</div><div class="t-stat-sub">${isOverdue?'Renewal required':isExpiring?'Renewal due':'In good standing'}</div></div>
@@ -4862,18 +4865,42 @@ function openPropEdit(propId) {
   if (!p) return;
   _editingPropId = propId;
   const extra = getPropExtra(propId);
-  const rec = rentLogs.find(e => e.unitId === propId);
+  _refreshRentLogs();
+  const rec = _normaliseRecord(rentLogs.find(e => (e.unitId||e.unit) === propId || (e.unit||'').toLowerCase() === (p.label||'').toLowerCase()));
 
   document.getElementById('propEditTitle').textContent = 'Edit: ' + p.label;
-  document.getElementById('peLabel').value = p.label || '';
-  document.getElementById('peCity').value = p.city || 'Ojodu';
-  document.getElementById('peType').value = p.type || '2 Bedroom Flat';
+  document.getElementById('peLabel').value    = p.label    || '';
+  document.getElementById('peCity').value     = p.city     || 'Ojodu';
+  document.getElementById('peType').value     = p.type     || '2 Bedroom Flat';
   document.getElementById('peLocation').value = p.location || '';
-  document.getElementById('peRent').value = extra.rent || (rec ? rec.amount : '') || '';
+  document.getElementById('peRent').value     = extra.rent || (rec ? rec.amount : '') || '';
   document.getElementById('peAvailFrom').value = extra.availableFrom || '';
 
+  // New rent + effective date
+  document.getElementById('peNewRent').value     = extra.newRent || (rec ? rec.newRent : '') || '';
+  document.getElementById('peNewRentDate').value = extra.newRentDate || (rec ? rec.newRentDate : '') || '';
+
+  // Tenant fields — populate from linked rentLogs record
+  const linked = document.getElementById('peTenantLinkedBadge');
+  if (rec && rec.tenant) {
+    document.getElementById('peTenant').value        = rec.tenant        || '';
+    document.getElementById('peContractName').value  = rec.contractName  || '';
+    document.getElementById('peTenantEmail').value   = rec.tenantEmail   || '';
+    document.getElementById('peTenantPhone').value   = rec.tenantPhone   || '';
+    document.getElementById('peTenantNIN').value     = rec.tenantNIN     || '';
+    document.getElementById('peTenancyStart').value  = rec.start         || '';
+    document.getElementById('peTenancyExpiry').value = rec.expiry        || '';
+    document.getElementById('peTenantLastPay').value = rec.lastPayment   || '';
+    if(linked) linked.style.display = '';
+    document.getElementById('peTenantNote').textContent = 'Linked to Rent Manager record. Changes here update all portal pages.';
+  } else {
+    ['peTenant','peContractName','peTenantEmail','peTenantPhone','peTenantNIN','peTenancyStart','peTenancyExpiry','peTenantLastPay'].forEach(id => document.getElementById(id).value='');
+    if(linked) linked.style.display = 'none';
+    document.getElementById('peTenantNote').textContent = 'No linked tenancy record found for this unit. Saving will create one.';
+  }
+
   // Vacancy
-  _editVacancy = (rec && rec.vacancy !== 'vacant') ? 'occupied' : 'vacant';
+  _editVacancy = (rec && rec.vacancy !== 'vacant') ? 'occupied' : (extra.vacancy || 'vacant');
   setVacancy(_editVacancy);
 
   // Amenities
@@ -5029,34 +5056,117 @@ function savePropEdit() {
   const p = PROPERTIES.find(x => x.id === _editingPropId);
   if (!p) return;
 
-  // Update PROPERTIES array in memory
-  p.label    = document.getElementById('peLabel').value.trim() || p.label;
-  p.city     = document.getElementById('peCity').value;
-  p.type     = document.getElementById('peType').value;
-  p.location = document.getElementById('peLocation').value.trim() || p.location;
+  // Read all fields
+  const newLabel       = document.getElementById('peLabel').value.trim()         || p.label;
+  const newCity        = document.getElementById('peCity').value;
+  const newType        = document.getElementById('peType').value;
+  const newLocation    = document.getElementById('peLocation').value.trim()       || p.location;
+  const newRentAmt     = document.getElementById('peRent').value.trim();
+  const newAvailFrom   = document.getElementById('peAvailFrom').value;
+  const newRentNew     = document.getElementById('peNewRent').value.trim();
+  const newRentDate    = document.getElementById('peNewRentDate').value;
+  const newTenant      = document.getElementById('peTenant').value.trim();
+  const newContract    = document.getElementById('peContractName').value.trim()   || newTenant;
+  const newEmail       = document.getElementById('peTenantEmail').value.trim();
+  const newPhone       = document.getElementById('peTenantPhone').value.trim();
+  const newNIN         = document.getElementById('peTenantNIN').value.trim();
+  const newStart       = document.getElementById('peTenancyStart').value;
+  const newExpiry      = document.getElementById('peTenancyExpiry').value;
+  const newLastPay     = document.getElementById('peTenantLastPay').value;
 
-  // Save extras
+  // ── 1. Update PROPERTIES array ──
+  p.label    = newLabel;
+  p.city     = newCity;
+  p.type     = newType;
+  p.location = newLocation;
+
+  // ── 2. Save propExtras ──
   setPropExtra(_editingPropId, {
     amenities:     _editAmenities,
     img0:          _editImages[0],
     img1:          _editImages[1],
-    rent:          document.getElementById('peRent').value,
-    availableFrom: document.getElementById('peAvailFrom').value,
+    rent:          newRentAmt,
+    availableFrom: newAvailFrom,
     vacancy:       _editVacancy,
+    newRent:       newRentNew,
+    newRentDate:   newRentDate,
   });
 
-  // Update vacancy in rentLogs
-  const recIdx = rentLogs.findIndex(e => e.unitId === _editingPropId);
+  // ── 3. Find or create rentLogs record ──
+  _refreshRentLogs();
+  let recIdx = rentLogs.findIndex(e =>
+    (e.unitId||e.unit) === _editingPropId ||
+    (e.unit||'').toLowerCase() === (p.label||'').toLowerCase()
+  );
+
+  const updatedRecord = {
+    unitId:      _editingPropId,
+    unit:        newLabel,
+    location:    newLocation,
+    city:        newCity,
+    type:        newType,
+    tenant:      newTenant      || (recIdx>=0 ? rentLogs[recIdx].tenant : ''),
+    contractName:newContract    || (recIdx>=0 ? rentLogs[recIdx].contractName : newTenant),
+    tenantEmail: newEmail       || (recIdx>=0 ? rentLogs[recIdx].tenantEmail : ''),
+    tenantPhone: newPhone       || (recIdx>=0 ? rentLogs[recIdx].tenantPhone : ''),
+    tenantNIN:   newNIN         || (recIdx>=0 ? rentLogs[recIdx].tenantNIN : ''),
+    amount:      newRentAmt     || (recIdx>=0 ? rentLogs[recIdx].amount : ''),
+    newRent:     newRentNew     || (recIdx>=0 ? rentLogs[recIdx].newRent : ''),
+    newRentDate: newRentDate    || (recIdx>=0 ? rentLogs[recIdx].newRentDate : ''),
+    start:       newStart       || (recIdx>=0 ? rentLogs[recIdx].start : ''),
+    expiry:      newExpiry      || (recIdx>=0 ? rentLogs[recIdx].expiry : ''),
+    lastPayment: newLastPay     || (recIdx>=0 ? rentLogs[recIdx].lastPayment : ''),
+    vacancy:     _editVacancy,
+    updatedAt:   new Date().toISOString(),
+  };
+
   if (recIdx >= 0) {
-    rentLogs[recIdx].vacancy = _editVacancy;
-  } else if (_editVacancy === 'vacant') {
-    // No rent record exists — it's already vacant, nothing to do
+    // Merge into existing record — preserve id and other fields
+    rentLogs[recIdx] = { ...rentLogs[recIdx], ...updatedRecord };
+  } else {
+    // Create new record if none exists
+    rentLogs.push({
+      id: (_editingPropId + '_' + Date.now()).replace(/\s+/g,'_').toLowerCase(),
+      importedAt: new Date().toISOString(),
+      ...updatedRecord
+    });
+    recIdx = rentLogs.length - 1;
   }
 
+  // ── 4. Save to localStorage ──
+  saveLocal();
+
+  // ── 5. Re-sync _myRecord if this is the logged-in tenant's unit ──
+  if (!isAdmin && currentUser && window._myRecord) {
+    const myEmail = (currentUser.email||'').toLowerCase();
+    if ((updatedRecord.tenantEmail||'').toLowerCase() === myEmail ||
+        (window._myRecord.unitId||window._myRecord.unit) === _editingPropId) {
+      window._myRecord = _normaliseRecord(rentLogs[recIdx]);
+    }
+  }
+
+  // ── 6. Sync to Firestore ──
+  if (window._db) {
+    const rec = rentLogs[recIdx];
+    window._db.collection('rentRecords').doc(rec.id).set(rec, {merge:true}).catch(e=>{});
+  }
+
+  // ── 7. Refresh all views ──
   closePropEdit();
   renderProperties();
+  renderRentManager();
   renderAll();
-  toast('Property updated successfully');
+  if (!isAdmin && window._myRecord) {
+    loadMyProperty({});
+    setTimeout(renderTenantDashboard, 300);
+  }
+
+  // Show confirmation with what changed
+  const changes = [];
+  if (newRentNew)  changes.push(`New rent ₦${Number(newRentNew).toLocaleString()}${newRentDate?' eff. '+newRentDate:''}`);
+  if (newExpiry)   changes.push(`Expiry updated to ${newExpiry}`);
+  if (newEmail)    changes.push(`Email: ${newEmail}`);
+  toast(`✓ ${newLabel} updated${changes.length?' — '+changes.slice(0,2).join(' · '):''}`);
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -6671,9 +6781,36 @@ var _origBootApp = typeof _bootApp === 'function' ? _bootApp : null;
             </select>
           </div>
           <div class="fg" style="grid-column:1/-1"><label>Full Location / Address</label><input type="text" id="peLocation" placeholder="Full estate address"/></div>
-          <div class="fg"><label>Annual Rent (₦)</label><input type="number" id="peRent" placeholder="500000"/></div>
+          <div class="fg"><label>Annual Rent (₦) — Current</label><input type="number" id="peRent" placeholder="500000"/></div>
           <div class="fg"><label>Available From</label><input type="date" id="peAvailFrom"/></div>
+          <div class="fg"><label>New / Revised Rent (₦)
+            <span style="font-size:.65rem;color:var(--dim);font-weight:400;margin-left:4px">— leave blank if unchanged</span></label>
+            <input type="number" id="peNewRent" placeholder="e.g. 850000"/>
+          </div>
+          <div class="fg"><label>New Rent Effective Date
+            <span style="font-size:.65rem;color:var(--dim);font-weight:400;margin-left:4px">— when new rent takes effect</span></label>
+            <input type="date" id="peNewRentDate"/>
+          </div>
         </div>
+      </div>
+
+      <!-- TENANT DETAILS (linked record) -->
+      <div class="pec-section" id="peTenantSection">
+        <div class="pec-section-title" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Tenant Details</span>
+          <span id="peTenantLinkedBadge" style="font-size:.68rem;font-weight:700;padding:2px 10px;border-radius:20px;background:rgba(26,92,46,.1);color:var(--green);border:1px solid rgba(26,92,46,.2);display:none">● Linked</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="fg span2"><label>Tenant Full Name (Portal Name)</label><input type="text" id="peTenant" placeholder="Name shown in portal"/></div>
+          <div class="fg span2"><label>Contract Name <span style="font-size:.65rem;color:var(--dim);font-weight:400">— exact name on tenancy agreement</span></label><input type="text" id="peContractName" placeholder="Name on agreement (if different)"/></div>
+          <div class="fg"><label>Tenant Email</label><input type="email" id="peTenantEmail" placeholder="tenant@email.com"/></div>
+          <div class="fg"><label>Phone Number</label><input type="tel" id="peTenantPhone" placeholder="+234..."/></div>
+          <div class="fg"><label>NIN</label><input type="text" id="peTenantNIN" placeholder="11-digit NIN" maxlength="11"/></div>
+          <div class="fg"><label>Tenancy Start Date</label><input type="date" id="peTenancyStart"/></div>
+          <div class="fg"><label>Tenancy Expiry Date</label><input type="date" id="peTenancyExpiry"/></div>
+          <div class="fg"><label>Last Payment Date</label><input type="date" id="peTenantLastPay"/></div>
+        </div>
+        <div style="font-size:.72rem;color:var(--dim);margin-top:8px;line-height:1.6" id="peTenantNote">Changes here update the Rent Manager and all portal pages immediately.</div>
       </div>
 
       <!-- VACANCY TOGGLE -->
