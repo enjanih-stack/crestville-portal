@@ -984,7 +984,52 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .sc-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
 .sc-title{font-size:.88rem;font-weight:600;color:var(--ink);margin-bottom:2px}
 .sc-ref{font-size:.7rem;color:var(--dim);font-family:monospace}
-.sc-status-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:.72rem;font-weight:700;white-space:nowrap;flex-shrink:0}
+/* EXPIRY BANNER — rolling ticker on Notices page */
+.expiry-banner-wrap{overflow:hidden;background:var(--ink);border-radius:8px;padding:0;margin-bottom:18px;border:1px solid #2a2620;position:relative}
+.expiry-banner-track{display:flex;white-space:nowrap;animation:bannerScroll 28s linear infinite}
+.expiry-banner-track:hover{animation-play-state:paused}
+.expiry-banner-item{display:inline-flex;align-items:center;gap:10px;padding:11px 28px;font-size:.8rem;flex-shrink:0}
+.expiry-banner-item .eb-unit{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:.9rem}
+.expiry-banner-item .eb-days{font-weight:800;font-size:.85rem;border-radius:20px;padding:2px 10px}
+.eb-green .eb-days{background:rgba(26,92,46,.2);color:#5aaf7a}
+.eb-orange .eb-days{background:rgba(201,150,12,.2);color:#c9960c}
+.eb-red .eb-days{background:rgba(140,31,31,.2);color:#f57272;animation:pulse 1.2s ease-in-out infinite}
+@keyframes bannerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* DAYS REMAINING PILL — inline in tables and cards */
+.days-pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700;white-space:nowrap}
+.days-pill.dp-green{background:rgba(26,92,46,.12);color:#1a5c2e;border:1px solid rgba(26,92,46,.25)}
+.days-pill.dp-orange{background:rgba(201,150,12,.12);color:#7a5c00;border:1px solid rgba(201,150,12,.3)}
+.days-pill.dp-red{background:rgba(140,31,31,.12);color:#8c1f1f;border:1px solid rgba(140,31,31,.25);animation:pulse 1.4s ease-in-out infinite}
+
+/* TERMINATION OVERLAY */
+#terminationOverlay{position:fixed;inset:0;z-index:2000;background:rgba(10,8,6,.96);display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(8px)}
+#terminationOverlay.on{display:flex}
+.termination-card{background:#0f0e0c;border:2px solid #8c1f1f;border-radius:14px;max-width:480px;width:100%;overflow:hidden;box-shadow:0 16px 64px rgba(140,31,31,.4)}
+.termination-card-head{background:linear-gradient(135deg,#1a0808,#120404);padding:28px 28px 20px;text-align:center;border-bottom:1px solid #2a0a0a}
+.termination-card-icon{font-size:3rem;margin-bottom:12px}
+.termination-card-title{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;color:#f57272;margin-bottom:6px}
+.termination-card-sub{font-size:.8rem;color:#9a7070;line-height:1.6}
+.termination-card-body{padding:24px 28px}
+.termination-card-body p{font-size:.82rem;color:#c8b0b0;line-height:1.75;margin-bottom:14px}
+.termination-card-body strong{color:#e8d0d0}
+.termination-contact{background:#1a0a0a;border:1px solid #2a1010;border-radius:8px;padding:14px;font-size:.76rem;color:#9a7070;line-height:1.8;margin-top:4px}
+.termination-contact a{color:#c9960c;text-decoration:none}
+
+/* ADMIN UNLOCK FORM */
+.unlock-panel{background:linear-gradient(135deg,#0f0e0c,#1a1814);border-radius:10px;padding:22px;border:1px solid #2a2620;margin-bottom:20px}
+.unlock-panel h3{font-family:'Cormorant Garamond',serif;font-size:1rem;color:#e8dfc8;margin-bottom:4px}
+.unlock-panel p{font-size:.76rem;color:#9a8a6a;margin-bottom:16px;line-height:1.6}
+.unlock-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.unlock-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.locked-list{margin-top:14px}
+.locked-item{display:flex;align-items:center;gap:10px;background:#1a0a0a;border:1px solid #2a1010;border-radius:8px;padding:10px 14px;margin-bottom:8px}
+.locked-item-info{flex:1;font-size:.78rem;color:#c8b0b0}
+.locked-item-info strong{color:#e8dfc8;display:block;margin-bottom:2px}
+.locked-item-info span{color:#9a7070;font-size:.7rem}
+.btn-unlock{background:rgba(26,92,46,.2);border:1px solid rgba(26,92,46,.4);color:#5aaf7a;padding:6px 14px;border-radius:6px;font-size:.76rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-unlock:hover{background:rgba(26,92,46,.35)}
 .ssp-pending{background:rgba(201,150,12,.12);color:#b45309;border:1px solid rgba(201,150,12,.3)}
 .ssp-approved{background:rgba(26,92,46,.1);color:#15803d;border:1px solid rgba(26,92,46,.25)}
 .ssp-rejected{background:rgba(140,31,31,.1);color:#b91c1c;border:1px solid rgba(140,31,31,.25)}
@@ -1499,10 +1544,19 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
         <div class="page-header">
           <div><h1>Notices</h1><div class="ph-sub">Announcements and messages from Crestechnologies IS Ltd</div></div>
         </div>
-        <div class="page-body" id="noticesBody">
-          <div style="text-align:center;padding:40px;color:var(--dim)">
-            <div style="font-size:2rem;margin-bottom:10px">📋</div>
-            <div>No notices at this time</div>
+        <div class="page-body">
+          <!-- Rolling expiry banner — shown to tenant only -->
+          <div id="expiryBannerWrap" class="expiry-banner-wrap" style="display:none">
+            <div class="expiry-banner-track" id="expiryBannerTrack"></div>
+          </div>
+          <!-- Tenancy status notice card — shown to tenant -->
+          <div id="tenancyStatusNotice" style="display:none;margin-bottom:18px"></div>
+          <!-- General notices body -->
+          <div id="noticesBody">
+            <div style="text-align:center;padding:40px;color:var(--dim)">
+              <div style="font-size:2rem;margin-bottom:10px">📋</div>
+              <div>No notices at this time</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1516,6 +1570,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
             <button class="btn btn-gold" onclick="openRentModal()">+ Add Record</button>
             <button class="btn btn-blue" onclick="sendAllRenewalReminders()" title="Send renewal reminders to all tenants within 60 days of expiry">📧 Send Reminders</button>
             <button class="btn btn-outline" onclick="toggleRmImport()" id="rmImportToggleBtn">⬆ Import CSV</button>
+            <button class="btn btn-outline" onclick="toggleUnlockPanel()" id="unlockPanelBtn">🔓 Unlock Tenants</button>
             <button class="btn btn-outline" onclick="syncToCloud()">☁️ Sync</button>
             <button class="btn btn-blue btn-sm" onclick="pullFromCloud()">⬇ Pull</button>
             <button class="btn btn-outline" onclick="exportAllCSV()" style="background:rgba(26,92,46,.08);border-color:rgba(26,92,46,.3);color:var(--green);font-size:.8rem">⬆ Export CSV</button>
@@ -1615,6 +1670,13 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
             </div>
           </div>
 
+          <!-- ── ADMIN: UNLOCK TERMINATED TENANTS ── -->
+          <div id="unlockPanel" class="unlock-panel" style="display:none">
+            <h3>🔓 Unlock Terminated / Suspended Tenants</h3>
+            <p>Tenants whose tenancy has expired and been terminated are locked out of the portal. Use this panel to reinstate access after a formal renewal or agreement has been made.</p>
+            <div id="lockedTenantsList"><div style="font-size:.76rem;color:#9a8a6a;text-align:center;padding:14px 0">No locked tenants at this time.</div></div>
+          </div>
+
           <div class="search-row">
             <input class="search-input" placeholder="🔍 Search tenant, unit…" id="rmSearch" oninput="renderRentManager()"/>
             <select class="filter-select" id="rmFilter" onchange="renderRentManager()">
@@ -1623,7 +1685,6 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
               <option value="overdue">Overdue</option>
             </select>
           </div>
-          <div class="sec-card">
             <div class="sec-body overflow-table" style="padding:0">
               <table class="data-table" id="rmTable">
                 <thead><tr><th>Unit / Location</th><th>Tenant</th><th>Rent (₦)</th><th>Start</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
@@ -2484,6 +2545,7 @@ async function _bootApp(user, userData, adminMode) {
   if (!adminMode) {
     loadMyProperty(userData);
     setTimeout(renderTenantDashboard, 1200);
+    setTimeout(checkTenantLockout, 1500); // check after record loads
     // Update welcome card — always use freshest data
     setTimeout(() => {
       _refreshRentLogs();
@@ -2596,7 +2658,8 @@ function showPage(pgId, btn) {
   closeSidebar();
   if(pgId === 'pgVacant') renderVacant();
   if(pgId === 'pgProperties') renderProperties();
-  if(pgId === 'pgRentManager') renderRentManager();
+  if(pgId === 'pgRentManager') { renderRentManager(); if(isAdmin) renderLockedTenantsList(); }
+  if(pgId === 'pgNotices') { loadNotices(); renderExpiryBanner(); renderTenancyStatusNotice(); }
   // Save state on every page navigation
   if (typeof saveSessionState === 'function') saveSessionState();
 }
@@ -2777,26 +2840,25 @@ function renderRentManager() {
     // Calculate days left for colour coding
     const daysLeft2 = exp ? Math.round((exp - today2) / 864e5) : null;
     const rowBg = daysLeft2 !== null
-      ? (daysLeft2 < 0   ? 'background:rgba(140,31,31,.06);'
-      : daysLeft2 <= 60  ? 'background:rgba(140,31,31,.04);'
-      : daysLeft2 <= 90  ? 'background:rgba(234,120,20,.04);' : '')
+      ? (daysLeft2 <= 0   ? 'background:rgba(140,31,31,.07);'
+      : daysLeft2 <= 60  ? 'background:rgba(201,150,12,.05);'
+      : '')
+      : '';
+
+    const daysPillHtml = daysLeft2 !== null
+      ? `<span class="days-pill ${daysLeft2 <= 0 ? 'dp-red' : daysLeft2 <= 60 ? 'dp-orange' : 'dp-green'}">${
+          daysLeft2 < 0 ? Math.abs(daysLeft2)+'d overdue'
+        : daysLeft2 === 0 ? 'Expires today'
+        : daysLeft2+'d left'
+        }</span>`
       : '';
     const expiryCell = e.expiry
-      ? `<span style="font-size:.82rem">${fmtTableDate(e.expiry)}</span>`
-        + (daysLeft2 !== null ? `<br><span style="font-size:.68rem;font-weight:700;${
-            daysLeft2 < 0   ? 'color:#b91c1c'
-          : daysLeft2 <= 60 ? 'color:#b91c1c'
-          : daysLeft2 <= 90 ? 'color:#b45309'
-          : 'color:#15803d'}">${
-            daysLeft2 < 0   ? '🔴 ' + Math.abs(daysLeft2) + 'd overdue'
-          : daysLeft2 <= 60 ? '🔴 ' + daysLeft2 + 'd left'
-          : daysLeft2 <= 90 ? '🟠 ' + daysLeft2 + 'd left'
-          : '🟢 ' + daysLeft2 + 'd left'
-          }</span>` : '')
+      ? `<span style="font-size:.82rem">${fmtTableDate(e.expiry)}</span><br>${daysPillHtml}`
       : '<span style="color:var(--dim);font-size:.8rem">—</span>';
 
-    return `<tr style="${rowBg}">
-      <td style="max-width:180px"><div style="font-weight:600;font-size:.82rem">${label}</div>
+    const isLocked = _isLockedOut(_normaliseRecord(e));
+    return `<tr style="${rowBg}${isLocked?'opacity:.6;':''}">
+      <td style="max-width:180px"><div style="font-weight:600;font-size:.82rem">${label}${isLocked?'<span class="days-pill dp-red" style="margin-left:6px;animation:none">🔒 Locked</span>':''}</div>
         <div style="font-size:.7rem;color:var(--dim)">${e.tenantEmail||''}</div></td>
       <td>
         <div style="font-size:.84rem;font-weight:600">${e.tenant}</div>
@@ -2809,8 +2871,11 @@ function renderRentManager() {
         ${e.lastPayment ? '<div style="font-size:.68rem;color:var(--dim);margin-top:1px">Last paid: '+fmtTableDate(e.lastPayment)+'</div>' : ''}
       </td>
       <td>${expiryCell}</td>
-      <td><span class="badge ${daysLeft2 !== null && daysLeft2 < 0 ? 'badge-overdue' : daysLeft2 !== null && daysLeft2 <= 60 ? 'badge-overdue' : daysLeft2 !== null && daysLeft2 <= 90 ? '' : 'badge-active'}" style="${daysLeft2 !== null && daysLeft2 <= 90 && daysLeft2 >= 0 && daysLeft2 > 60 ? 'background:rgba(234,120,20,.12);color:#b45309;border-color:rgba(234,120,20,.3)' : ''}">${
-        isOverdue ? 'Overdue' : daysLeft2 !== null && daysLeft2 <= 60 ? 'Expiring' : daysLeft2 !== null && daysLeft2 <= 90 ? 'Due Soon' : 'Active'
+      <td><span class="badge ${daysLeft2 === null ? 'badge-active' : daysLeft2 <= 0 ? 'badge-overdue' : daysLeft2 <= 60 ? 'badge-expiring' : 'badge-active'}">${
+        daysLeft2 === null ? 'Active'
+        : daysLeft2 <= 0  ? 'Terminated'
+        : daysLeft2 <= 60 ? 'Expiring'
+        : 'Active'
       }</span></td>
       <td style="white-space:nowrap">
         <button class="btn btn-sm btn-outline" onclick="editRentRecord(${idx})" title="Edit">✏️</button>
@@ -3195,9 +3260,106 @@ async function loadNotices() {
       </div>
       <div class="nc-body">${n.body}</div>
     </div>`;
-  }).join('');
+  }).join('') || '<div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem;margin-bottom:10px">📋</div><div>No notices at this time</div></div>';
   const badge = document.getElementById('noticesBadge');
   if(badge) badge.style.display = notices.length ? '' : 'none';
+
+  // ── Rolling expiry banner + tenancy status notice (tenant view) ──
+  renderExpiryBanner();
+  renderTenancyStatusNotice();
+}
+
+/* ── ROLLING EXPIRY BANNER ── */
+function renderExpiryBanner() {
+  const wrap  = document.getElementById('expiryBannerWrap');
+  const track = document.getElementById('expiryBannerTrack');
+  if(!wrap || !track) return;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const fmt = d => { try{ return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); }catch(e){return d;} };
+
+  let items;
+  if(!isAdmin && window._myRecord) {
+    // Tenant: show only their own record
+    const rec = window._myRecord;
+    const expD = rec.expiry ? new Date(rec.expiry) : null;
+    if(expD) expD.setHours(0,0,0,0);
+    const days = expD ? Math.round((expD - today)/864e5) : null;
+    if(days === null) { wrap.style.display='none'; return; }
+    const cls  = days <= 0 ? 'eb-red' : days <= 60 ? 'eb-orange' : 'eb-green';
+    const pill = days < 0  ? Math.abs(days)+'d overdue' : days===0 ? 'Expires today' : days+'d left';
+    const unit = getPropertyLabel(rec.unitId||rec.unit);
+    items = [{cls, unit, expiry: fmt(rec.expiry), pill}];
+  } else if(isAdmin) {
+    // Admin: show all tenants ≤90 days
+    items = rentLogs
+      .filter(e => e.expiry && e.vacancy !== 'vacant')
+      .map(e => {
+        const expD = new Date(e.expiry); expD.setHours(0,0,0,0);
+        const days = Math.round((expD - today)/864e5);
+        return { days, unit: getPropertyLabel(e.unitId||e.unit), expiry: fmt(e.expiry),
+          pill: days < 0 ? Math.abs(days)+'d overdue' : days===0 ? 'Today' : days+'d left',
+          cls: days <= 0 ? 'eb-red' : days <= 60 ? 'eb-orange' : 'eb-green',
+          tenant: e.tenant||'' };
+      })
+      .filter(e => e.days <= 90)
+      .sort((a,b) => a.days - b.days);
+    if(!items.length) { wrap.style.display='none'; return; }
+  } else { wrap.style.display='none'; return; }
+
+  // Duplicate items so scrolling loops seamlessly
+  const html = [...items,...items].map(it =>
+    `<div class="expiry-banner-item ${it.cls}">
+      <span class="eb-unit">${it.unit}${it.tenant?' — '+it.tenant:''}</span>
+      <span style="font-size:.72rem;color:#9a8a6a">Expires ${it.expiry}</span>
+      <span class="eb-days">${it.pill}</span>
+    </div><span style="color:#2a2620;padding:0 8px;flex-shrink:0">|</span>`
+  ).join('');
+
+  track.innerHTML = html;
+  wrap.style.display = 'block';
+  // Adjust animation speed by item count
+  const speed = Math.max(16, items.length * 5);
+  track.style.animationDuration = speed + 's';
+}
+
+/* ── TENANCY STATUS NOTICE (Notices page, tenant view) ── */
+function renderTenancyStatusNotice() {
+  const el = document.getElementById('tenancyStatusNotice');
+  if(!el || isAdmin || !window._myRecord) { if(el) el.style.display='none'; return; }
+  const rec = window._myRecord;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const expD = rec.expiry ? new Date(rec.expiry) : null;
+  if(expD) expD.setHours(0,0,0,0);
+  const days = expD ? Math.round((expD - today)/864e5) : null;
+  if(days === null) { el.style.display='none'; return; }
+  const fmt = d => { try{ return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}); }catch(e){return d;} };
+  const unit = getPropertyLabel(rec.unitId||rec.unit);
+
+  let bg, border, icon, title, msg;
+  if(days < 0) {
+    bg='rgba(140,31,31,.08)'; border='var(--red)'; icon='🔴';
+    title='Tenancy Expired';
+    msg=`Your tenancy for <strong>${unit}</strong> expired <strong>${Math.abs(days)} day${Math.abs(days)===1?'':'s'} ago</strong> on ${fmt(rec.expiry)}. Please contact Crestechnologies IS Ltd immediately.`;
+  } else if(days === 0) {
+    bg='rgba(140,31,31,.06)'; border='var(--red)'; icon='🚨';
+    title='Tenancy Expires Today';
+    msg=`Your tenancy for <strong>${unit}</strong> expires <strong>today</strong> (${fmt(rec.expiry)}). Contact your landlord immediately.`;
+  } else if(days <= 60) {
+    bg='rgba(201,150,12,.07)'; border='var(--gold)'; icon='🟠';
+    title=`Renewal Due — ${days} Day${days===1?'':'s'} Remaining`;
+    msg=`Your tenancy for <strong>${unit}</strong> expires on <strong>${fmt(rec.expiry)}</strong>. Please submit a renewal request through the portal before it's too late.`;
+  } else {
+    bg='rgba(26,92,46,.06)'; border='var(--green)'; icon='🟢';
+    title=`Tenancy Active — ${days} Days Remaining`;
+    msg=`Your tenancy for <strong>${unit}</strong> is in good standing. Expiry: <strong>${fmt(rec.expiry)}</strong>.`;
+  }
+
+  el.style.display = 'block';
+  el.innerHTML = `<div style="background:${bg};border-left:4px solid ${border};border-radius:0 8px 8px 0;padding:16px 20px;font-size:.84rem;color:var(--ink);line-height:1.7">
+    <div style="font-weight:700;font-size:.95rem;margin-bottom:6px;display:flex;align-items:center;gap:8px">${icon} <span>${title}</span></div>
+    <div>${msg}</div>
+  </div>`;
 }
 
 function generateReceiptByRecord(rec) {
@@ -3249,22 +3411,166 @@ async function pullFromCloud(silent=false) {
    Sends to the tenant's own email address
 ═══════════════════════════════════════════════════════════════════ */
 
-/* Key used to avoid sending the same email twice in one session */
+/* ═══════════════════════════════════════════════════════════════════
+   TENANCY EXPIRY SYSTEM
+   • Daily emails from 60 days → expiry day (every day in final 60)
+   • Termination email on day 0 + lock-out
+   • Rolling banner on Notices page
+   • Tenant portal block on expired + terminated
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── localStorage keys ── */
+const _LOCK_KEY  = 'crs_lockedTenants_v1';   // { email: {lockedAt, reason, unitId} }
+const _DAILY_KEY = 'crs_dailyAlerts_v1';      // { "email_YYYY-MM-DD": true }
+
+function _getLocked() { try { return JSON.parse(localStorage.getItem(_LOCK_KEY)||'{}'); } catch(e){return {};} }
+function _saveLocked(obj) { localStorage.setItem(_LOCK_KEY, JSON.stringify(obj)); }
+function _getDailyAlerts() { try { return JSON.parse(localStorage.getItem(_DAILY_KEY)||'{}'); } catch(e){return {};} }
+function _saveDailyAlerts(obj) { localStorage.setItem(_DAILY_KEY, JSON.stringify(obj)); }
+
+/* Returns true if the tenant is currently locked out */
+function _isLockedOut(rec) {
+  if(!rec || !rec.tenantEmail) return false;
+  const locked = _getLocked();
+  return !!locked[(rec.tenantEmail||'').toLowerCase()];
+}
+
+/* Lock a tenant out */
+function _lockTenant(rec, reason) {
+  const locked = _getLocked();
+  locked[(rec.tenantEmail||'').toLowerCase()] = {
+    lockedAt: new Date().toISOString(),
+    reason: reason || 'Tenancy expired and terminated',
+    unitId: rec.unitId || rec.unit,
+    tenant: rec.tenant || rec.contractName,
+    expiry: rec.expiry
+  };
+  _saveLocked(locked);
+  // Mark unit as vacant in rentLogs
+  const idx = rentLogs.findIndex(r => (r.tenantEmail||'').toLowerCase() === (rec.tenantEmail||'').toLowerCase());
+  if(idx >= 0) { rentLogs[idx].vacancy = 'vacant'; saveLocal(); }
+  renderRentManager();
+  renderProperties();
+}
+
+/* Unlock a tenant (admin action) */
+function unlockTenant(email) {
+  const locked = _getLocked();
+  delete locked[email.toLowerCase()];
+  _saveLocked(locked);
+  // Reinstate vacancy as occupied
+  const idx = rentLogs.findIndex(r => (r.tenantEmail||'').toLowerCase() === email.toLowerCase());
+  if(idx >= 0) { rentLogs[idx].vacancy = 'occupied'; saveLocal(); }
+  renderRentManager();
+  renderLockedTenantsList();
+  toast('✓ Tenant access reinstated: ' + email);
+}
+
+function toggleUnlockPanel() {
+  const panel = document.getElementById('unlockPanel');
+  const open = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  if(open) { renderLockedTenantsList(); panel.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+}
+
+function renderLockedTenantsList() {
+  const el = document.getElementById('lockedTenantsList'); if(!el) return;
+  const locked = _getLocked();
+  const entries = Object.entries(locked);
+  if(!entries.length) {
+    el.innerHTML = '<div style="font-size:.76rem;color:#9a8a6a;text-align:center;padding:14px 0">No locked tenants at this time.</div>';
+    return;
+  }
+  el.innerHTML = entries.map(([email, info]) => `
+    <div class="locked-item">
+      <div style="font-size:1.2rem">🔒</div>
+      <div class="locked-item-info">
+        <strong>${info.tenant||'Unknown'} — ${info.unitId||'—'}</strong>
+        <span>${email} · Locked: ${new Date(info.lockedAt).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})} · ${info.reason||'Tenancy expired'}</span>
+      </div>
+      <button class="btn-unlock" onclick="unlockTenant('${email}')">🔓 Reinstate Access</button>
+    </div>
+  `).join('');
+}
+
+/* ── TENANT LOCK-OUT CHECK — runs on every page load for tenants ── */
+function checkTenantLockout() {
+  if(isAdmin || !currentUser) return;
+  const rec = window._myRecord;
+  if(!rec) return;
+
+  // Check if already locked
+  if(_isLockedOut(rec)) {
+    document.getElementById('terminationOverlay').classList.add('on');
+    return;
+  }
+
+  // Check if expiry has passed
+  if(!rec.expiry) return;
+  const expD = new Date(rec.expiry); expD.setHours(0,0,0,0);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const daysLeft = Math.round((expD - today) / 864e5);
+
+  if(daysLeft < 0) {
+    // Expired — lock and show overlay
+    _lockTenant(rec, 'Tenancy expired on ' + rec.expiry);
+    document.getElementById('terminationOverlay').classList.add('on');
+    // Send termination email
+    _sendTerminationEmail(rec);
+  }
+}
+
+async function _sendTerminationEmail(rec) {
+  const email = rec.tenantEmail; if(!email) return;
+  const name = rec.tenant || email.split('@')[0];
+  const unit = getPropertyLabel(rec.unitId||rec.unit);
+  const fmtDate = d => { try{ return new Date(d).toLocaleDateString('en-NG',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }catch(e){return d;} };
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f0ebe1;font-family:Arial,sans-serif">
+<div style="max-width:600px;margin:24px auto;border-radius:10px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.12)">
+  <div style="background:linear-gradient(135deg,#1a0808,#0f0e0c);padding:28px;text-align:center;border-bottom:3px solid #8c1f1f">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#f57272;margin-bottom:8px">Crestechnologies IS Ltd · Crestville Properties</div>
+    <div style="font-size:22px;font-weight:700;color:#fff;font-family:Georgia,serif">TENANCY TERMINATED</div>
+  </div>
+  <div style="background:#faf8f4;padding:28px">
+    <p style="font-size:14px;color:#2c2c2a;margin:0 0 16px">Dear ${name},</p>
+    <div style="background:#fff0f0;border-left:4px solid #8c1f1f;padding:16px;border-radius:0 6px 6px 0;margin-bottom:20px">
+      <div style="font-weight:700;color:#8c1f1f;margin-bottom:8px">⚠ Formal Notice of Tenancy Termination</div>
+      <div style="font-size:13px;color:#6a1a1a;line-height:1.75">Your tenancy for <strong>${unit}</strong> expired on <strong>${fmtDate(rec.expiry)}</strong> and has been formally <strong>terminated</strong>. Your access to the Crestville Tenant Portal has been suspended.</div>
+    </div>
+    <p style="font-size:13px;color:#4a4440;line-height:1.75;margin:0 0 16px">Under <strong>Clause X</strong> of your tenancy agreement, you are required to vacate the property and surrender vacant possession to Crestechnologies IS Ltd. The unit is now listed as <strong>vacant</strong>.</p>
+    <p style="font-size:13px;color:#4a4440;line-height:1.75;margin:0 0 20px">If you believe this is in error or wish to discuss a renewal, please contact us immediately:</p>
+    <div style="background:#fff;border:1px solid #e0d8c8;border-radius:6px;padding:14px;font-size:12px;color:#8a7a60;line-height:1.9">
+      ✉ crestechnologies@outlook.com &nbsp;·&nbsp; enjanih@gmail.com<br>
+      📍 Victoria Estate #20, Ojodu, Ogun State, Nigeria
+    </div>
+  </div>
+  <div style="background:#0f0e0c;padding:14px 28px;text-align:center">
+    <div style="font-size:10px;color:#5a4e44">© 2026 Crestechnologies IS Ltd · RC 1643396</div>
+  </div>
+</div></body></html>`;
+  if(typeof window.sendCRSEmail === 'function') {
+    await window.sendCRSEmail(email, '[Crestville] TENANCY TERMINATED — ' + unit, html);
+    await window.sendCRSEmail(['crestechnologies@outlook.com','enjanih@gmail.com'], '[ADMIN] Tenant Terminated: ' + name + ' — ' + unit, html);
+  }
+}
+
+/* ── DAILY EMAIL ENGINE — fires for every tenant with ≤60 days left ── */
 const _sentRenewalAlerts = new Set(
   JSON.parse(localStorage.getItem('crs_sentAlerts_v1') || '[]')
 );
 function _markAlertSent(key) {
   _sentRenewalAlerts.add(key);
-  localStorage.setItem('crs_sentAlerts_v1',
-    JSON.stringify([..._sentRenewalAlerts]));
+  localStorage.setItem('crs_sentAlerts_v1', JSON.stringify([..._sentRenewalAlerts]));
 }
 
 async function checkAndSendRenewalEmails() {
-  // Admin only — checks all tenants in rentLogs
   if (!isAdmin) return;
   if (!rentLogs.length) return;
 
   const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = today.toISOString().slice(0,10);
+  const dailyAlerts = _getDailyAlerts();
 
   for (const rec of rentLogs) {
     if (!rec.tenantEmail || !rec.expiry) continue;
@@ -3273,176 +3579,102 @@ async function checkAndSendRenewalEmails() {
     const expD = new Date(rec.expiry); expD.setHours(0,0,0,0);
     const daysLeft = Math.round((expD - today) / 864e5);
 
-    // We send at exactly 60 days, 30 days, 14 days, 7 days, and 0 (expiry day)
-    const triggers = [60, 30, 14, 7, 0];
-    if (!triggers.includes(daysLeft)) continue;
+    // Daily emails from day 60 down to day 0
+    if (daysLeft > 60 || daysLeft < 0) continue;
 
-    // Unique key per tenant + days threshold — prevents re-sending today
-    const alertKey = `${rec.tenantEmail}_${daysLeft}d_${rec.expiry}`;
-    if (_sentRenewalAlerts.has(alertKey)) continue;
+    // Unique daily key — one email per tenant per day
+    const dailyKey = `${rec.tenantEmail}_${todayStr}`;
+    if (dailyAlerts[dailyKey]) continue;
 
     const tenantName = rec.tenant || rec.tenantEmail.split('@')[0];
     const unitLabel  = getPropertyLabel(rec.unitId || rec.unit);
-    const fmtDate    = d => new Date(d).toLocaleDateString('en-NG',
-                        {weekday:'long',day:'numeric',month:'long',year:'numeric'});
-    const fmtShort   = d => new Date(d).toLocaleDateString('en-NG',
-                        {day:'numeric',month:'long',year:'numeric'});
+    const fmtDate    = d => { try{ return new Date(d).toLocaleDateString('en-NG',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }catch(e){return d;} };
+    const fmtShort   = d => { try{ return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}); }catch(e){return d;} };
 
-    // ── CHOOSE EMAIL TONE BASED ON DAYS LEFT ───────────────────────────
-    let urgencyColour, urgencyLabel, bannerBg, intro, bodyText, ctaText, footerNote;
+    // Colour & tone by days remaining
+    let urgencyColour, urgencyLabel, bannerBg, bodyText, ctaText, footerNote;
 
-    if (daysLeft === 60) {
-      urgencyColour = '#c9960c'; urgencyLabel = 'RENEWAL NOTICE — 60 DAYS';
-      bannerBg = '#1a1410';
-      intro = `Dear ${tenantName},`;
-      bodyText = `
-        <p style="margin:0 0 14px">This is a formal reminder that your tenancy agreement for the above property will expire in <strong>60 days</strong>, on <strong>${fmtDate(rec.expiry)}</strong>.</p>
-        <p style="margin:0 0 14px">In accordance with your tenancy agreement, you are required to <strong>notify Crestechnologies IS Ltd of your intention to renew or vacate</strong> before this deadline. Failure to submit a renewal request through the tenant portal may result in forfeiture of your right to renew the tenancy at the current terms.</p>
-        <div style="background:#fff8e6;border-left:4px solid #c9960c;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0">
-          <div style="font-weight:700;color:#7a5a00;margin-bottom:6px">⏳ Action Required Within 30 Days</div>
-          <div style="font-size:13px;color:#5a4000;line-height:1.7">Log in to the Crestville Tenant Portal and click <strong>"Request Renewal"</strong> to formally indicate your intention to renew. Your landlord will review your request and confirm the new rent and tenure terms.</div>
-        </div>`;
-      ctaText = 'Submit Renewal Request Now';
-      footerNote = 'This is an automated 60-day tenancy renewal notice from Crestechnologies IS Ltd. Please do not ignore this message.';
-
-    } else if (daysLeft === 30) {
-      urgencyColour = '#e8822a'; urgencyLabel = 'URGENT — 30 DAYS TO RENEWAL DEADLINE';
-      bannerBg = '#1a1208';
-      intro = `Dear ${tenantName},`;
-      bodyText = `
-        <p style="margin:0 0 14px">Your tenancy is expiring in <strong>30 days</strong> on <strong>${fmtDate(rec.expiry)}</strong>.</p>
-        <p style="margin:0 0 14px">You have not yet submitted a renewal request through the tenant portal. <strong>Please act immediately.</strong></p>
-        <div style="background:#fff3e6;border-left:4px solid #e8822a;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0">
-          <div style="font-weight:700;color:#8a4a00;margin-bottom:6px">⚠ 30-Day Deadline Notice</div>
-          <div style="font-size:13px;color:#6a3800;line-height:1.7">Per the terms of your tenancy agreement, if a renewal request is not submitted and approved before the expiry date, you will be required to <strong>vacate the property</strong> and surrender vacant possession to the landlord on or before <strong>${fmtShort(rec.expiry)}</strong> in accordance with <strong>Clause X</strong> of your agreement.</div>
-        </div>`;
-      ctaText = 'Submit Renewal Request — 30 Days Left';
-      footerNote = 'This is your 30-day final reminder. If you have already submitted a request, please disregard this message.';
-
-    } else if (daysLeft === 14) {
-      urgencyColour = '#c0392b'; urgencyLabel = 'CRITICAL — 14 DAYS REMAINING';
-      bannerBg = '#1a0a08';
-      intro = `Dear ${tenantName},`;
-      bodyText = `
-        <p style="margin:0 0 14px">Your tenancy expires in <strong style="color:#c0392b">14 days</strong> on <strong>${fmtDate(rec.expiry)}</strong>. This is a critical notice.</p>
-        <div style="background:#fff0f0;border-left:4px solid #c0392b;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0">
-          <div style="font-weight:700;color:#8c1f1f;margin-bottom:8px">🚨 Immediate Action Required</div>
-          <div style="font-size:13px;color:#6a1a1a;line-height:1.7">
-            <strong>If you wish to renew:</strong> Log in to the portal immediately and submit a renewal request. Your landlord must receive and approve your request before your expiry date.<br><br>
-            <strong>If you do not intend to renew:</strong> Please confirm your vacating date in writing to crestechnologies@outlook.com and begin preparations to surrender the property in good condition.
-          </div>
-        </div>`;
-      ctaText = '🚨 Act Now — Submit Renewal or Vacating Notice';
-      footerNote = 'Non-compliance with this notice may result in legal action in accordance with your tenancy agreement.';
-
-    } else if (daysLeft === 7) {
-      urgencyColour = '#c0392b'; urgencyLabel = 'FINAL WARNING — 7 DAYS TO EXPIRY';
-      bannerBg = '#160606';
-      intro = `Dear ${tenantName},`;
-      bodyText = `
-        <p style="margin:0 0 14px">Your tenancy expires in <strong style="color:#c0392b">7 days</strong> on <strong>${fmtDate(rec.expiry)}</strong>.</p>
-        <div style="background:#fff0f0;border-left:4px solid #c0392b;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0">
-          <div style="font-weight:700;color:#8c1f1f;margin-bottom:8px">🚨 Final Warning</div>
-          <div style="font-size:13px;color:#6a1a1a;line-height:1.7">
-            If your renewal has not been <strong>submitted and approved</strong> before ${fmtShort(rec.expiry)}, you are legally required under <strong>Clause X</strong> of your tenancy agreement to vacate the property and surrender vacant possession to Crestechnologies IS Ltd on or before that date.<br><br>
-            Failure to vacate may result in legal proceedings and additional costs.
-          </div>
-        </div>`;
-      ctaText = 'Submit Renewal Request Immediately';
-      footerNote = 'This is your final 7-day warning. Contact crestechnologies@outlook.com urgently.';
-
-    } else { // daysLeft === 0
-      urgencyColour = '#8c1f1f'; urgencyLabel = 'TENANCY EXPIRES TODAY';
-      bannerBg = '#100404';
-      intro = `Dear ${tenantName},`;
-      bodyText = `
-        <p style="margin:0 0 14px">Your tenancy for <strong>${unitLabel}</strong> expires <strong>TODAY, ${fmtDate(rec.expiry)}</strong>.</p>
+    if (daysLeft === 0) {
+      urgencyColour='#8c1f1f'; urgencyLabel='TENANCY EXPIRES TODAY'; bannerBg='#100404';
+      bodyText=`<p style="margin:0 0 14px">Your tenancy for <strong>${unitLabel}</strong> expires <strong>TODAY, ${fmtDate(rec.expiry)}</strong>.</p>
         <div style="background:#fff0f0;border-left:4px solid #8c1f1f;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0">
           <div style="font-weight:700;color:#8c1f1f;margin-bottom:8px">⚠ Legal Notice — Clause X</div>
-          <div style="font-size:13px;color:#6a1a1a;line-height:1.7">
-            As per <strong>Clause X</strong> of your tenancy agreement, you are required to <strong>vacate the property and surrender vacant possession</strong> to Crestechnologies IS Ltd today, unless a renewal has been formally approved in writing by the landlord.<br><br>
-            If you wish to discuss a renewal, please contact the landlord immediately at <strong>crestechnologies@outlook.com</strong>.
-          </div>
+          <div style="font-size:13px;color:#6a1a1a;line-height:1.75">You are required to <strong>vacate and surrender vacant possession</strong> to Crestechnologies IS Ltd today unless a renewal is formally approved. Failure to do so may result in legal proceedings.</div>
         </div>`;
-      ctaText = 'Contact Landlord Immediately';
-      footerNote = 'This is a formal legal notice. Continued occupation without a valid renewed agreement may result in legal proceedings.';
+      ctaText='Contact Landlord Immediately'; footerNote='This is a formal legal notice. Portal access will be suspended after today.';
+    } else if (daysLeft <= 7) {
+      urgencyColour='#c0392b'; urgencyLabel=`FINAL WARNING — ${daysLeft} DAY${daysLeft===1?'':'S'} TO EXPIRY`; bannerBg='#160606';
+      bodyText=`<p style="margin:0 0 14px">Your tenancy expires in <strong style="color:#c0392b">${daysLeft} day${daysLeft===1?'':'s'}</strong> on <strong>${fmtDate(rec.expiry)}</strong>.</p>
+        <div style="background:#fff0f0;border-left:4px solid #c0392b;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0">
+          <div style="font-weight:700;color:#8c1f1f;margin-bottom:8px">🚨 Final Warning</div>
+          <div style="font-size:13px;color:#6a1a1a;line-height:1.75">Submit your renewal request or vacating notice immediately. Legal obligations under <strong>Clause X</strong> apply.</div>
+        </div>`;
+      ctaText='Submit Renewal Immediately'; footerNote='This is your final daily notice. Portal access will be suspended on expiry.';
+    } else if (daysLeft <= 14) {
+      urgencyColour='#c0392b'; urgencyLabel=`CRITICAL — ${daysLeft} DAYS REMAINING`; bannerBg='#1a0a08';
+      bodyText=`<p style="margin:0 0 14px">Your tenancy expires in <strong style="color:#c0392b">${daysLeft} days</strong> on <strong>${fmtDate(rec.expiry)}</strong>.</p>
+        <div style="background:#fff0f0;border-left:4px solid #c0392b;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0">
+          <div style="font-weight:700;color:#8c1f1f;margin-bottom:8px">🚨 Immediate Action Required</div>
+          <div style="font-size:13px;color:#6a1a1a;line-height:1.75">Log in to the portal and submit a renewal request today or confirm your vacating date in writing.</div>
+        </div>`;
+      ctaText='Act Now — Submit Renewal or Vacating Notice'; footerNote='Daily reminders will continue until your renewal is confirmed or tenancy expires.';
+    } else if (daysLeft <= 30) {
+      urgencyColour='#e8822a'; urgencyLabel=`URGENT — ${daysLeft} DAYS TO RENEWAL DEADLINE`; bannerBg='#1a1208';
+      bodyText=`<p style="margin:0 0 14px">Your tenancy is expiring in <strong>${daysLeft} days</strong> on <strong>${fmtDate(rec.expiry)}</strong>.</p>
+        <div style="background:#fff3e6;border-left:4px solid #e8822a;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0">
+          <div style="font-weight:700;color:#8a4a00;margin-bottom:6px">⚠ ${daysLeft}-Day Notice</div>
+          <div style="font-size:13px;color:#6a3800;line-height:1.7">Please log in to the tenant portal and submit your renewal request. If you intend to vacate, please notify us in writing at <strong>crestechnologies@outlook.com</strong>.</div>
+        </div>`;
+      ctaText=`Submit Renewal Request — ${daysLeft} Days Left`; footerNote='You will receive this reminder daily until your renewal is confirmed.';
+    } else {
+      urgencyColour='#c9960c'; urgencyLabel=`RENEWAL NOTICE — ${daysLeft} DAYS REMAINING`; bannerBg='#1a1410';
+      bodyText=`<p style="margin:0 0 14px">Your tenancy for <strong>${unitLabel}</strong> will expire in <strong>${daysLeft} days</strong> on <strong>${fmtDate(rec.expiry)}</strong>.</p>
+        <div style="background:#fff8e6;border-left:4px solid #c9960c;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0">
+          <div style="font-weight:700;color:#7a5a00;margin-bottom:6px">⏳ Action Required</div>
+          <div style="font-size:13px;color:#5a4000;line-height:1.7">Log in to the Crestville Tenant Portal and click <strong>"Request Renewal"</strong> to formally indicate your intention to renew.</div>
+        </div>`;
+      ctaText='Submit Renewal Request'; footerNote='You will receive daily reminders from 60 days before expiry.';
     }
 
-    // ── BUILD THE HTML EMAIL ────────────────────────────────────────────
-    const emailHtml = `<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/></head>
+    const emailHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/></head>
 <body style="margin:0;padding:0;background:#f0ebe1;font-family:Arial,sans-serif">
 <div style="max-width:600px;margin:24px auto;border-radius:10px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.12)">
-
-  <!-- HEADER -->
-  <div style="background:${bannerBg};padding:0">
-    <div style="background:linear-gradient(135deg,${bannerBg},#0f0e0c);padding:22px 28px;text-align:center;border-bottom:3px solid ${urgencyColour}">
-      <div style="font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:${urgencyColour};margin-bottom:8px">Crestechnologies IS Ltd · Crestville Properties</div>
-      <div style="font-size:20px;font-weight:700;color:#fff;font-family:Georgia,serif;letter-spacing:.02em">${urgencyLabel}</div>
-    </div>
+  <div style="background:linear-gradient(135deg,${bannerBg},#0f0e0c);padding:22px 28px;text-align:center;border-bottom:3px solid ${urgencyColour}">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:${urgencyColour};margin-bottom:8px">Crestechnologies IS Ltd · Crestville Properties</div>
+    <div style="font-size:20px;font-weight:700;color:#fff;font-family:Georgia,serif">${urgencyLabel}</div>
   </div>
-
-  <!-- PROPERTY BANNER -->
-  <div style="background:#1a1612;padding:14px 28px;display:flex;align-items:center;gap:16px;border-bottom:1px solid #2a2620">
-    <div style="flex:1">
-      <div style="font-size:10px;color:#9a8a6a;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px">Property</div>
-      <div style="font-size:15px;font-weight:700;color:#fff;font-family:Georgia,serif">${unitLabel}</div>
-      <div style="font-size:11px;color:${urgencyColour};font-weight:700;margin-top:4px">Expiry: ${fmtShort(rec.expiry)} &nbsp;·&nbsp; ${daysLeft === 0 ? 'TODAY' : daysLeft + ' days remaining'}</div>
-    </div>
-    <div style="text-align:right;flex-shrink:0">
-      <div style="font-size:10px;color:#9a8a6a;text-transform:uppercase;margin-bottom:2px">Annual Rent</div>
-      <div style="font-size:16px;font-weight:700;color:#c9960c;font-family:'Courier New',monospace">₦${Number(rec.amount||0).toLocaleString()}</div>
-    </div>
+  <div style="background:#1a1612;padding:14px 28px;border-bottom:1px solid #2a2620">
+    <div style="font-size:10px;color:#9a8a6a;text-transform:uppercase;margin-bottom:3px">Property</div>
+    <div style="font-size:15px;font-weight:700;color:#fff;font-family:Georgia,serif">${unitLabel}</div>
+    <div style="font-size:11px;color:${urgencyColour};font-weight:700;margin-top:4px">Expiry: ${fmtShort(rec.expiry)} · ${daysLeft === 0 ? 'TODAY' : daysLeft + ' days remaining'}</div>
   </div>
-
-  <!-- BODY -->
   <div style="background:#faf8f4;padding:26px 28px">
-    <p style="margin:0 0 16px;font-size:14px;color:#2c2c2a">${intro}</p>
+    <p style="margin:0 0 16px;font-size:14px;color:#2c2c2a">Dear ${tenantName},</p>
     <div style="font-size:14px;color:#4a4440;line-height:1.75">${bodyText}</div>
-
-    <!-- CTA BUTTON -->
     <div style="text-align:center;margin:24px 0 10px">
       <a href="https://enjanih-stack.github.io/crestville-portal/index.html"
-         style="display:inline-block;background:${urgencyColour};color:#fff;text-decoration:none;padding:13px 28px;border-radius:6px;font-weight:700;font-size:14px;letter-spacing:.03em">${ctaText} →</a>
+         style="display:inline-block;background:${urgencyColour};color:#fff;text-decoration:none;padding:13px 28px;border-radius:6px;font-weight:700;font-size:14px">${ctaText} →</a>
     </div>
-    <div style="text-align:center;font-size:12px;color:#9a8a6a;margin-bottom:20px">
-      Or visit: <a href="https://enjanih-stack.github.io/crestville-portal/index.html" style="color:${urgencyColour}">enjanih-stack.github.io/crestville-portal</a>
-    </div>
-
-    <!-- CONTACT -->
-    <div style="background:#fff;border:1px solid #e0d8c8;border-radius:6px;padding:14px 16px;font-size:12px;color:#8a7a60;line-height:1.8">
-      <strong style="color:#2c2c2a;display:block;margin-bottom:4px">Contact Crestechnologies IS Ltd</strong>
+    <div style="background:#fff;border:1px solid #e0d8c8;border-radius:6px;padding:14px;font-size:12px;color:#8a7a60;line-height:1.8">
+      <strong style="color:#2c2c2a;display:block;margin-bottom:4px">Crestechnologies IS Ltd</strong>
       ✉ crestechnologies@outlook.com &nbsp;·&nbsp; enjanih@gmail.com<br>
-      📍 Victoria Estate #20, Ojodu, Ogun State, Nigeria<br>
-      🌐 enjanih-stack.github.io/crestville-portal
+      📍 Victoria Estate #20, Ojodu, Ogun State, Nigeria
     </div>
   </div>
-
-  <!-- FOOTER -->
   <div style="background:#0f0e0c;padding:14px 28px;text-align:center">
-    <div style="font-size:11px;color:#7a6e62;line-height:1.7">${footerNote}</div>
-    <div style="font-size:10px;color:#5a4e44;margin-top:6px">© 2026 Crestechnologies IS Ltd · RC 1643396 · Crestville Properties</div>
+    <div style="font-size:11px;color:#7a6e62">${footerNote}</div>
+    <div style="font-size:10px;color:#5a4e44;margin-top:4px">© 2026 Crestechnologies IS Ltd · RC 1643396</div>
   </div>
-
-</div>
-`;
+</div></body></html>`;
 
     const subject = `[Crestville] ${urgencyLabel} — ${unitLabel}`;
 
-    // Send to tenant email
     if (typeof window.sendCRSEmail === 'function') {
       await window.sendCRSEmail(rec.tenantEmail, subject, emailHtml);
-      // Also CC admin on critical notices (≤ 14 days)
-      if (daysLeft <= 14) {
-        await window.sendCRSEmail(
-          ['crestechnologies@outlook.com', 'enjanih@gmail.com'],
-          `[ADMIN COPY] ${subject}`,
-          emailHtml
-        );
-      }
-      _markAlertSent(alertKey);
-      console.log(`✓ Renewal alert sent to ${rec.tenantEmail} — ${daysLeft} days`);
-      toast(`📧 Renewal reminder sent to ${rec.tenant || rec.tenantEmail}`, 4000);
+      if (daysLeft <= 7) await window.sendCRSEmail(['crestechnologies@outlook.com','enjanih@gmail.com'], '[ADMIN COPY] '+subject, emailHtml);
+      dailyAlerts[dailyKey] = todayStr;
+      _saveDailyAlerts(dailyAlerts);
+      toast(`📧 Daily reminder sent to ${rec.tenant||rec.tenantEmail}`);
     }
   }
 }
@@ -3457,6 +3689,8 @@ async function sendAllRenewalReminders() {
 
   if (!count) { toast('No tenants within 60 days of expiry'); return; }
   if (!confirm(`Send renewal reminder emails to ${count} tenant(s) expiring within 60 days?`)) return;
+
+
 
   // Temporarily clear sent cache so all get resent
   _sentRenewalAlerts.clear();
@@ -6334,7 +6568,26 @@ var _origBootApp = typeof _bootApp === 'function' ? _bootApp : null;
 </div>
 
 
-<!-- ═══ SWITCH ROLE MODAL ═══ -->
+<!-- ═══ TERMINATION OVERLAY ═══ -->
+<div id="terminationOverlay">
+  <div class="termination-card">
+    <div class="termination-card-head">
+      <div class="termination-card-icon">🔒</div>
+      <div class="termination-card-title">Tenancy Terminated</div>
+      <div class="termination-card-sub">Your access to the Crestville Tenant Portal has been suspended</div>
+    </div>
+    <div class="termination-card-body">
+      <p>Your tenancy agreement has <strong>expired and been terminated</strong>. Under <strong>Clause X</strong> of your tenancy agreement, you are required to have vacated the property and surrendered vacant possession to Crestechnologies IS Ltd.</p>
+      <p>Portal access is suspended until your tenancy is formally renewed or an administrator reinstates your account.</p>
+      <div class="termination-contact">
+        <strong style="color:#e8d0d0;display:block;margin-bottom:6px">Contact Crestechnologies IS Ltd to reinstate access</strong>
+        ✉ <a href="mailto:crestechnologies@outlook.com">crestechnologies@outlook.com</a><br>
+        ✉ <a href="mailto:enjanih@gmail.com">enjanih@gmail.com</a><br>
+        📍 Victoria Estate #20, Ojodu, Ogun State, Nigeria
+      </div>
+    </div>
+  </div>
+</div>
 <div id="switchRoleOverlay">
   <div class="sr-card">
     <div class="sr-head">
