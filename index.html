@@ -518,6 +518,17 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .imp-map-sel:focus { outline: 1px solid var(--gold); }
 .imp-map-sel.matched { background-color: rgba(26,92,46,.25); }
 .imp-map-sel.unmatched { background-color: rgba(180,83,9,.15); }
+.imp-default-wrap { display:none; grid-column:3; }
+.imp-default-wrap.show { display:block; }
+.imp-default-input {
+  width:100%; padding:6px 10px;
+  background:#1a1410; border:1px dashed rgba(201,150,12,.4);
+  border-radius:0 0 6px 6px; color:#e8b830;
+  font-family:'DM Sans',sans-serif; font-size:.72rem;
+  outline:none; border-top:none;
+}
+.imp-default-input::placeholder { color:#5a4a38; }
+.imp-map-cell { display:contents; }
 /* Stats strip */
 .imp-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
 .imp-stat { background: #0f0e0c; border: 1px solid #2a2620; border-radius: 8px; padding: 10px 16px; text-align: center; min-width: 80px; }
@@ -4298,6 +4309,7 @@ const _IMP_FIELDS = [
 let _impRawHeaders = [];
 let _impRawRows    = [];
 let _impColMap     = {};  // field.key → raw header string
+let _impDefaultValues = {}; // field.key → manual default value (for skipped columns)
 let _impMapped     = [];  // transformed records
 
 function _impNorm(s) {
@@ -4369,45 +4381,107 @@ function smartImportFile(file) {
 
 function _impBuildMappingUI() {
   const grid = document.getElementById('impMapGrid');
-  grid.innerHTML = `<div class="imp-map-head">CRS Field</div><div class="imp-map-head c">→</div><div class="imp-map-head">Your Column</div>`;
+  // 4-column grid: CRS Field | → | Your Column dropdown | Default value input
+  grid.style.gridTemplateColumns = '1fr 28px 1fr';
+  grid.innerHTML = `
+    <div class="imp-map-head">CRS Field</div>
+    <div class="imp-map-head c">→</div>
+    <div class="imp-map-head">Your Column &nbsp;<span style="color:#5a4a38;font-weight:400;font-size:.62rem">(or type a default below)</span></div>`;
+
   const unmapped = _IMP_FIELDS.filter(f=>f.required && !_impColMap[f.key]);
   const warn = document.getElementById('impMapWarn');
   if(unmapped.length) {
     document.getElementById('impMapWarnText').textContent = 'Could not auto-detect: ' + unmapped.map(f=>f.label).join(', ') + '. Please set manually.';
     warn.style.display='flex';
   } else { warn.style.display='none'; }
+
   for(const f of _IMP_FIELDS) {
+    // Label cell
     const lbl = document.createElement('div'); lbl.className='imp-map-lbl';
     lbl.innerHTML = f.label + (f.required?'<span class="req-dot"></span>':'');
+
+    // Arrow cell
     const arr = document.createElement('div'); arr.className='imp-map-arr'; arr.textContent='→';
-    const sel = document.createElement('select'); sel.className='imp-map-sel '+((_impColMap[f.key])?'matched':'unmatched');
-    sel.id='impMap_'+f.key;
-    sel.innerHTML=`<option value="">— skip —</option>`;
+
+    // Right cell — select + optional default input stacked
+    const rightCell = document.createElement('div');
+    rightCell.style.cssText = 'display:flex;flex-direction:column;border-bottom:1px solid #2a2620;';
+
+    const sel = document.createElement('select');
+    sel.className = 'imp-map-sel ' + (_impColMap[f.key] ? 'matched' : 'unmatched');
+    sel.id = 'impMap_' + f.key;
+    sel.style.borderRadius = _impColMap[f.key] ? '0 6px 6px 0' : '0 6px 0 0';
+
+    // Add "— skip —" then "✏ Type a default value…" sentinel, then columns
+    sel.innerHTML = `<option value="">— skip —</option><option value="__DEFAULT__" style="color:#c9960c">✏ Type a default value below…</option>`;
     _impRawHeaders.forEach(h=>{
-      const o=document.createElement('option'); o.value=h; o.textContent=h;
-      if(h===_impColMap[f.key]) o.selected=true;
+      const o = document.createElement('option'); o.value=h; o.textContent=h;
+      if(h === _impColMap[f.key]) o.selected = true;
       sel.appendChild(o);
     });
-    sel.onchange=()=>{ _impColMap[f.key]=sel.value; sel.className='imp-map-sel '+(sel.value?'matched':'unmatched'); };
-    grid.appendChild(lbl); grid.appendChild(arr); grid.appendChild(sel);
+
+    // Default value input (shown when "type a default" is selected or field skipped with existing default)
+    const defInput = document.createElement('input');
+    defInput.type = 'text';
+    defInput.className = 'imp-default-input';
+    defInput.id = 'impDefault_' + f.key;
+    defInput.placeholder = '✏ Type default for all rows — e.g. +234 801 234 5678';
+    defInput.value = _impDefaultValues[f.key] || '';
+    const showDefault = !_impColMap[f.key] && _impDefaultValues[f.key];
+    defInput.style.display = showDefault ? 'block' : 'none';
+    if(showDefault) sel.style.borderRadius = '0 6px 0 0';
+
+    defInput.addEventListener('input', () => {
+      _impDefaultValues[f.key] = defInput.value.trim();
+    });
+
+    sel.addEventListener('change', () => {
+      if(sel.value === '__DEFAULT__') {
+        _impColMap[f.key] = '';
+        sel.className = 'imp-map-sel unmatched';
+        sel.style.borderRadius = '0 6px 0 0';
+        defInput.style.display = 'block';
+        defInput.focus();
+      } else {
+        _impColMap[f.key] = sel.value;
+        sel.className = 'imp-map-sel ' + (sel.value ? 'matched' : 'unmatched');
+        sel.style.borderRadius = sel.value ? '0 6px 6px 0' : '0 6px 0 0';
+        defInput.style.display = sel.value ? 'none' : (defInput.value ? 'block' : 'none');
+      }
+    });
+
+    rightCell.appendChild(sel);
+    rightCell.appendChild(defInput);
+    grid.appendChild(lbl); grid.appendChild(arr); grid.appendChild(rightCell);
   }
 }
 
 function smartApplyMapping() {
-  // Read final selections
-  for(const f of _IMP_FIELDS){ const s=document.getElementById('impMap_'+f.key); if(s) _impColMap[f.key]=s.value; }
-  const missing = _IMP_FIELDS.filter(f=>f.required&&!_impColMap[f.key]);
-  if(missing.length){ toast('Map required fields: '+missing.map(f=>f.label).join(', ')); return; }
-  const idx={}; _impRawHeaders.forEach((h,i)=>idx[h]=i);
-  _impMapped = _impRawRows.map((row,ri)=>{
-    const get=k=>{ const h=_impColMap[k]; return h?(row[idx[h]]||'').trim():''; };
-    const obj={_row:ri+2};
-    for(const f of _IMP_FIELDS) obj[f.key]=get(f.key);
+  // Read final selections and defaults
+  for(const f of _IMP_FIELDS) {
+    const s = document.getElementById('impMap_'+f.key);
+    const d = document.getElementById('impDefault_'+f.key);
+    if(s && s.value !== '__DEFAULT__') _impColMap[f.key] = s.value;
+    if(d) _impDefaultValues[f.key] = d.value.trim();
+  }
+  const missing = _IMP_FIELDS.filter(f => f.required && !_impColMap[f.key] && !_impDefaultValues[f.key]);
+  if(missing.length){ notify('error','Missing Required Fields','Please map or provide a default for:',missing.map(f=>f.label)); return; }
+
+  const idx = {}; _impRawHeaders.forEach((h,i) => idx[h]=i);
+  _impMapped = _impRawRows.map((row, ri) => {
+    // get from CSV column, fallback to typed default
+    const get = k => {
+      const h = _impColMap[k];
+      const fromCSV = h ? (row[idx[h]]||'').trim() : '';
+      return fromCSV || _impDefaultValues[k] || '';
+    };
+    const obj = {_row: ri+2};
+    for(const f of _IMP_FIELDS) obj[f.key] = get(f.key);
     return obj;
-  }).filter(r=>r.unit||r.tenant);
+  }).filter(r => r.unit || r.tenant);
   _impBuildPreview();
   _impShowStage(3);
-  document.getElementById('impStage3').scrollIntoView({behavior:'smooth',block:'nearest'});
+  document.getElementById('impStage3').scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
 function _impBuildPreview() {
@@ -4549,7 +4623,7 @@ function smartDownloadCSV() {
 }
 
 function resetSmartImport() {
-  _impRawHeaders=[];_impRawRows=[];_impColMap={};_impMapped=[];
+  _impRawHeaders=[];_impRawRows=[];_impColMap={};_impMapped=[];_impDefaultValues={};
   const fi=document.getElementById('csvFileInput'); if(fi) fi.value='';
   document.getElementById('impFilePill').style.display='none';
   document.getElementById('importLog').innerHTML='';
@@ -4571,7 +4645,7 @@ function setImportProgress(pct){document.getElementById('importProgressFill').st
    Reuses _IMP_FIELDS, _impNorm, _impAutoDetect, _impParseCSV
    but with separate state + rm-prefixed element IDs
 ════════════════════════════════════════════════════ */
-let _rmRawHeaders=[], _rmRawRows=[], _rmColMap={}, _rmMapped=[];
+let _rmRawHeaders=[], _rmRawRows=[], _rmColMap={}, _rmMapped=[], _rmDefaultValues={};
 
 function toggleRmImport() {
   const panel = document.getElementById('rmImportPanel');
@@ -4608,33 +4682,87 @@ function rmSmartImportFile(file) {
 }
 
 function _rmBuildMappingUI() {
-  const grid=document.getElementById('rmImpMapGrid');
-  grid.innerHTML=`<div class="imp-map-head">CRS Field</div><div class="imp-map-head c">→</div><div class="imp-map-head">Your Column</div>`;
-  const unmapped=_IMP_FIELDS.filter(f=>f.required&&!_rmColMap[f.key]);
-  const warn=document.getElementById('rmImpMapWarn');
-  if(unmapped.length){document.getElementById('rmImpMapWarnText').textContent='Could not auto-detect: '+unmapped.map(f=>f.label).join(', ')+'. Please set manually.';warn.style.display='flex';}
-  else warn.style.display='none';
-  for(const f of _IMP_FIELDS){
-    const lbl=document.createElement('div');lbl.className='imp-map-lbl';
-    lbl.innerHTML=f.label+(f.required?'<span class="req-dot"></span>':'');
-    const arr=document.createElement('div');arr.className='imp-map-arr';arr.textContent='→';
-    const sel=document.createElement('select');sel.className='imp-map-sel '+((_rmColMap[f.key])?'matched':'unmatched');
-    sel.id='rmImpMap_'+f.key;
-    sel.innerHTML=`<option value="">— skip —</option>`;
-    _rmRawHeaders.forEach(h=>{const o=document.createElement('option');o.value=h;o.textContent=h;if(h===_rmColMap[f.key])o.selected=true;sel.appendChild(o);});
-    sel.onchange=()=>{_rmColMap[f.key]=sel.value;sel.className='imp-map-sel '+(sel.value?'matched':'unmatched');};
-    grid.appendChild(lbl);grid.appendChild(arr);grid.appendChild(sel);
+  const grid = document.getElementById('rmImpMapGrid');
+  grid.style.gridTemplateColumns = '1fr 28px 1fr';
+  grid.innerHTML = `
+    <div class="imp-map-head">CRS Field</div>
+    <div class="imp-map-head c">→</div>
+    <div class="imp-map-head">Your Column &nbsp;<span style="color:#5a4a38;font-weight:400;font-size:.62rem">(or type a default below)</span></div>`;
+
+  const unmapped = _IMP_FIELDS.filter(f=>f.required&&!_rmColMap[f.key]);
+  const warn = document.getElementById('rmImpMapWarn');
+  if(unmapped.length) {
+    document.getElementById('rmImpMapWarnText').textContent = 'Could not auto-detect: '+unmapped.map(f=>f.label).join(', ')+'. Please set manually.';
+    warn.style.display='flex';
+  } else warn.style.display='none';
+
+  for(const f of _IMP_FIELDS) {
+    const lbl = document.createElement('div'); lbl.className='imp-map-lbl';
+    lbl.innerHTML = f.label+(f.required?'<span class="req-dot"></span>':'');
+    const arr = document.createElement('div'); arr.className='imp-map-arr'; arr.textContent='→';
+
+    const rightCell = document.createElement('div');
+    rightCell.style.cssText = 'display:flex;flex-direction:column;border-bottom:1px solid #2a2620;';
+
+    const sel = document.createElement('select');
+    sel.className = 'imp-map-sel '+(_rmColMap[f.key]?'matched':'unmatched');
+    sel.id = 'rmImpMap_'+f.key;
+    sel.style.borderRadius = _rmColMap[f.key] ? '0 6px 6px 0' : '0 6px 0 0';
+    sel.innerHTML = `<option value="">— skip —</option><option value="__DEFAULT__" style="color:#c9960c">✏ Type a default value below…</option>`;
+    _rmRawHeaders.forEach(h=>{
+      const o=document.createElement('option'); o.value=h; o.textContent=h;
+      if(h===_rmColMap[f.key]) o.selected=true;
+      sel.appendChild(o);
+    });
+
+    const defInput = document.createElement('input');
+    defInput.type='text'; defInput.className='imp-default-input';
+    defInput.id = 'rmImpDefault_'+f.key;
+    defInput.placeholder = '✏ Type default for all rows…';
+    defInput.value = _rmDefaultValues[f.key] || '';
+    const showDef = !_rmColMap[f.key] && _rmDefaultValues[f.key];
+    defInput.style.display = showDef ? 'block' : 'none';
+    defInput.addEventListener('input', ()=>{ _rmDefaultValues[f.key]=defInput.value.trim(); });
+
+    sel.addEventListener('change', ()=>{
+      if(sel.value==='__DEFAULT__') {
+        _rmColMap[f.key]='';
+        sel.className='imp-map-sel unmatched';
+        sel.style.borderRadius='0 6px 0 0';
+        defInput.style.display='block'; defInput.focus();
+      } else {
+        _rmColMap[f.key]=sel.value;
+        sel.className='imp-map-sel '+(sel.value?'matched':'unmatched');
+        sel.style.borderRadius=sel.value?'0 6px 6px 0':'0 6px 0 0';
+        defInput.style.display=sel.value?'none':(defInput.value?'block':'none');
+      }
+    });
+
+    rightCell.appendChild(sel); rightCell.appendChild(defInput);
+    grid.appendChild(lbl); grid.appendChild(arr); grid.appendChild(rightCell);
   }
 }
 
 function rmSmartApplyMapping() {
-  for(const f of _IMP_FIELDS){const s=document.getElementById('rmImpMap_'+f.key);if(s)_rmColMap[f.key]=s.value;}
-  const missing=_IMP_FIELDS.filter(f=>f.required&&!_rmColMap[f.key]);
-  if(missing.length){toast('Map required fields: '+missing.map(f=>f.label).join(', '));return;}
-  const idx={};_rmRawHeaders.forEach((h,i)=>idx[h]=i);
+  for(const f of _IMP_FIELDS) {
+    const s=document.getElementById('rmImpMap_'+f.key);
+    const d=document.getElementById('rmImpDefault_'+f.key);
+    if(s && s.value!=='__DEFAULT__') _rmColMap[f.key]=s.value;
+    if(d) _rmDefaultValues[f.key]=d.value.trim();
+  }
+  const missing=_IMP_FIELDS.filter(f=>f.required&&!_rmColMap[f.key]&&!_rmDefaultValues[f.key]);
+  if(missing.length){ notify('error','Missing Required Fields','Please map or provide a default for:',missing.map(f=>f.label)); return; }
+
+  const idx={}; _rmRawHeaders.forEach((h,i)=>idx[h]=i);
   _rmMapped=_rmRawRows.map((row,ri)=>{
-    const get=k=>{const h=_rmColMap[k];return h?(row[idx[h]]||'').trim():'';};
-    const obj={_row:ri+2};for(const f of _IMP_FIELDS)obj[f.key]=get(f.key);return obj;
+    const get=k=>{
+      const h=_rmColMap[k];
+      const fromCSV=h?(row[idx[h]]||'').trim():'';
+      return fromCSV||_rmDefaultValues[k]||'';
+    };
+    const obj={_row:ri+2};
+    for(const f of _IMP_FIELDS) obj[f.key]=get(f.key);
+    return obj;
   }).filter(r=>r.unit||r.tenant);
   // Build preview
   const cols=['unit','tenant','tenantEmail','amount','start','expiry','vacancy'];
@@ -4747,7 +4875,7 @@ function rmSmartDownloadCSV(){
 }
 
 function rmResetImport(){
-  _rmRawHeaders=[];_rmRawRows=[];_rmColMap={};_rmMapped=[];
+  _rmRawHeaders=[];_rmRawRows=[];_rmColMap={};_rmMapped=[];_rmDefaultValues={};
   const fi=document.getElementById('rmCsvFileInput');if(fi)fi.value='';
   document.getElementById('rmImpFilePill').style.display='none';
   document.getElementById('rmImportLog').innerHTML='';
