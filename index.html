@@ -1515,12 +1515,106 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-gold" onclick="openRentModal()">+ Add Record</button>
             <button class="btn btn-blue" onclick="sendAllRenewalReminders()" title="Send renewal reminders to all tenants within 60 days of expiry">📧 Send Reminders</button>
+            <button class="btn btn-outline" onclick="toggleRmImport()" id="rmImportToggleBtn">⬆ Import CSV</button>
             <button class="btn btn-outline" onclick="syncToCloud()">☁️ Sync</button>
             <button class="btn btn-blue btn-sm" onclick="pullFromCloud()">⬇ Pull</button>
             <button class="btn btn-outline" onclick="exportAllCSV()" style="background:rgba(26,92,46,.08);border-color:rgba(26,92,46,.3);color:var(--green);font-size:.8rem">⬆ Export CSV</button>
           </div>
         </div>
         <div class="page-body">
+
+          <!-- ── INLINE IMPORT PANEL (collapsed by default) ── -->
+          <div id="rmImportPanel" style="display:none;margin-bottom:18px">
+            <div class="import-panel">
+              <h3>📤 Mass Import — Update Rent Records</h3>
+              <p>Upload any CSV or spreadsheet export. Columns are auto-detected regardless of header naming. Existing records with matching unit IDs are updated; new units are added.</p>
+
+              <!-- Stage 1: Drop zone -->
+              <div class="imp-stage on" id="rmImpStage1">
+                <div class="drop-zone" id="rmCsvDropZone">
+                  <input type="file" id="rmCsvFileInput" accept=".csv,.tsv,.txt" onchange="rmSmartImportFile(this.files[0])"/>
+                  <span class="drop-zone-icon">📊</span>
+                  <div class="drop-zone-label">Drop CSV file here or click to browse</div>
+                  <div class="drop-zone-sub">Any header format · Max 5 MB · UTF-8</div>
+                </div>
+                <div class="imp-file-pill" id="rmImpFilePill" style="display:none">
+                  <span>📎</span>
+                  <span class="imp-file-pill-name" id="rmImpFileName">—</span>
+                  <span class="imp-file-pill-meta" id="rmImpFileMeta">—</span>
+                  <button class="imp-file-pill-clear" onclick="rmResetImport()">✕</button>
+                </div>
+                <div class="import-progress" id="rmImportProgress" style="margin-top:10px">
+                  <div class="import-progress-bar"><div class="import-progress-fill" id="rmImportProgressFill" style="width:0%"></div></div>
+                </div>
+              </div>
+
+              <!-- Stage 2: Column mapping -->
+              <div class="imp-stage" id="rmImpStage2">
+                <div class="imp-divider"></div>
+                <div class="imp-step-head"><div class="imp-step-num">2</div> Confirm Column Mapping</div>
+                <div class="imp-alert imp-alert-warn" id="rmImpMapWarn" style="display:none">
+                  <span>⚠️</span><span id="rmImpMapWarnText">—</span>
+                </div>
+                <p style="font-size:.74rem;color:#9a8a6a;margin-bottom:10px">Auto-detected below. Adjust any incorrect mappings. <span style="color:var(--gold)">●</span> = required.</p>
+                <div class="imp-map-grid" id="rmImpMapGrid">
+                  <div class="imp-map-head">CRS Field</div>
+                  <div class="imp-map-head c">→</div>
+                  <div class="imp-map-head">Your Column</div>
+                </div>
+                <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+                  <button class="btn btn-gold" onclick="rmSmartApplyMapping()">✓ Apply &amp; Preview</button>
+                  <button class="btn btn-outline" onclick="rmResetImport()">← Start Over</button>
+                </div>
+              </div>
+
+              <!-- Stage 3: Preview -->
+              <div class="imp-stage" id="rmImpStage3">
+                <div class="imp-divider"></div>
+                <div class="imp-step-head"><div class="imp-step-num">3</div> Preview &amp; Validate</div>
+                <div class="imp-stats" id="rmImpStats"></div>
+                <div class="imp-alert imp-alert-ok" id="rmImpAlertOk" style="display:none"><span>✅</span><span id="rmImpAlertOkText">—</span></div>
+                <div class="imp-alert imp-alert-warn" id="rmImpAlertWarn" style="display:none"><span>⚠️</span><span id="rmImpAlertWarnText">—</span></div>
+                <div class="imp-table-wrap">
+                  <table class="imp-table">
+                    <thead id="rmImpPreviewHead"></thead>
+                    <tbody id="rmImpPreviewBody"></tbody>
+                  </table>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <button class="btn btn-gold" onclick="rmSmartDoImport()">⬆ Import &amp; Update Records</button>
+                  <button class="btn btn-outline" onclick="rmSmartDownloadCSV()">⬇ Download Mapped CSV</button>
+                  <button class="btn btn-outline" onclick="rmResetImport()">✕ Cancel</button>
+                </div>
+              </div>
+
+              <!-- Stage 4: Done -->
+              <div class="imp-stage" id="rmImpStage4">
+                <div class="imp-divider"></div>
+                <div class="imp-step-head"><div class="imp-step-num">4</div> Import Complete</div>
+                <div class="imp-alert imp-alert-ok"><span>✅</span><span id="rmImpDoneSummary">—</span></div>
+                <div class="import-log" id="rmImportLog" style="margin-top:10px"></div>
+                <div class="import-summary" id="rmImportSummary" style="margin-top:12px">
+                  <div class="is-grid">
+                    <div class="is-item"><div class="is-num" id="rmIsTotal">0</div><div class="is-lbl">Rows processed</div></div>
+                    <div class="is-item"><div class="is-num" id="rmIsAdded">0</div><div class="is-lbl">Records added</div></div>
+                    <div class="is-item"><div class="is-num" id="rmIsUpdated">0</div><div class="is-lbl">Updated</div></div>
+                    <div class="is-item"><div class="is-num" id="rmIsSkipped">0</div><div class="is-lbl">Skipped</div></div>
+                  </div>
+                </div>
+                <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+                  <button class="btn btn-gold" onclick="document.getElementById('rmImportPanel').style.display='none';document.getElementById('rmImportToggleBtn').textContent='⬆ Import CSV';">✓ Done — Close Panel</button>
+                  <button class="btn btn-outline" onclick="rmResetImport()">Import Another File</button>
+                </div>
+              </div>
+
+              <div style="margin-top:14px;font-size:.7rem;color:#5a5248;line-height:1.7">
+                <strong style="color:#9a8a6a">Required:</strong> Unit, Tenant, Amount &nbsp;·&nbsp;
+                <strong style="color:#9a8a6a">Optional:</strong> Address_Location, Email, Phone, Tenancy_Start_Date, Tenancy_Expiry_Date, vacancy, New_Rent, Last_Payment_Date, NIN, Contract_Name, Notes &nbsp;·&nbsp;
+                <span style="color:#3a3428">&#9432; Any column naming style accepted automatically</span>
+              </div>
+            </div>
+          </div>
+
           <div class="search-row">
             <input class="search-input" placeholder="🔍 Search tenant, unit…" id="rmSearch" oninput="renderRentManager()"/>
             <select class="filter-select" id="rmFilter" onchange="renderRentManager()">
@@ -1887,7 +1981,131 @@ const PROPERTIES = [{"id": "OJ-1A", "label": "2BDR Flat 1A", "location": "11 Jib
 const CLOUD_URL = "https://script.google.com/macros/s/AKfycbw_T79TJ60R0bLXe2x-phevLuwYYQwrGQAIjQ3yjtuSadQze09_28iX15H7qxxbDpjl/exec";
 const ADMIN_EMAILS = ['enjanih@gmail.com','crestechnologies@outlook.com','crestiton@gmail.com'];
 
+/* ═══════════════════════════════════════════════════════════════
+   UNIFIED DATA LAYER
+   rentLogs is the SINGLE SOURCE OF TRUTH for all tenant data.
+   Always loaded fresh from localStorage so any import (Rent Manager
+   or Properties page) is immediately visible everywhere.
+   Call _refreshRentLogs() any time you need the latest snapshot.
+═══════════════════════════════════════════════════════════════ */
 let rentLogs = JSON.parse(localStorage.getItem('rentData_CRS_v3')) || [];
+
+function _refreshRentLogs() {
+  const stored = JSON.parse(localStorage.getItem('rentData_CRS_v3') || '[]');
+  // Merge: stored entries win on id conflict (most recently saved = truth)
+  if (stored.length) {
+    const map = {};
+    rentLogs.forEach(r => { if(r.id) map[r.id] = r; });
+    stored.forEach(r => { if(r.id) map[r.id] = r; }); // stored overrides
+    rentLogs = Object.values(map);
+    // Also include any stored entries without ids
+    stored.filter(r => !r.id).forEach(r => {
+      if(!rentLogs.some(e => e.unit === r.unit && e.tenant === r.tenant)) rentLogs.push(r);
+    });
+  }
+  return rentLogs;
+}
+
+/* saveLocal is defined in the unified data layer above */
+
+/* Normalise a rentLogs record field name — handles both old field names
+   (tenant, tenantEmail, tenantPhone, tenantNIN, start, expiry, unitId)
+   and new CSV import names (Tenant, Email, Phone, NIN, Tenancy_Start_Date etc.)
+   Returns a unified object regardless of which importer created it.       */
+function _normaliseRecord(r) {
+  if (!r) return null;
+  return {
+    id:           r.id || '',
+    unitId:       r.unitId || r.Unit || r.unit || '',
+    unit:         r.unit  || r.Unit  || r.unitId || '',
+    location:     r.location || r.Address_Location || '',
+    city:         r.city || '',
+    type:         r.type  || r.Use   || 'Residential',
+    tenant:       r.tenant || r.Tenant || r.contractName || r.Contract_Name || '',
+    contractName: r.contractName || r.Contract_Name || r.tenant || r.Tenant || '',
+    tenantEmail:  r.tenantEmail  || r.Email  || '',
+    tenantPhone:  r.tenantPhone  || r.Phone  || '',
+    tenantNIN:    r.tenantNIN    || r.NIN    || '',
+    amount:       r.amount  || r.Amount  || '',
+    newRent:      r.newRent || r.New_Rent || '',
+    start:        r.start   || r.Tenancy_Start_Date  || '',
+    expiry:       r.expiry  || r.Tenancy_Expiry_Date || '',
+    lastPayment:  r.lastPayment || r.Last_Payment_Date || '',
+    vacancy:      r.vacancy || r.vacancy || 'occupied',
+    notes:        r.notes   || r.Notes  || '',
+    importedAt:   r.importedAt || '',
+    updatedAt:    r.updatedAt  || ''
+  };
+}
+
+/* Unified tenant lookup — works regardless of which importer populated the record.
+   Used by login verification, tenant dashboard, all pages.
+   Returns a normalised record or null.                                           */
+function _findTenantRecord(emailInput, nameInput) {
+  _refreshRentLogs(); // always use latest data
+  const strip = n => (n||'').toLowerCase()
+    .replace(/^(mr\.?|mrs\.?|ms\.?|dr\.?|prof\.?)\s+/i,'').trim();
+  const normEmail = (emailInput||'').toLowerCase().trim();
+  const normName  = strip(nameInput);
+
+  // Pass 1 — strict: email + name both match
+  let match = rentLogs.find(r => {
+    const n = _normaliseRecord(r);
+    const rEmail = n.tenantEmail.toLowerCase();
+    const rName  = strip(n.tenant);
+    const rCon   = strip(n.contractName);
+    const emailOk = normEmail && (rEmail === normEmail);
+    const nameOk  = normName  && (
+      rName === normName || rCon === normName ||
+      rName.includes(normName) || normName.includes(rName) ||
+      rCon.includes(normName)  || normName.includes(rCon)  ||
+      rName.split(' ').filter(w=>w.length>2).some(w=>normName.includes(w)) ||
+      rCon.split(' ').filter(w=>w.length>2).some(w=>normName.includes(w))
+    );
+    return emailOk && nameOk;
+  });
+  if (match) return { record: _normaliseRecord(match), confidence: 'strict', raw: match };
+
+  // Pass 2 — email-only fallback
+  if (normEmail) {
+    match = rentLogs.find(r => {
+      const n = _normaliseRecord(r);
+      return n.tenantEmail.toLowerCase() === normEmail;
+    });
+    if (match) return { record: _normaliseRecord(match), confidence: 'email_only', raw: match };
+  }
+
+  // Pass 3 — name-only fallback (for records with no email yet)
+  if (normName) {
+    match = rentLogs.find(r => {
+      const n = _normaliseRecord(r);
+      const rName = strip(n.tenant); const rCon = strip(n.contractName);
+      return rName === normName || rCon === normName ||
+        rName.split(' ').filter(w=>w.length>3).some(w=>normName.includes(w));
+    });
+    if (match) return { record: _normaliseRecord(match), confidence: 'name_only', raw: match };
+  }
+
+  return null;
+}
+
+/* Get a single tenant's record by email — used across all pages */
+function _getTenantByEmail(email) {
+  _refreshRentLogs();
+  const normEmail = (email||'').toLowerCase().trim();
+  const raw = rentLogs.find(r => (_normaliseRecord(r).tenantEmail||'').toLowerCase() === normEmail);
+  return raw ? _normaliseRecord(raw) : null;
+}
+
+/* Get a record by unitId — used by Properties, Dashboard, etc. */
+function _getRecordByUnit(unitId) {
+  _refreshRentLogs();
+  return rentLogs.find(r => {
+    const n = _normaliseRecord(r);
+    return n.unitId === unitId || n.unit === unitId;
+  }) || null;
+}
+
 let currentUser = null;
 let isAdmin = false;
 let chartInstance = null;
@@ -2164,55 +2382,41 @@ async function continueWithRole() {
       return;
     }
 
-    const strip = n => (n||'').toLowerCase().replace(/^(mr\.?|mrs\.?|ms\.?|dr\.?|prof\.?)\s+/i,'').trim();
-    const nameLower = strip(inputName);
+    // Always use the freshest data — pulls from localStorage
+    const result = _findTenantRecord(inputEmail, inputName);
 
-    // Match: STRICT email + name match
-    let match = rentLogs.find(function(r) {
-      const rEmail    = (r.tenantEmail||'').toLowerCase();
-      const rName     = strip(r.tenant);
-      const rContract = strip(r.contractName||r.tenant);
-      const emailMatch = rEmail === inputEmail || rEmail === email;
-      const nameMatch  = rName === nameLower || rContract === nameLower
-        || rName.includes(nameLower) || nameLower.includes(rName)
-        || rContract.includes(nameLower) || nameLower.includes(rContract)
-        || rName.split(' ').filter(w=>w.length>3).some(w => nameLower.includes(w));
-      return emailMatch && nameMatch;
-    });
-
-    // Fallback: email-only match (tenant may have different name spelling)
-    if (!match) {
-      match = rentLogs.find(function(r) {
-        return (r.tenantEmail||'').toLowerCase() === inputEmail
-            || (r.tenantEmail||'').toLowerCase() === email;
-      });
-      if (match) {
-        errEl.style.cssText = 'background:rgba(201,150,12,.1);color:#b45309;display:block;padding:7px 10px;border-radius:5px;font-size:.76rem';
-        errEl.textContent = '⚠ Email matched but name differs from our record. Proceeding — contact admin to update your name on file.';
-      }
-    }
-
-    if (!match) {
+    if (!result) {
       errEl.style.cssText = 'background:rgba(140,31,31,.1);color:#b91c1c;display:block;padding:7px 10px;border-radius:5px;font-size:.76rem';
       errEl.innerHTML = '⚠ No tenancy record found for these details.<br><span style="font-size:.73rem">Check: (1) Name is exactly as on your agreement &nbsp;(2) Email matches our records.<br>Contact <a href="mailto:crestechnologies@outlook.com" style="color:inherit">crestechnologies@outlook.com</a> for help.</span>';
       return;
     }
 
-    // Link email to record if not set
-    if (!match.tenantEmail && inputEmail) {
-      const ridx = rentLogs.findIndex(function(r){ return r.id === match.id; });
+    const { record, confidence, raw } = result;
+
+    // Amber warning for email-only match
+    if (confidence === 'email_only') {
+      errEl.style.cssText = 'background:rgba(201,150,12,.1);color:#b45309;display:block;padding:7px 10px;border-radius:5px;font-size:.76rem';
+      errEl.textContent = '⚠ Email matched but name differs from our record (' + (record.contractName||record.tenant) + '). Proceeding — contact admin to update your name on file.';
+    } else if (confidence === 'name_only') {
+      errEl.style.cssText = 'background:rgba(201,150,12,.1);color:#b45309;display:block;padding:7px 10px;border-radius:5px;font-size:.76rem';
+      errEl.textContent = '⚠ Name matched but no email on file yet. Your email will be saved to your record.';
+    } else {
+      errEl.style.cssText = 'background:rgba(26,92,46,.08);color:#15803d;display:block;padding:7px 10px;border-radius:5px;font-size:.76rem';
+      errEl.textContent = '✓ Identity verified — loading your portal…';
+    }
+
+    // Link email to record if missing or different
+    if (!record.tenantEmail && inputEmail) {
+      const ridx = rentLogs.findIndex(r => r.id === raw.id);
       if (ridx >= 0) {
         rentLogs[ridx].tenantEmail = inputEmail;
-        match = rentLogs[ridx];
         saveLocal();
-        if (window._db) window._db.collection('rentRecords').doc(match.id).update({tenantEmail: inputEmail}).catch(function(){});
+        if (window._db) window._db.collection('rentRecords').doc(rentLogs[ridx].id).update({tenantEmail: inputEmail}).catch(function(){});
       }
     }
 
-    errEl.style.cssText = 'background:rgba(26,92,46,.08);color:#15803d;display:block;padding:7px 10px;border-radius:5px;font-size:.76rem';
-    errEl.textContent = '✓ Identity verified — loading your portal…';
-
-    window._myRecord = match;
+    // Store normalised record as the canonical portal record
+    window._myRecord = record;
     isAdmin = false;
     document.getElementById('roleSelectorOverlay').classList.remove('on');
     await _bootApp(user, {...userData, role:'tenant'}, false);
@@ -2280,11 +2484,14 @@ async function _bootApp(user, userData, adminMode) {
   if (!adminMode) {
     loadMyProperty(userData);
     setTimeout(renderTenantDashboard, 1200);
-    // Update welcome card
+    // Update welcome card — always use freshest data
     setTimeout(() => {
-      const rec = window._myRecord || rentLogs.find(e =>
-        (e.tenantEmail||'').toLowerCase() === (user.email||'').toLowerCase()
-      );
+      _refreshRentLogs();
+      const rawRec = window._myRecord
+        ? rentLogs.find(e => e.id === (window._myRecord.id || '')) || window._myRecord
+        : _getTenantByEmail(user.email);
+      const rec = rawRec ? _normaliseRecord(rawRec) : null;
+      if (rec) window._myRecord = rec; // keep normalised version
       const wMsg = document.getElementById('tenantWelcomeMsg');
       const wSub = document.getElementById('tenantWelcomeSub');
       if (wMsg) {
@@ -2739,7 +2946,12 @@ async function loadMyProperty(userData) {
   const body = document.getElementById('myPropertyBody');
   if(!body || !currentUser) return;
   const myEmail = (currentUser.email||'').toLowerCase();
-  const myRecord = rentLogs.find(e => (e.tenantEmail||'').toLowerCase() === myEmail);
+  _refreshRentLogs();
+  // Use already-verified _myRecord if it matches, otherwise look up fresh
+  const rawRec = (window._myRecord && window._myRecord.tenantEmail && window._myRecord.tenantEmail.toLowerCase()===myEmail)
+    ? window._myRecord
+    : _getTenantByEmail(myEmail);
+  const myRecord = rawRec ? _normaliseRecord(rawRec) : null;
   window._myRecord = myRecord || null;
 
   if(!myRecord) {
@@ -3005,18 +3217,25 @@ async function syncToCloud() {
 }
 async function pullFromCloud(silent=false) {
   try {
-    // Timeout after 8 seconds — never block the UI
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(CLOUD_URL, { signal: controller.signal });
     clearTimeout(timer);
     const data = await res.json();
     if(data && data.length > 0) {
-      // Merge cloud data into local (cloud wins on conflicts by id)
       const cloudMap = {};
       data.forEach(e => { if(e.id) cloudMap[e.id] = e; });
       rentLogs.forEach(e => { if(e.id && !cloudMap[e.id]) cloudMap[e.id] = e; });
       rentLogs = Object.values(cloudMap);
+      saveLocal(); // persist merged result
+      // Re-sync _myRecord with fresh cloud data
+      if (window._myRecord && window._myRecord.id) {
+        const fresh = rentLogs.find(e => e.id === window._myRecord.id);
+        if (fresh) window._myRecord = _normaliseRecord(fresh);
+      } else if (currentUser && !isAdmin) {
+        const fresh = _getTenantByEmail(currentUser.email);
+        if (fresh) window._myRecord = fresh;
+      }
       renderAll(); renderRentManager();
       if(!silent) toast('✓ Data pulled from cloud');
     }
@@ -3620,6 +3839,7 @@ function _impBuildPreview() {
 }
 
 async function smartDoImport() {
+  _refreshRentLogs(); // always start from latest localStorage state
   const logEl = document.getElementById('importLog');
   logEl.innerHTML = '';
   const log = (msg,type='ok')=>{ const cls=type==='err'?'log-err':type==='warn'?'log-warn':type==='info'?'log-info':''; logEl.innerHTML+=`<div class="${cls}">${msg}</div>`; logEl.scrollTop=logEl.scrollHeight; };
@@ -3665,6 +3885,11 @@ async function smartDoImport() {
 
   // Save localStorage
   localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs));
+  // Re-sync current tenant's record if logged in as tenant
+  if (!isAdmin && currentUser) {
+    const fresh = _getTenantByEmail(currentUser.email);
+    if (fresh) window._myRecord = fresh;
+  }
   document.getElementById('isTotal').textContent=_impMapped.length;
   document.getElementById('isAdded').textContent=added;
   document.getElementById('isUpdated').textContent=updated;
@@ -3721,6 +3946,188 @@ function _impShowStage(n) {
 function clearImport() { resetSmartImport(); }
 function logImport(msg,type='ok'){const el=document.getElementById('importLog');const cls=type==='err'?'log-err':type==='warn'?'log-warn':type==='info'?'log-info':'';el.innerHTML+=`<div class="${cls}">${msg}</div>`;el.scrollTop=el.scrollHeight;}
 function setImportProgress(pct){document.getElementById('importProgressFill').style.width=pct+'%';}
+
+/* ════════════════════════════════════════════════════
+   RENT MANAGER — INLINE IMPORT INSTANCE
+   Reuses _IMP_FIELDS, _impNorm, _impAutoDetect, _impParseCSV
+   but with separate state + rm-prefixed element IDs
+════════════════════════════════════════════════════ */
+let _rmRawHeaders=[], _rmRawRows=[], _rmColMap={}, _rmMapped=[];
+
+function toggleRmImport() {
+  const panel = document.getElementById('rmImportPanel');
+  const btn   = document.getElementById('rmImportToggleBtn');
+  const open  = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  btn.textContent = open ? '✕ Close Import' : '⬆ Import CSV';
+  if(open) panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function rmSmartImportFile(file) {
+  if(!file) return;
+  if(!file.name.match(/\.(csv|tsv|txt)$/i)) { toast('Please upload a .csv file'); return; }
+  document.getElementById('rmImportProgressFill').style.width='0%';
+  document.getElementById('rmImportProgress').style.display='block';
+  let p=0; const t=setInterval(()=>{p=Math.min(p+Math.random()*20,80);document.getElementById('rmImportProgressFill').style.width=p+'%';},80);
+  const reader=new FileReader();
+  reader.onload=e=>{
+    clearInterval(t);
+    document.getElementById('rmImportProgressFill').style.width='100%';
+    setTimeout(()=>{document.getElementById('rmImportProgress').style.display='none';document.getElementById('rmImportProgressFill').style.width='0%';},350);
+    // Reuse shared CSV parser but store into rm state
+    _impParseCSV(e.target.result);
+    _rmRawHeaders=[..._impRawHeaders]; _rmRawRows=[..._impRawRows];
+    _impRawHeaders=[]; _impRawRows=[];  // clear shared state
+    document.getElementById('rmImpFileName').textContent=file.name;
+    document.getElementById('rmImpFileMeta').textContent=`${_rmRawRows.length} records · ${_rmRawHeaders.length} columns · ${(file.size/1024).toFixed(1)} KB`;
+    document.getElementById('rmImpFilePill').style.display='flex';
+    _rmColMap=_impAutoDetect(_rmRawHeaders);
+    _rmBuildMappingUI();
+    _rmShowStage(2);
+  };
+  reader.readAsText(file);
+}
+
+function _rmBuildMappingUI() {
+  const grid=document.getElementById('rmImpMapGrid');
+  grid.innerHTML=`<div class="imp-map-head">CRS Field</div><div class="imp-map-head c">→</div><div class="imp-map-head">Your Column</div>`;
+  const unmapped=_IMP_FIELDS.filter(f=>f.required&&!_rmColMap[f.key]);
+  const warn=document.getElementById('rmImpMapWarn');
+  if(unmapped.length){document.getElementById('rmImpMapWarnText').textContent='Could not auto-detect: '+unmapped.map(f=>f.label).join(', ')+'. Please set manually.';warn.style.display='flex';}
+  else warn.style.display='none';
+  for(const f of _IMP_FIELDS){
+    const lbl=document.createElement('div');lbl.className='imp-map-lbl';
+    lbl.innerHTML=f.label+(f.required?'<span class="req-dot"></span>':'');
+    const arr=document.createElement('div');arr.className='imp-map-arr';arr.textContent='→';
+    const sel=document.createElement('select');sel.className='imp-map-sel '+((_rmColMap[f.key])?'matched':'unmatched');
+    sel.id='rmImpMap_'+f.key;
+    sel.innerHTML=`<option value="">— skip —</option>`;
+    _rmRawHeaders.forEach(h=>{const o=document.createElement('option');o.value=h;o.textContent=h;if(h===_rmColMap[f.key])o.selected=true;sel.appendChild(o);});
+    sel.onchange=()=>{_rmColMap[f.key]=sel.value;sel.className='imp-map-sel '+(sel.value?'matched':'unmatched');};
+    grid.appendChild(lbl);grid.appendChild(arr);grid.appendChild(sel);
+  }
+}
+
+function rmSmartApplyMapping() {
+  for(const f of _IMP_FIELDS){const s=document.getElementById('rmImpMap_'+f.key);if(s)_rmColMap[f.key]=s.value;}
+  const missing=_IMP_FIELDS.filter(f=>f.required&&!_rmColMap[f.key]);
+  if(missing.length){toast('Map required fields: '+missing.map(f=>f.label).join(', '));return;}
+  const idx={};_rmRawHeaders.forEach((h,i)=>idx[h]=i);
+  _rmMapped=_rmRawRows.map((row,ri)=>{
+    const get=k=>{const h=_rmColMap[k];return h?(row[idx[h]]||'').trim():'';};
+    const obj={_row:ri+2};for(const f of _IMP_FIELDS)obj[f.key]=get(f.key);return obj;
+  }).filter(r=>r.unit||r.tenant);
+  // Build preview
+  const cols=['unit','tenant','tenantEmail','amount','start','expiry','vacancy'];
+  const labels={unit:'Unit',tenant:'Tenant',tenantEmail:'Email',amount:'Rent (₦)',start:'Start',expiry:'Expiry',vacancy:'Status'};
+  document.getElementById('rmImpPreviewHead').innerHTML='<tr>'+cols.map(k=>`<th>${labels[k]}</th>`).join('')+'</tr>';
+  document.getElementById('rmImpPreviewBody').innerHTML=_rmMapped.map(r=>'<tr>'+cols.map(k=>{
+    let v=r[k]||'—';
+    if(k==='vacancy'){const lv=v.toLowerCase();const c=lv.includes('occup')?'#5aaf7a':lv.includes('terminat')?'#e8b422':'#f57272';v=`<span style="color:${c};font-weight:600;font-size:.7rem;text-transform:uppercase">${v}</span>`;}
+    return `<td title="${r[k]||''}">${v}</td>`;
+  }).join('')+'</tr>').join('');
+  const occ=_rmMapped.filter(r=>(r.vacancy||'').toLowerCase().includes('occup')).length;
+  const ter=_rmMapped.filter(r=>(r.vacancy||'').toLowerCase().includes('terminat')).length;
+  const noEmail=_rmMapped.filter(r=>!r.tenantEmail).length;
+  document.getElementById('rmImpStats').innerHTML=
+    `<div class="imp-stat"><div class="imp-stat-n">${_rmMapped.length}</div><div class="imp-stat-l">Total</div></div>`+
+    `<div class="imp-stat"><div class="imp-stat-n">${occ}</div><div class="imp-stat-l">Occupied</div></div>`+
+    `<div class="imp-stat"><div class="imp-stat-n" style="color:#e8b422">${ter}</div><div class="imp-stat-l">Terminated</div></div>`+
+    `<div class="imp-stat"><div class="imp-stat-n" style="color:#f57272">${_rmMapped.length-occ-ter}</div><div class="imp-stat-l">Vacant</div></div>`+
+    `<div class="imp-stat"><div class="imp-stat-n">${_rmMapped.length-noEmail}</div><div class="imp-stat-l">Have Email</div></div>`;
+  document.getElementById('rmImpAlertOk').style.display='flex';
+  document.getElementById('rmImpAlertOkText').textContent=`${_rmMapped.length} records ready. Review below then click Import.`;
+  const wa=document.getElementById('rmImpAlertWarn');
+  if(noEmail>0){wa.style.display='flex';document.getElementById('rmImpAlertWarnText').textContent=`${noEmail} record(s) have no email — notifications won't reach them.`;}
+  else wa.style.display='none';
+  _rmShowStage(3);
+  document.getElementById('rmImpStage3').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function rmSmartDoImport() {
+  _refreshRentLogs(); // pull latest state before merging
+  const logEl=document.getElementById('rmImportLog'); logEl.innerHTML='';
+  const log=(msg,type='ok')=>{const cls=type==='err'?'log-err':type==='warn'?'log-warn':type==='info'?'log-info':'';logEl.innerHTML+=`<div class="${cls}">${msg}</div>`;logEl.scrollTop=logEl.scrollHeight;};
+  let added=0,updated=0,skipped=0;
+  for(let i=0;i<_rmMapped.length;i++){
+    const r=_rmMapped[i];
+    if(!r.unit&&!r.tenant){skipped++;continue;}
+    const unitId=autoMatchUnitId(r.unit,r.location)||_impNorm(r.unit)||r.unit;
+    const record={
+      id:_impNorm(unitId)+'_'+Date.now()+'_'+i, unitId,
+      unit:r.unit, location:r.location, city:r.city, type:r.type||'Residential',
+      tenant:r.tenant||r.contractName, contractName:r.contractName||r.tenant,
+      tenantEmail:r.tenantEmail, tenantPhone:r.tenantPhone, tenantNIN:r.tenantNIN,
+      amount:(r.amount||'').replace(/[^0-9.]/g,''),
+      newRent:(r.newRent||'').replace(/[^0-9.]/g,''),
+      start:normaliseDate(r.start), expiry:normaliseDate(r.expiry),
+      lastPayment:normaliseDate(r.lastPayment),
+      vacancy:(r.vacancy||'').toLowerCase().includes('vacant')?'vacant':(r.vacancy||'occupied'),
+      notes:r.notes, importedAt:new Date().toISOString(), updatedAt:new Date().toISOString()
+    };
+    const existIdx=rentLogs.findIndex(e=>e.unitId===unitId);
+    if(existIdx>=0){rentLogs[existIdx]={...rentLogs[existIdx],...record,id:rentLogs[existIdx].id};updated++;log(`↻ Row ${r._row}: Updated — ${unitId} · ${record.tenant||'(vacant)'}`, 'info');}
+    else{rentLogs.push(record);added++;log(`✓ Row ${r._row}: Added — ${unitId} · ${record.tenant||'(vacant)'}`, 'ok');}
+  }
+  log(`─── Complete: ${added} added · ${updated} updated · ${skipped} skipped ───`,'info');
+  localStorage.setItem('rentData_CRS_v3',JSON.stringify(rentLogs));
+  // Re-sync current tenant's record if logged in as tenant
+  if (!isAdmin && currentUser) {
+    const fresh = _getTenantByEmail(currentUser.email);
+    if (fresh) window._myRecord = fresh;
+  }
+  document.getElementById('rmIsTotal').textContent=_rmMapped.length;
+  document.getElementById('rmIsAdded').textContent=added;
+  document.getElementById('rmIsUpdated').textContent=updated;
+  document.getElementById('rmIsSkipped').textContent=skipped;
+  document.getElementById('rmImpDoneSummary').textContent=`${added+updated} records imported (${added} new · ${updated} updated · ${skipped} skipped).`;
+  renderAll(); renderRentManager();
+  await new Promise(r=>setTimeout(r,150));
+  toast(`✓ Import complete: ${added+updated} records`);
+  _rmShowStage(4);
+  document.getElementById('rmImpStage4').scrollIntoView({behavior:'smooth',block:'nearest'});
+  // Firestore sync
+  log('☁ Syncing to Firestore...','info');
+  try{
+    if(!window._db)throw new Error('Firestore not initialised');
+    const batch=window._db.batch();let bc=0;
+    for(const rec of rentLogs){batch.set(window._db.collection('rentRecords').doc(rec.id),rec);bc++;if(bc>=499)break;}
+    await batch.commit();
+    log(`✓ Firestore sync complete — ${Math.min(rentLogs.length,499)} records saved`,'ok');
+    toast('✓ Import + cloud sync complete: '+rentLogs.length+' records');
+  }catch(e){log('⚠ Firestore sync skipped — '+(e.message||'check connection'),'warn');}
+}
+
+function rmSmartDownloadCSV(){
+  const keys=_IMP_FIELDS.map(f=>f.key);
+  const rows=[keys.join(','),..._rmMapped.map(r=>keys.map(k=>`"${(r[k]||'').replace(/"/g,'""')}"`).join(','))];
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='CRS_RM_Mapped_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  URL.revokeObjectURL(a.href); toast('Mapped CSV downloaded');
+}
+
+function rmResetImport(){
+  _rmRawHeaders=[];_rmRawRows=[];_rmColMap={};_rmMapped=[];
+  const fi=document.getElementById('rmCsvFileInput');if(fi)fi.value='';
+  document.getElementById('rmImpFilePill').style.display='none';
+  document.getElementById('rmImportLog').innerHTML='';
+  document.getElementById('rmImpMapGrid').innerHTML=`<div class="imp-map-head">CRS Field</div><div class="imp-map-head c">→</div><div class="imp-map-head">Your Column</div>`;
+  _rmShowStage(1);
+}
+
+function _rmShowStage(n){[1,2,3,4].forEach(i=>{const el=document.getElementById('rmImpStage'+i);if(el)el.classList.toggle('on',i<=n);});}
+
+/* ── Drag-and-drop for RM drop zone ── */
+(function setupRmDragDrop(){
+  const ready=()=>{
+    const zone=document.getElementById('rmCsvDropZone');if(!zone)return;
+    zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+    zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+    zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)rmSmartImportFile(f);});
+  };
+  if(document.readyState==='complete')ready();else window.addEventListener('DOMContentLoaded',ready);
+})();
 
 function parseCSVRow(line) {
   const result=[]; let cur=''; let inQ=false;
@@ -4605,10 +5012,13 @@ function _navTo(pgId) {
    TENANT DASHBOARD — status card + app tracker
 ════════════════════════════════════════════════ */
 function renderTenantDashboard() {
-  var rec = window._myRecord ||
-    rentLogs.find(function(e) {
-      return (e.tenantEmail||'').toLowerCase() === ((currentUser&&currentUser.email)||'').toLowerCase();
-    });
+  // Always refresh from localStorage and normalise field names
+  _refreshRentLogs();
+  var rawRec = window._myRecord
+    ? (rentLogs.find(function(e){ return e.id === (window._myRecord.id||''); }) || window._myRecord)
+    : _getTenantByEmail((currentUser&&currentUser.email)||'');
+  var rec = rawRec ? _normaliseRecord(rawRec) : null;
+  if (rec) window._myRecord = rec; // keep in sync
 
   // ── TENANCY STATUS CARD ────────────────────────────────────────
   var today = new Date(); today.setHours(0,0,0,0);
