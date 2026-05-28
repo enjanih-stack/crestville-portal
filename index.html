@@ -989,6 +989,120 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .idle-btn-out{padding:10px;background:none;border:1px solid rgba(255,255,255,.08);color:#7a6e62;border-radius:8px;font-size:.82rem;cursor:pointer;font-family:inherit}
 .idle-btn-stay:hover{transform:translateY(-1px)}
 
+
+/* ════════════════════════════════════════════════
+   MOBILE RESPONSIVE — phone-first fixes
+════════════════════════════════════════════════ */
+@media(max-width:767px){
+
+  /* Layout — full width, no sidebar margin */
+  .content-area { margin-left: 0 !important; }
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .topbar { display: flex !important; }
+
+  /* Page padding — tighter on phone */
+  .page-body { padding: 14px 14px 80px !important; }
+  .page-header { padding: 14px 16px !important; }
+  .page-header h1 { font-size: 1.2rem !important; }
+  .page-nav-bar { padding: 0 !important; }
+
+  /* Metrics — 2-col grid, compact cards */
+  .metrics { grid-template-columns: repeat(2,1fr) !important; gap: 8px !important; margin-bottom: 14px !important; }
+  .metric-card { padding: 11px 12px 10px !important; border-radius: 8px !important; border-left-width: 3px !important; }
+  .mc-label { font-size: .56rem !important; }
+  .mc-value { font-size: 1.3rem !important; }
+  .mc-sub { font-size: .64rem !important; }
+
+  /* Section cards — less padding */
+  .sec-card { margin-bottom: 12px !important; }
+  .sec-head { padding: 10px 14px !important; }
+  .sec-head h2 { font-size: .88rem !important; }
+  .sec-body { padding: 12px 14px !important; }
+
+  /* Tenant dashboard hero card */
+  .tenancy-status-card { padding: 16px 14px !important; border-radius: 10px !important; }
+  .tsc-unit { font-size: 1.1rem !important; }
+  .tsc-stats { grid-template-columns: repeat(2,1fr) !important; gap: 8px !important; }
+  .tsc-stat { padding: 9px 10px !important; border-radius: 6px !important; }
+  .tsc-stat-value { font-size: .92rem !important; }
+
+  /* Quick action grid — 3 across on phone */
+  .tenant-qa-grid { grid-template-columns: repeat(3,1fr) !important; gap: 8px !important; }
+  .tenant-qa-card { padding: 12px 8px !important; border-radius: 8px !important; }
+  .tqa-icon { font-size: 1.3rem !important; }
+  .tqa-label { font-size: .74rem !important; }
+  .tqa-sub { display: none !important; }
+
+  /* App tracker — tighter */
+  .app-tracker-card .atc-head { padding: 10px 14px !important; }
+  .app-tracker-card .atc-head h3 { font-size: .84rem !important; }
+  .atc-steps { padding: 12px 14px !important; }
+  .atc-name { font-size: .8rem !important; }
+  .atc-desc { font-size: .7rem !important; }
+
+  /* Tenant dash grid — single column */
+  .tenant-dash-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* Workflow tracker */
+  .wf-tracker { border-radius: 8px !important; }
+  .wft-head { padding: 11px 14px !important; }
+  .wft-steps { padding: 12px 14px !important; }
+  .wft-name { font-size: .82rem !important; }
+
+  /* Tables — horizontal scroll */
+  .overflow-table { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .data-table { min-width: 480px; }
+  .data-table th, .data-table td { padding: 8px 10px !important; font-size: .78rem !important; }
+
+  /* Modals — full screen on phone */
+  .modal-overlay .modal { margin: 0; border-radius: 16px 16px 0 0 !important; max-height: 92vh; overflow-y: auto; width: 100% !important; max-width: 100% !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; }
+  .modal-body { padding: 14px 16px !important; }
+  .modal-foot { padding: 12px 16px !important; }
+
+  /* Status cards */
+  .sc-head { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
+  .sc-timeline { display: none !important; }
+  .sc-meta { gap: 8px !important; }
+  .sc-meta-item { font-size: .72rem !important; }
+
+  /* Properties page */
+  .unit-card { border-radius: 8px !important; }
+  .amenity-select-grid { grid-template-columns: 1fr !important; }
+
+  /* Buttons */
+  .btn { font-size: .8rem !important; padding: 8px 14px !important; }
+  .btn-sm { font-size: .72rem !important; padding: 5px 10px !important; }
+  .sbar { padding: 10px 14px !important; flex-wrap: nowrap !important; }
+  .sbar-btns { flex-wrap: wrap !important; gap: 6px !important; }
+
+  /* Page header date/time — hide on very small */
+  .ph-date { display: none !important; }
+
+  /* Greeting */
+  .page-header .ph-sub { font-size: .72rem !important; }
+
+  /* Rent manager table */
+  #rentTable th:nth-child(3),
+  #rentTable td:nth-child(3) { display: none !important; }
+
+  /* Dashboard workflow queue cards */
+  .wf-queue-card .wfq-head { flex-direction: column !important; align-items: flex-start !important; gap: 4px !important; }
+  .wfq-step-row { flex-direction: column !important; gap: 2px !important; }
+  .wfq-actions { gap: 6px !important; }
+
+  /* Idle overlay */
+  .idle-card { padding: 24px 20px !important; }
+  .idle-countdown { font-size: 2rem !important; }
+}
+
+@media(max-width:380px){
+  .metrics { gap: 6px !important; }
+  .metric-card { padding: 9px 10px 8px !important; }
+  .mc-value { font-size: 1.15rem !important; }
+  .tenant-qa-grid { grid-template-columns: repeat(2,1fr) !important; }
+}
+
 </style>
 </head>
 <body>
