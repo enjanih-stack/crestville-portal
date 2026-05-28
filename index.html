@@ -2189,13 +2189,72 @@ function _getTenantByEmail(email) {
   return raw ? _normaliseRecord(raw) : null;
 }
 
-/* Get a record by unitId — used by Properties, Dashboard, etc. */
-function _getRecordByUnit(unitId) {
-  _refreshRentLogs();
-  return rentLogs.find(r => {
-    const n = _normaliseRecord(r);
-    return n.unitId === unitId || n.unit === unitId;
+/* ════════════════════════════════════════════════════════════
+   UNIFIED PROPERTY ↔ RENTLOGS LOOKUP
+   Single function used by BOTH renderProperties AND renderRentManager.
+   Matches by: exact unitId → property id → normalised label → partial label
+════════════════════════════════════════════════════════════ */
+function _norm(s){ return (s||'').toString().toLowerCase().replace(/[^a-z0-9]/g,''); }
+
+function _getRecordByPropId(propId) {
+  if(!propId) return null;
+  const prop = PROPERTIES.find(p => p.id === propId);
+  const propLabel = prop ? prop.label : '';
+  const propNorm  = _norm(propLabel);
+
+  return rentLogs.find(e => {
+    const n = _normaliseRecord(e);
+    // 1. Exact unitId match
+    if(n.unitId === propId) return true;
+    // 2. unitId matches property label
+    if(n.unitId && _norm(n.unitId) === propNorm) return true;
+    // 3. unit field matches
+    if(n.unit && (_norm(n.unit) === propNorm || _norm(n.unit) === _norm(propId))) return true;
+    // 4. Partial match — label starts with or contains
+    if(propNorm && n.unitId && propNorm.length > 4 &&
+       (_norm(n.unitId).includes(propNorm) || propNorm.includes(_norm(n.unitId)))) return true;
+    return false;
   }) || null;
+}
+
+/* After any import, rewrite all unitId values to match PROPERTIES ids.
+   This is the key dedup step — ensures Properties and Rent Manager always agree. */
+function _canonicaliseUnitIds() {
+  let changed = 0;
+  rentLogs.forEach(rec => {
+    // Find the PROPERTIES entry this record belongs to
+    const norm = _normaliseRecord(rec);
+    const match = PROPERTIES.find(p => {
+      const pNorm = _norm(p.label);
+      const rNorm = _norm(norm.unitId || norm.unit || '');
+      return p.id === norm.unitId ||
+             pNorm === rNorm ||
+             (pNorm.length > 4 && (pNorm.includes(rNorm) || rNorm.includes(pNorm)));
+    });
+    if(match && rec.unitId !== match.id) {
+      rec.unitId = match.id;
+      rec.unit   = match.label;
+      changed++;
+    }
+  });
+
+  // Deduplicate — for each canonical unitId keep the most recently updated record
+  const unitMap = new Map();
+  rentLogs.forEach(r => {
+    const key = (r.unitId || r.unit || '').toLowerCase().trim();
+    if(!key) return;
+    const ex = unitMap.get(key);
+    if(!ex || (r.updatedAt||'') >= (ex.updatedAt||'')) unitMap.set(key, r);
+  });
+  const before = rentLogs.length;
+  rentLogs = Array.from(unitMap.values());
+  const dupes = before - rentLogs.length;
+
+  if(changed || dupes) {
+    saveLocal();
+    console.log(`_canonicaliseUnitIds: ${changed} ids fixed, ${dupes} duplicates removed`);
+  }
+  return {changed, dupes};
 }
 
 let currentUser = null;
@@ -2653,6 +2712,7 @@ async function _bootApp(user, userData, adminMode) {
   // Show app immediately with whatever is in localStorage
   showApp();
   _refreshRentLogs();
+  _canonicaliseUnitIds(); // fix any stale unitIds / duplicates from previous imports
   renderAll();
   restoreAutoSave();
 
@@ -2757,6 +2817,7 @@ async function _pullFromFirestore(silent) {
   rentLogs = Array.from(unitMap.values());
 
   saveLocal();
+  _canonicaliseUnitIds(); // fix unitIds and remove duplicates
 
   // Re-sync _myRecord
   if (window._myRecord && window._myRecord.id) {
@@ -3047,12 +3108,15 @@ function renderRentManager() {
     return;
   }
   tbody.innerHTML = filtered.map((e,i) => {
+    const n = _normaliseRecord(e);
+    // Always show the canonical PROPERTIES label if we can match it
+    const prop = PROPERTIES.find(p => p.id === (n.unitId||n.unit));
+    const label = prop ? `${prop.label} — ${prop.location}` : getPropertyLabel(n.unitId||n.unit);
+    const idx = rentLogs.indexOf(e);
     const exp = e.expiry ? new Date(e.expiry) : null;
     if(exp) exp.setHours(0,0,0,0);
     const today2 = new Date(); today2.setHours(0,0,0,0);
     const isOverdue = exp && exp < today2;
-    const label = getPropertyLabel(e.unitId||e.unit);
-    const idx = rentLogs.indexOf(e);
     // Calculate days left for colour coding
     const daysLeft2 = exp ? Math.round((exp - today2) / 864e5) : null;
     const rowBg = daysLeft2 !== null
@@ -3224,9 +3288,12 @@ async function saveRentRecord() {
 
 /* ═══ VACANT UNITS ════════════════════════════════════ */
 function getVacantUnits() {
-  const occupiedIds = new Set(rentLogs.filter(e => e.vacancy !== 'vacant').map(e => e.unitId));
-  const markedVacant = new Set(rentLogs.filter(e => e.vacancy === 'vacant').map(e => e.unitId));
-  return PROPERTIES.filter(p => !occupiedIds.has(p.id) || markedVacant.has(p.id));
+  return PROPERTIES.filter(p => {
+    const r = _getRecordByPropId(p.id);
+    if(!r) return true; // no record = vacant
+    const n = _normaliseRecord(r);
+    return n.vacancy === 'vacant';
+  });
 }
 
 function renderVacant() {
@@ -4118,10 +4185,14 @@ function renderProperties() {
   const search = (document.getElementById('propSearch')?.value||'').toLowerCase();
   const city = document.getElementById('propCityFilter')?.value||'';
   const status = document.getElementById('propStatusFilter')?.value||'';
-  const occupiedIds = new Set(rentLogs.filter(e => e.vacancy !== 'vacant').map(e => e.unitId));
+  const occupiedIds = new Set(
+    PROPERTIES
+      .filter(p => { const r = _getRecordByPropId(p.id); return r && _normaliseRecord(r).vacancy !== 'vacant'; })
+      .map(p => p.id)
+  );
 
   let props = PROPERTIES.filter(p => {
-    const rec = rentLogs.find(e => e.unitId === p.id);
+    const rec = _normaliseRecord(_getRecordByPropId(p.id));
     const searchStr = (p.label+p.location+p.type+(rec?rec.tenant:'')).toLowerCase();
     const matchSearch = !search || searchStr.includes(search);
     const matchCity = !city || p.city === city;
@@ -4136,7 +4207,7 @@ function renderProperties() {
 
   grid.innerHTML = props.map(p => {
     const occupied = occupiedIds.has(p.id);
-    const rec = rentLogs.find(e => e.unitId === p.id);
+    const rec = _normaliseRecord(_getRecordByPropId(p.id));
     const today = new Date(); today.setHours(0,0,0,0);
     const exp = rec?.expiry ? new Date(rec.expiry) : null;
     if(exp) exp.setHours(0,0,0,0);
@@ -4199,6 +4270,27 @@ function renderProperties() {
     var g = document.getElementById('propGrid');
     if (g) g.innerHTML = '<div style="padding:30px;color:var(--red);font-size:.84rem">Error rendering properties: ' + e.message + '</div>';
   }
+}
+
+/* Open the Rent Manager edit modal for a property card's ✏️ button */
+function editRentByUnit(propId) {
+  const rec = _getRecordByPropId(propId);
+  if(rec) {
+    const idx = rentLogs.findIndex(r => r === rec || r.id === rec.id);
+    if(idx >= 0) { showPage('pgRentManager'); openRentModal(idx); return; }
+  }
+  // No record yet — open the property edit modal (tenant details section)
+  openPropEdit(propId);
+}
+
+/* Open Add Record modal pre-filled with this property's unit */
+function addRecordForUnit(propId) {
+  showPage('pgRentManager');
+  openRentModal(null);
+  setTimeout(() => {
+    const sel = document.getElementById('rmUnit');
+    if(sel) { sel.value = propId; sel.dispatchEvent(new Event('change')); }
+  }, 100);
 }
 
 /* ── DOCUMENT COUNTS CACHE ── */
@@ -4569,6 +4661,7 @@ async function smartDoImport() {
   rentLogs = Array.from(seen.values());
   dupes = beforeCount - rentLogs.length;
   if(dupes > 0) log(`🗑 ${dupes} duplicate unit(s) removed — kept most recently updated`, 'warn');
+  _canonicaliseUnitIds(); // ensure all unitIds match PROPERTIES ids
 
   log(`─── Complete: ${added} added · ${updated} updated · ${skipped} skipped · ${dupes} dupes removed ───`,'info');
 
@@ -4830,6 +4923,7 @@ async function rmSmartDoImport() {
   rentLogs=Array.from(seen.values());
   dupes=bc-rentLogs.length;
   if(dupes>0)log(`🗑 ${dupes} duplicate unit(s) removed — kept most recently updated`,'warn');
+  _canonicaliseUnitIds(); // ensure all unitIds align with PROPERTIES ids
 
   log(`─── Complete: ${added} added · ${updated} updated · ${skipped} skipped · ${dupes} dupes removed ───`,'info');
   localStorage.setItem('rentData_CRS_v3',JSON.stringify(rentLogs));
