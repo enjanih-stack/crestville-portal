@@ -2044,7 +2044,30 @@ body.sidebar-collapsed .content-area {
           <div id="rmImportPanel" style="display:none;margin-bottom:18px">
             <div class="import-panel">
               <h3>📤 Mass Import — Update Rent Records</h3>
-              <p>Upload CSV <em>or</em> paste rows directly. Existing records are <strong>merged field-by-field</strong> — only fields with data update the record; empty fields keep existing values.</p>
+              <p>Upload CSV <em>or</em> paste rows directly.</p>
+
+              <!-- MERGE vs REPLACE toggle -->
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(201,150,12,.07);border:1px solid rgba(201,150,12,.25);border-radius:8px;margin-bottom:14px;flex-wrap:wrap">
+                <span style="font-size:.78rem;font-weight:700;color:var(--ink)">Import Mode:</span>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem">
+                  <input type="radio" name="rmImportMode" value="merge" checked onchange="rmSetImportMode(this.value)"
+                    style="accent-color:var(--gold)"/> 
+                  <span><strong>Merge</strong> — update existing, keep others</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem">
+                  <input type="radio" name="rmImportMode" value="replace" onchange="rmSetImportMode(this.value)"
+                    style="accent-color:var(--red)"/> 
+                  <span style="color:var(--red)"><strong>Replace All</strong> — clear everything first</span>
+                </label>
+                <span id="rmImportModeNote" style="font-size:.7rem;color:var(--dim);margin-left:auto">Only fields with data in your CSV will update existing records</span>
+              </div>
+              <!-- Emergency clear button -->
+              <div style="margin-bottom:12px">
+                <button onclick="rmClearAllData()" style="padding:6px 14px;background:rgba(140,31,31,.1);border:1px solid rgba(140,31,31,.3);color:var(--red);border-radius:6px;font-size:.74rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">
+                  🗑 Clear All Stored Records (fresh start)
+                </button>
+                <span style="font-size:.68rem;color:var(--dim);margin-left:8px">Removes all localStorage data so only your new CSV is used</span>
+              </div>
 
               <!-- Mode tabs -->
               <div style="display:flex;gap:0;margin-bottom:14px;border:1px solid #2a2620;border-radius:6px;overflow:hidden">
@@ -5322,7 +5345,7 @@ const _IMP_FIELDS = [
   { key:'tenantEmail', label:'Tenant Email',              required:false,
     aliases:['tenant_email','email','email_address','mail','contact_email','tenant email'] },
   { key:'tenantPhone', label:'Phone Number',              required:false,
-    aliases:['phone','phone_number','mobile','tel','telephone','tenant_phone','contact'] },
+    aliases:['phone','phone_number','phone_no','phone_no.','phoneno','mobile','tel','telephone','tenant_phone','contact'] },
   { key:'contractName',label:'Contract Name',             required:false,
     aliases:['contract_name','name_on_agreement','agreement_name','legal_name','name_on_contract'] },
   { key:'amount',      label:'Rent Amount',               required:true,
@@ -5341,7 +5364,7 @@ const _IMP_FIELDS = [
   { key:'tenantNIN',   label:'NIN (National ID)',          required:false,
     aliases:['nin','national_id','national_id_number','nin_no','tenant_nin'] },
   { key:'notes',       label:'Notes / Remarks',           required:false,
-    aliases:['notes','remarks','comment','comments','additional','note'] },
+    aliases:['notes','notes.','remark','remarks','comment','comments','additional','note'] },
 ];
 
 // State
@@ -5559,6 +5582,7 @@ async function smartDoImport() {
   for(let i=0;i<_impMapped.length;i++){
     const r=_impMapped[i];
     if(!r.unit&&!r.tenant){ skipped++; continue; }
+    if(_isHeaderRow(r)){ skipped++; log(`⊘ Row ${r._row}: Skipped (header row)`,'warn'); continue; }
 
     // -- Find canonical PROPERTIES id using fuzzy match --
     const unitId = _resolveUnitId(r.unit, r.location);
@@ -5814,14 +5838,51 @@ function rmSmartApplyMapping() {
   document.getElementById('rmImpStage3').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
+let _rmImportMode = 'merge'; // 'merge' | 'replace'
+
+function rmSetImportMode(mode) {
+  _rmImportMode = mode;
+  const note = document.getElementById('rmImportModeNote');
+  if (note) {
+    note.textContent = mode === 'replace'
+      ? '⚠ WARNING: All existing records will be deleted before import'
+      : 'Only fields with data in your CSV will update existing records';
+    note.style.color = mode === 'replace' ? 'var(--red)' : 'var(--dim)';
+  }
+}
+
+function rmClearAllData() {
+  if (!confirm('DELETE ALL stored rent records?\n\nThis removes everything from localStorage so you can start fresh with your CSV import.\n\nThis cannot be undone.')) return;
+  rentLogs = [];
+  localStorage.removeItem('rentData_CRS_v3');
+  renderAll();
+  notify('success', 'All Records Cleared', 'localStorage wiped. Import your CSV to reload data.', ['Use Import CSV to re-import', 'Or use Sync to pull from Firestore']);
+}
+
+/* Skip rows that look like header rows (unit_id appears in first column) */
+function _isHeaderRow(r) {
+  const first = (r.unit || r.unitId || '').toLowerCase().trim();
+  return first === 'unit_id' || first === 'unit' || first === 'unit_label' || first === 'property';
+}
+
 async function rmSmartDoImport() {
   _refreshRentLogs();
   const logEl=document.getElementById('rmImportLog'); logEl.innerHTML='';
   const log=(msg,type='ok')=>{const cls=type==='err'?'log-err':type==='warn'?'log-warn':type==='info'?'log-info':'';logEl.innerHTML+=`<div class="${cls}">${msg}</div>`;logEl.scrollTop=logEl.scrollHeight;};
+
+  // Replace mode: wipe existing data first
+  if (_rmImportMode === 'replace') {
+    if (!confirm('REPLACE ALL: This will delete all existing tenancy records and replace with the imported data.\n\nThis cannot be undone. Continue?')) return;
+    rentLogs = [];
+    log('⚠ Replace mode: existing records cleared', 'warn');
+  }
+
   let added=0,updated=0,skipped=0,dupes=0;
   for(let i=0;i<_rmMapped.length;i++){
     const r=_rmMapped[i];
     if(!r.unit&&!r.tenant){skipped++;continue;}
+    // Skip rows that look like header rows
+    if(_isHeaderRow(r)){skipped++;log(`⊘ Row ${r._row}: Skipped (header row detected)`,'warn');continue;}
 
     const unitId = _resolveUnitId(r.unit, r.location);
     const incoming = _buildIncomingRecord(r, unitId, i);
@@ -5830,7 +5891,7 @@ async function rmSmartDoImport() {
       rentLogs.find(e => _norm(e.unitId||e.unit) === _norm(r.unit));
     const existIdx = existRaw ? rentLogs.indexOf(existRaw) : -1;
 
-    if(existIdx>=0){
+    if(existIdx>=0 && _rmImportMode !== 'replace'){
       rentLogs[existIdx]=_smartMerge(rentLogs[existIdx], incoming);
       updated++;log(`↻ Row ${r._row}: Merged into ${unitId} · ${incoming.tenant||rentLogs[existIdx].tenant||'(vacant)'}`, 'info');
     } else {
@@ -5967,6 +6028,8 @@ function normaliseDate(d) {
 
 /* Strip currency prefixes and commas from amount strings: "NGN 1,700,000.00" → "1700000" */
 function normaliseAmount(v) {
+  // Strip NGN prefix and normalize
+  v = String(v).replace(/^[\s]*(NGN|USD|GBP|EUR|\u20A6)[\s]*/i, '').trim();
   if(!v && v!==0) return '';
   return (v+'').replace(/[^0-9.]/g,'').replace(/\.00$/,'');
 }
