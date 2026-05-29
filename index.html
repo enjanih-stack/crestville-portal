@@ -3320,21 +3320,17 @@ async function _pullFromFirestore(silent) {
 
 /* -- Sync banner helpers -- */
 function _showSyncBanner(msg, type) {
-  let el = document.getElementById('_syncBanner');
+  var el = document.getElementById('_syncBanner');
   if (!el) {
     el = document.createElement('div');
     el.id = '_syncBanner';
-    el.style.cssText = `position:fixed;bottom:0;left:0;right:0;z-index:8500;
-      padding:10px 20px;font-family:'DM Sans',sans-serif;font-size:.82rem;
-      display:flex;align-items:center;gap:10px;transition:transform .3s ease;
-      transform:translateY(100%)`;
+    el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:8500;padding:10px 20px;font-size:.82rem;display:flex;align-items:center;gap:10px;transition:transform .3s ease;transform:translateY(100%)';
     document.body.appendChild(el);
   }
-  const bg = type==='warn' ? '#1a1410' : '#0f0e0c';
-  const border = type==='warn' ? '#c9960c' : '#3b82f6';
-  el.style.cssText += `;background:${bg};border-top:2px solid ${border};color:#e8dfc8;transform:translateY(0)`;
-  el.innerHTML = `<span style="animation:spin .8s linear infinite;display:inline-block;width:14px;height:14px;
-    border:2px solid rgba(255,255,255,.2);border-top-color:${border};border-radius:50%"></span>${msg}`;
+  var bg = type === 'warn' ? '#1a1410' : '#0f0e0c';
+  var border = type === 'warn' ? '#c9960c' : '#3b82f6';
+  el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:8500;padding:10px 20px;font-size:.82rem;display:flex;align-items:center;gap:10px;transition:transform .3s ease;background:' + bg + ';border-top:2px solid ' + border + ';color:#e8dfc8;transform:translateY(0)';
+  el.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:' + border + ';border-radius:50%;animation:spin .8s linear infinite"></span> ' + msg;
 }
 function _hideSyncBanner() {
   const el = document.getElementById('_syncBanner');
