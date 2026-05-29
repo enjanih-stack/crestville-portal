@@ -1578,15 +1578,16 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       <div class="nav-section admin-only">Admin</div>
       <button class="nav-item admin-only" onclick="showPage('pgNoticesAdmin',this)" id="navNoticesAdmin">
         <span class="nav-icon">📝</span><span class="nav-label">Manage Notices</span>
-      </button>>
-        <span class="ni-icon">🏢</span> Rent Manager
+      </button>
+      <button class="nav-item admin-only" onclick="showPage('pgRentManager',this)" id="navRent">
+        <span class="nav-icon">🏢</span><span class="nav-label">Rent Manager</span>
         <span class="nav-badge red" id="overdueBadge">0</span>
       </button>
-      <button class="nav-item admin-only" onclick="showPage('pgTenants',this)">
-        <span class="ni-icon">👥</span> Tenants
+      <button class="nav-item admin-only" onclick="showPage('pgTenants',this)" id="navTenants">
+        <span class="nav-icon">👥</span><span class="nav-label">Tenants</span>
       </button>
-      <button class="nav-item admin-only" onclick="showPage('pgProperties',this)">
-        <span class="ni-icon">🗂️</span> Properties
+      <button class="nav-item admin-only" onclick="showPage('pgProperties',this)" id="navProps">
+        <span class="nav-icon">🗂️</span><span class="nav-label">Properties</span>
       </button>
     </nav>
 
@@ -2089,22 +2090,50 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       <!-- ── TENANTS (admin) ── -->
       <div class="pg" id="pgTenants">
         <div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()" title="Go back">&#8592;</button><button class="pnb-btn" onclick="historyFwd()" title="Go forward">&#8594;</button><div class="pnb-crumb" id="navCrumb"></div></div>
-        <div class="page-header"><div><h1>Tenants</h1><div class="ph-sub">All registered portal users</div></div></div>
+        <div class="page-header">
+          <div><h1>Tenants</h1><div class="ph-sub">All registered tenants · Edit details · Bulk actions</div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-outline" onclick="showPage('pgRentManager')">📋 Rent Manager</button>
+            <button class="btn btn-outline" onclick="tenantsExportCSV()">⬆ Export CSV</button>
+            <button class="btn btn-outline" onclick="loadTenantsTable()">🔄 Refresh</button>
+          </div>
+        </div>
         <div class="page-body">
+
+          <!-- Search -->
+          <div style="margin-bottom:14px">
+            <input type="text" id="tenantsSearch" placeholder="🔍 Search name, email or unit..."
+              oninput="tenantsFilterTable(this.value)"
+              style="width:100%;padding:10px 14px;border:1px solid var(--rule);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.84rem;background:var(--card);outline:none;box-sizing:border-box"/>
+          </div>
+
+          <!-- Bulk bar -->
           <div class="bulk-bar" id="tenantsBulkBar">
             <input type="checkbox" class="bulk-chk" title="Select all" onchange="tenantsToggleSelectAll(this.checked)"/>
             <span class="bulk-bar-count" id="tenantsBulkCount">0 selected</span>
+            <button class="btn-bulk-action" onclick="tenantsExportSelected()">⬇ Export Selected</button>
             <button class="btn-bulk-del" onclick="tenantsBulkDelete()">🗑 Remove Selected</button>
             <button class="btn-bulk-action" onclick="tenantsClearSelection()">✕ Clear</button>
           </div>
+
           <div class="sec-card">
             <div class="sec-body overflow-table" style="padding:0">
-              <table class="data-table">
-                <thead><tr><th class="th-chk"><input type="checkbox" class="bulk-chk" title="Select all" onchange="tenantsToggleSelectAll(this.checked)"/></th><th>Name</th><th>Email</th><th>Role</th><th>Linked Unit</th><th>Registered</th></tr></thead>
+              <table class="data-table" id="tenantsTable">
+                <thead><tr>
+                  <th class="th-chk"><input type="checkbox" class="bulk-chk" title="Select all" onchange="tenantsToggleSelectAll(this.checked)"/></th>
+                  <th>Name</th>
+                  <th>Email / Phone</th>
+                  <th>Role</th>
+                  <th>Linked Unit</th>
+                  <th>Expiry</th>
+                  <th>Registered</th>
+                  <th>Actions</th>
+                </tr></thead>
                 <tbody id="tenantsBody"></tbody>
               </table>
             </div>
           </div>
+
         </div>
       </div>
 
@@ -5943,20 +5972,37 @@ async function loadTenantsTable() {
     const ud = userMap[email] || {};
     const unit = getPropertyLabel(r.unitId||r.unit) || r.unit || '--';
     const linked = unit !== '--';
+    const exp = r.expiry ? new Date(normaliseDate(r.expiry)) : null;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const daysLeft = exp ? Math.round((exp - today)/864e5) : null;
+    const expPill = daysLeft !== null
+      ? '<span style="font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:20px;'
+        + 'background:' + (daysLeft <= 0 ? 'rgba(140,31,31,.1)' : daysLeft <= 60 ? 'rgba(201,150,12,.1)' : 'rgba(26,92,46,.08)') + ';'
+        + 'color:' + (daysLeft <= 0 ? 'var(--red)' : daysLeft <= 60 ? '#b45309' : 'var(--green)') + '">'
+        + (daysLeft <= 0 ? Math.abs(daysLeft)+'d overdue' : daysLeft+'d left') + '</span>'
+      : '<span style="font-size:.7rem;color:var(--dim)">--</span>';
+    // Find rentLogs index for edit
+    const rlIdx = rentLogs.findIndex(e => (e.tenantEmail||'').toLowerCase() === email);
     return `<tr class="tenants-row" data-email="${email}">
       <td class="td-chk"><input type="checkbox" class="bulk-chk tenants-chkbox" value="${email}" onchange="tenantsRowChecked(this)"/></td>
       <td>
         <div style="font-weight:600;font-size:.83rem">${r.tenant||r.contractName||'--'}</div>
-        ${r.contractName && r.contractName !== r.tenant ? '<div style="font-size:.68rem;color:var(--gold)">Contract: '+r.contractName+'</div>' : ''}
-        ${r.tenantPhone ? '<div style="font-size:.7rem;color:var(--dim)">'+r.tenantPhone+'</div>' : ''}
+        ${r.contractName && r.contractName !== r.tenant ? '<div style="font-size:.68rem;color:var(--gold)">' + r.contractName + '</div>' : ''}
       </td>
-      <td style="font-size:.81rem">${r.tenantEmail||'--'}</td>
-      <td><span style="font-size:.72rem;padding:2px 9px;border-radius:20px;font-weight:700;background:rgba(26,92,46,.1);color:var(--green);border:1px solid rgba(26,92,46,.2)">${ud.role||'Tenant'}</span></td>
+      <td>
+        <div style="font-size:.81rem">${r.tenantEmail||'--'}</div>
+        ${r.tenantPhone ? '<div style="font-size:.72rem;color:var(--dim)">' + r.tenantPhone + '</div>' : ''}
+      </td>
+      <td><span class="badge badge-active" style="font-size:.7rem">${ud.role||'Tenant'}</span></td>
       <td>
         <div style="font-size:.81rem;font-weight:${linked?600:400};color:${linked?'var(--ink)':'var(--dim)'}">${unit}</div>
-        ${r.expiry ? '<div style="font-size:.69rem;color:var(--dim)">Expires: '+fmt(r.expiry)+'</div>' : ''}
       </td>
+      <td>${expPill}</td>
       <td style="font-size:.78rem;color:var(--dim)">${ud.createdAt ? fmt(ud.createdAt) : r.importedAt ? fmt(r.importedAt) : '--'}</td>
+      <td style="white-space:nowrap">
+        ${rlIdx >= 0 ? '<button class="btn btn-sm btn-outline" onclick="showPage(\'pgRentManager\');setTimeout(()=>openRentModal(' + rlIdx + '),300)" title="Edit this tenant\'s record">✏️ Edit</button>' : ''}
+        ${rlIdx >= 0 ? '<button class="btn btn-sm" style="background:rgba(201,150,12,.1);border:1px solid rgba(201,150,12,.3);color:#7a5c00;padding:5px 10px;border-radius:6px;font-size:.72rem;cursor:pointer;margin-left:4px" onclick="openTenantDrawer(\'' + (r.unitId||r.unit||'') + '\')" title="View unit">🏠</button>' : ''}
+      </td>
     </tr>`;
   }).join('');
 }
@@ -6835,6 +6881,42 @@ function tenantsBulkDelete() {
     'Tenancy records cleared. Firebase accounts unchanged.',
     ['Rent Manager updated', 'Sync to push changes to cloud']
   );
+}
+
+function tenantsFilterTable(q) {
+  const query = (q||'').toLowerCase().trim();
+  document.querySelectorAll('#tenantsBody .tenants-row').forEach(row => {
+    row.style.display = (!query || row.textContent.toLowerCase().includes(query)) ? '' : 'none';
+  });
+}
+
+function tenantsExportCSV() {
+  _refreshRentLogs();
+  const tenants = rentLogs.filter(r => r.tenantEmail && r.tenant);
+  if(!tenants.length) { notify('warning','No Data','No tenants to export.'); return; }
+  const keys = ['tenant','contractName','tenantEmail','tenantPhone','tenantNIN','unitId','unit','location','amount','newRent','start','expiry','lastPayment','vacancy','notes'];
+  const headers = ['Name','Contract Name','Email','Phone','NIN','Unit ID','Unit Label','Location','Rent','New Rent','Start Date','Expiry Date','Last Payment','Vacancy','Notes'];
+  const rows = [headers.join(','), ...tenants.map(r => keys.map(k => '"' + ((r[k]||'').toString().replace(/"/g,'""')) + '"').join(','))];
+  const blob = new Blob([rows.join('\n')], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'CRS_Tenants_' + new Date().toISOString().slice(0,10) + '.csv'; a.click();
+  URL.revokeObjectURL(a.href);
+  notify('success','Export Complete', tenants.length + ' tenants exported to CSV.');
+}
+
+function tenantsExportSelected() {
+  const emails = [..._tenantsSelected];
+  if(!emails.length) { notify('warning','None Selected','Check some rows first.'); return; }
+  const selected = rentLogs.filter(r => emails.includes((r.tenantEmail||'').toLowerCase()));
+  if(!selected.length) return;
+  const keys = ['tenant','contractName','tenantEmail','tenantPhone','tenantNIN','unitId','unit','location','amount','newRent','start','expiry','lastPayment','vacancy','notes'];
+  const headers = ['Name','Contract Name','Email','Phone','NIN','Unit ID','Unit Label','Location','Rent','New Rent','Start Date','Expiry Date','Last Payment','Vacancy','Notes'];
+  const rows = [headers.join(','), ...selected.map(r => keys.map(k => '"' + ((r[k]||'').toString().replace(/"/g,'""')) + '"').join(','))];
+  const blob = new Blob([rows.join('\n')], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'CRS_SelectedTenants_' + new Date().toISOString().slice(0,10) + '.csv'; a.click();
+  URL.revokeObjectURL(a.href);
+  notify('success','Export Complete', selected.length + ' tenant(s) exported.');
 }
 
 /* ============================================================
