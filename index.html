@@ -482,6 +482,32 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .prop-sub-page { display: none; }
 .prop-sub-page.on { display: block; }
 
+/* NOTICE MANAGER */
+.nm-card{background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:14px;transition:box-shadow .15s}
+.nm-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.nm-card-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--rule);background:var(--cream);flex-wrap:wrap}
+.nm-card-body{padding:14px 16px;font-size:.82rem;color:#4a4440;line-height:1.7}
+.nm-card-foot{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--bg);border-top:1px solid var(--rule);flex-wrap:wrap}
+.nm-meta{font-size:.7rem;color:var(--dim);flex:1;min-width:0}
+.nm-expired{opacity:.55;border-left:4px solid var(--red)!important}
+.nm-expired .nm-card-head{background:#fff8f8}
+.nm-expired-pill{font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(140,31,31,.1);color:var(--red);border:1px solid rgba(140,31,31,.2)}
+.nm-targets-pill{font-size:.68rem;padding:2px 8px;border-radius:20px;background:rgba(201,150,12,.1);color:#7a5c00;border:1px solid rgba(201,150,12,.25)}
+.nf-group{margin-bottom:14px}
+.nf-group label{font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:5px}
+.nf-group input,.nf-group select,.nf-group textarea{width:100%;padding:9px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-family:'DM Sans',sans-serif;font-size:.84rem;background:var(--card);outline:none;box-sizing:border-box}
+.nf-group textarea{min-height:90px;resize:vertical}
+.nf-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.nf-targets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:5px;max-height:160px;overflow-y:auto;padding:8px;background:var(--bg);border:1px solid var(--rule);border-radius:6px;margin-top:4px}
+.nf-target-item{display:flex;align-items:center;gap:6px;font-size:.75rem;cursor:pointer;padding:3px 4px;border-radius:4px}
+.nf-target-item:hover{background:var(--cream)}
+.nf-target-item input{width:14px;height:14px;accent-color:var(--gold);flex-shrink:0;cursor:pointer}
+.nb-info{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.nb-urgent{background:#fff0f0;color:var(--red);border:1px solid rgba(140,31,31,.3)}
+.nb-gold{background:#fef9e7;color:#7a5c00;border:1px solid rgba(201,150,12,.3)}
+.nb-green{background:#f0fdf4;color:var(--green);border:1px solid rgba(26,92,46,.2)}
+.nb-purple{background:#f5f0ff;color:#5b21b6;border:1px solid #c4b5fd}
+
 /* BULK SELECTION */
 .bulk-bar{display:none;align-items:center;gap:10px;padding:9px 14px;background:var(--ink);border-radius:8px;margin-bottom:12px;flex-wrap:wrap}
 .bulk-bar.on{display:flex}
@@ -1550,7 +1576,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 
       <!-- ADMIN ONLY -->
       <div class="nav-section admin-only">Admin</div>
-      <button class="nav-item admin-only" onclick="showPage('pgRentManager',this)">
+      <button class="nav-item admin-only" onclick="showPage('pgNoticesAdmin',this)" id="navNoticesAdmin">
+        <span class="nav-icon">📝</span><span class="nav-label">Manage Notices</span>
+      </button>>
         <span class="ni-icon">🏢</span> Rent Manager
         <span class="nav-badge red" id="overdueBadge">0</span>
       </button>
@@ -1760,6 +1788,106 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
               <div>No notices at this time</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- ── NOTICES MANAGER (admin) ── -->
+      <div class="pg admin-only" id="pgNoticesAdmin">
+        <div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()">&#8592;</button><button class="pnb-btn" onclick="historyFwd()">&#8594;</button><div class="pnb-crumb" id="navCrumb"></div></div>
+        <div class="page-header">
+          <div><h1>Manage Notices</h1><div class="ph-sub">Create, edit and target notices to all or specific tenants</div></div>
+          <button class="btn btn-gold" onclick="nmOpenForm()">+ New Notice</button>
+        </div>
+        <div class="page-body">
+
+          <!-- CREATE / EDIT FORM -->
+          <div id="nmFormCard" style="display:none;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:22px;margin-bottom:22px">
+            <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;margin-bottom:16px" id="nmFormTitle">New Notice</h3>
+
+            <input type="hidden" id="nmEditId" value=""/>
+
+            <div class="nf-row">
+              <div class="nf-group">
+                <label>Notice Type</label>
+                <select id="nmType" onchange="nmPreviewBadge()">
+                  <option value="info">📢 Information</option>
+                  <option value="urgent">🚨 Urgent</option>
+                  <option value="gold">💰 Payment / Fees</option>
+                  <option value="green">📋 Estate Rules</option>
+                  <option value="purple">🔔 General Announcement</option>
+                </select>
+              </div>
+              <div class="nf-group">
+                <label>Pin to Top <span style="font-weight:400;color:var(--dim)">(shows first)</span></label>
+                <select id="nmPinned">
+                  <option value="">No — normal order</option>
+                  <option value="1">Yes — pin to top</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="nf-group">
+              <label>Notice Title <span style="color:var(--red)">*</span></label>
+              <input type="text" id="nmTitle" placeholder="e.g. Rent Payment Reminder — May 2026"/>
+            </div>
+
+            <div class="nf-group">
+              <label>Body / Message <span style="color:var(--red)">*</span> <span style="font-weight:400;color:var(--dim)">(HTML allowed: &lt;strong&gt;, &lt;br&gt;, &lt;ul&gt;&lt;li&gt;)</span></label>
+              <textarea id="nmBody" placeholder="Type your notice message here..."></textarea>
+            </div>
+
+            <div class="nf-row">
+              <div class="nf-group">
+                <label>Notice Date</label>
+                <input type="date" id="nmDate"/>
+              </div>
+              <div class="nf-group">
+                <label>Expiry Date <span style="font-weight:400;color:var(--dim)">(notice disappears after this date)</span></label>
+                <input type="date" id="nmExpiry" placeholder="Leave blank = no expiry"/>
+              </div>
+            </div>
+
+            <div class="nf-group">
+              <label>Recipients</label>
+              <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+                <button type="button" class="btn btn-sm btn-outline" onclick="nmSelectAllTenants(true)">☑ All Tenants</button>
+                <button type="button" class="btn btn-sm btn-outline" onclick="nmSelectAllTenants(false)">☐ None</button>
+                <button type="button" class="btn btn-sm btn-outline" onclick="nmSelectExpiring()">🟠 Expiring ≤60d</button>
+                <span style="font-size:.72rem;color:var(--dim);align-self:center">Leave all unchecked to show to everyone</span>
+              </div>
+              <div class="nf-targets-grid" id="nmTargetsGrid">
+                <div style="color:var(--dim);font-size:.75rem;padding:8px">Loading tenants...</div>
+              </div>
+              <div style="font-size:.68rem;color:var(--dim);margin-top:6px">✓ = selected tenants only &nbsp;·&nbsp; blank = all tenants see this notice</div>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;padding-top:4px">
+              <button class="btn btn-gold" onclick="nmSaveNotice()">💾 Save Notice</button>
+              <button class="btn btn-outline" onclick="nmCloseForm()">Cancel</button>
+              <div id="nmPreviewBadge" style="margin-left:auto;display:flex;align-items:center;gap:6px"></div>
+            </div>
+          </div>
+
+          <!-- NOTICE LIST -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+            <div style="font-size:.78rem;color:var(--dim)" id="nmListMeta">Loading notices...</div>
+            <div style="display:flex;gap:8px">
+              <select id="nmFilter" onchange="nmRenderList()" style="font-size:.76rem;padding:5px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--card)">
+                <option value="">All notices</option>
+                <option value="active">Active only</option>
+                <option value="expired">Expired only</option>
+                <option value="pinned">Pinned only</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="nmList">
+            <div style="text-align:center;padding:40px;color:var(--dim)">
+              <div style="font-size:2rem;margin-bottom:10px">📋</div>
+              <div>No notices yet. Click <strong>+ New Notice</strong> to create one.</div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -3298,6 +3426,7 @@ function showPage(pgId, btn) {
   if(pgId === 'pgRentManager') { renderRentManager(); if(isAdmin) renderLockedTenantsList(); }
   if(pgId === 'pgNotices') { loadNotices(); renderExpiryBanner(); renderTenancyStatusNotice(); }
   if(pgId === 'pgTenants') { loadTenantsTable(); }
+  if(pgId === 'pgNoticesAdmin') { nmRenderList(); }
   // Save state on every page navigation
   if (typeof saveSessionState === 'function') saveSessionState();
 }
@@ -3980,28 +4109,78 @@ const STATIC_NOTICES = [
 async function loadNotices() {
   const body = document.getElementById('noticesBody');
   if(!body) return;
-  let notices = [...STATIC_NOTICES];
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const currentEmail = currentUser ? (currentUser.email||'').toLowerCase() : '';
+
+  // 1. Start with localStorage notices (admin-created)
+  const lsNotices = _nmGetNotices ? _nmGetNotices() : [];
+  const lsIds = new Set(lsNotices.map(n => n.id));
+
+  // 2. Merge Firestore notices
+  let firestoreNotices = [];
   try {
     const snap = await window._db.collection('notices').get();
-    snap.docs.forEach(d => notices.unshift({...d.data(),id:d.id}));
+    snap.docs.forEach(d => {
+      const data = {...d.data(), id:d.id};
+      if(!lsIds.has(data.id)) firestoreNotices.push(data);
+      // Also update localStorage with Firestore version
+      else {
+        const lsIdx = lsNotices.findIndex(n => n.id === data.id);
+        if(lsIdx >= 0 && data.updatedAt > (lsNotices[lsIdx].updatedAt||'')) lsNotices[lsIdx] = data;
+      }
+    });
   } catch(e){}
-  notices.sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
-  const labels = {info:'📢 Information',urgent:'⚠ Urgent',gold:'💰 Payment',green:'📋 Estate Rules'};
-  body.innerHTML = notices.map(n => {
+
+  // 3. Combine: localStorage + Firestore + STATIC (deduplicated)
+  const allNotices = [...lsNotices, ...firestoreNotices];
+  const allIds = new Set(allNotices.map(n => n.id));
+  STATIC_NOTICES.forEach(n => { if(!allIds.has(n.id)) allNotices.push(n); });
+
+  // 4. Filter: remove expired + apply target filter for tenants
+  const visible = allNotices.filter(n => {
+    // Expiry check
+    if(n.expiry && new Date(n.expiry) < today) return false;
+    // Target check — if targets specified, only show to those tenants
+    if(!isAdmin && n.targets && n.targets.length > 0) {
+      if(!currentEmail) return false;
+      return n.targets.includes(currentEmail);
+    }
+    return true;
+  });
+
+  // 5. Sort: pinned first, then by date desc
+  visible.sort((a,b) => {
+    if(a.pinned && !b.pinned) return -1;
+    if(!a.pinned && b.pinned) return 1;
+    return new Date(b.date||0) - new Date(a.date||0);
+  });
+
+  // 6. Render
+  const labels = {info:'📢 Information', urgent:'🚨 Urgent', gold:'💰 Payment', green:'📋 Estate Rules', purple:'🔔 Announcement'};
+  const T = NM_TYPES || {};
+  body.innerHTML = visible.map(n => {
     const dateStr = n.date ? new Date(n.date).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : '';
-    return `<div class="notice-card">
+    const t = T[n.type] || {};
+    const cls = n.badgeClass || t.cls || 'nb-info';
+    const daysLeft = n.expiry ? Math.round((new Date(n.expiry) - today)/864e5) : null;
+    const expiryHint = daysLeft !== null && daysLeft <= 7
+      ? `<span style="font-size:.68rem;color:var(--red);font-weight:700;margin-left:8px">⏰ Expires in ${daysLeft} day${daysLeft!==1?'s':''}</span>` : '';
+    return `<div class="notice-card${n.pinned?' notice-pinned':''}">
       <div class="nc-head">
-        <span class="nc-badge ${n.badgeClass||'nb-info'}">${labels[n.type]||'📢 Notice'}</span>
+        ${n.pinned ? '<span style="font-size:.75rem;margin-right:2px">📌</span>' : ''}
+        <span class="nc-badge ${cls}">${labels[n.type]||'📢 Notice'}</span>
         <span class="nc-title">${n.title}</span>
-        <span class="nc-date">${dateStr}</span>
+        <span class="nc-date">${dateStr}${expiryHint}</span>
       </div>
-      <div class="nc-body">${n.body}</div>
+      <div class="nc-body">${n.body||''}</div>
     </div>`;
   }).join('') || '<div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem;margin-bottom:10px">📋</div><div>No notices at this time</div></div>';
-  const badge = document.getElementById('noticesBadge');
-  if(badge) badge.style.display = notices.length ? '' : 'none';
 
-  // -- Rolling expiry banner + tenancy status notice (tenant view) --
+  const badge = document.getElementById('noticesBadge');
+  if(badge) badge.style.display = visible.length ? '' : 'none';
+  if(badge) badge.textContent = visible.length;
+
   renderExpiryBanner();
   renderTenancyStatusNotice();
 }
@@ -6667,6 +6846,259 @@ function tenantsBulkDelete() {
   );
 }
 
+/* ============================================================
+   ADMIN NOTICES MANAGER
+   - CRUD: create/edit/delete notices
+   - Per-notice: type, title, body, date, expiry, pinned, targets
+   - Storage: Firestore 'notices' collection + localStorage fallback
+   - loadNotices() reads from Firestore + STATIC_NOTICES for all
+   ------------------------------------------------------------ */
+
+const NM_LS_KEY = 'crs_notices_v1';
+const NM_TYPES = {
+  info:   {label:'📢 Information', cls:'nb-info'},
+  urgent: {label:'🚨 Urgent',       cls:'nb-urgent'},
+  gold:   {label:'💰 Payment',      cls:'nb-gold'},
+  green:  {label:'📋 Estate Rules', cls:'nb-green'},
+  purple: {label:'🔔 Announcement', cls:'nb-purple'},
+};
+
+function _nmGetNotices() {
+  try { return JSON.parse(localStorage.getItem(NM_LS_KEY) || '[]'); } catch(e){ return []; }
+}
+function _nmSaveNotices(arr) { localStorage.setItem(NM_LS_KEY, JSON.stringify(arr)); }
+
+function nmOpenForm(editId) {
+  const form = document.getElementById('nmFormCard');
+  if(!form) return;
+  document.getElementById('nmFormTitle').textContent = editId ? 'Edit Notice' : 'New Notice';
+  document.getElementById('nmEditId').value = editId || '';
+
+  if(editId) {
+    const notices = _nmGetNotices();
+    const n = notices.find(x => x.id === editId);
+    if(n) {
+      document.getElementById('nmType').value    = n.type || 'info';
+      document.getElementById('nmPinned').value  = n.pinned ? '1' : '';
+      document.getElementById('nmTitle').value   = n.title || '';
+      document.getElementById('nmBody').value    = n.body  || '';
+      document.getElementById('nmDate').value    = n.date  || '';
+      document.getElementById('nmExpiry').value  = n.expiry|| '';
+      _nmBuildTargetsGrid(n.targets || []);
+    }
+  } else {
+    document.getElementById('nmType').value   = 'info';
+    document.getElementById('nmPinned').value = '';
+    document.getElementById('nmTitle').value  = '';
+    document.getElementById('nmBody').value   = '';
+    document.getElementById('nmDate').value   = new Date().toISOString().slice(0,10);
+    document.getElementById('nmExpiry').value = '';
+    _nmBuildTargetsGrid([]);
+  }
+  nmPreviewBadge();
+  form.style.display = 'block';
+  form.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function nmCloseForm() {
+  const form = document.getElementById('nmFormCard');
+  if(form) form.style.display = 'none';
+}
+
+function nmPreviewBadge() {
+  const type = document.getElementById('nmType')?.value || 'info';
+  const el = document.getElementById('nmPreviewBadge');
+  if(!el) return;
+  const t = NM_TYPES[type] || NM_TYPES.info;
+  el.innerHTML = `<span style="font-size:.68rem;color:var(--dim)">Preview:</span>
+    <span class="nc-badge ${t.cls}" style="font-size:.7rem">${t.label}</span>`;
+}
+
+function _nmBuildTargetsGrid(selectedEmails) {
+  const grid = document.getElementById('nmTargetsGrid');
+  if(!grid) return;
+  _refreshRentLogs();
+  const tenants = rentLogs.filter(r => r.tenantEmail && r.tenant);
+  if(!tenants.length) {
+    grid.innerHTML = '<div style="color:var(--dim);font-size:.75rem;padding:8px">No tenants with email addresses found in Rent Manager.</div>';
+    return;
+  }
+  const today = new Date(); today.setHours(0,0,0,0);
+  grid.innerHTML = tenants.map(r => {
+    const email = (r.tenantEmail||'').toLowerCase();
+    const checked = selectedEmails.includes(email) ? 'checked' : '';
+    const unit = getPropertyLabel(r.unitId||r.unit) || r.unit || '';
+    const exp = r.expiry ? new Date(normaliseDate(r.expiry)) : null;
+    if(exp) exp.setHours(0,0,0,0);
+    const days = exp ? Math.round((exp - today)/864e5) : null;
+    const pill = days !== null && days <= 60 ? `<span style="font-size:.62rem;color:${days<=0?'var(--red)':'#b45309'};font-weight:700">${days<=0?'Expired':days+'d'}</span>` : '';
+    return `<label class="nf-target-item" title="${email}">
+      <input type="checkbox" class="nm-target-chk" value="${email}" ${checked}/>
+      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        <span style="font-weight:600">${r.tenant||'--'}</span>
+        <span style="color:var(--dim);font-size:.68rem"> · ${unit}</span>
+      </span>${pill}
+    </label>`;
+  }).join('');
+}
+
+function nmSelectAllTenants(checked) {
+  document.querySelectorAll('.nm-target-chk').forEach(cb => cb.checked = checked);
+}
+
+function nmSelectExpiring() {
+  _refreshRentLogs();
+  const today = new Date(); today.setHours(0,0,0,0);
+  document.querySelectorAll('.nm-target-chk').forEach(cb => {
+    const rec = rentLogs.find(r => (r.tenantEmail||'').toLowerCase() === cb.value);
+    if(!rec || !rec.expiry) { cb.checked = false; return; }
+    const exp = new Date(normaliseDate(rec.expiry)); exp.setHours(0,0,0,0);
+    const days = Math.round((exp - today)/864e5);
+    cb.checked = days >= 0 && days <= 60;
+  });
+}
+
+function nmSaveNotice() {
+  const title = document.getElementById('nmTitle').value.trim();
+  const body  = document.getElementById('nmBody').value.trim();
+  if(!title) { notify('error','Missing Title','Notice title is required.'); return; }
+  if(!body)  { notify('error','Missing Body', 'Notice body cannot be empty.'); return; }
+
+  const editId = document.getElementById('nmEditId').value;
+  const targets = [...document.querySelectorAll('.nm-target-chk:checked')].map(cb => cb.value);
+  const type  = document.getElementById('nmType').value;
+
+  const notice = {
+    id:      editId || 'n_' + Date.now(),
+    type,
+    badgeClass: (NM_TYPES[type]||NM_TYPES.info).cls,
+    title,
+    body,
+    date:    document.getElementById('nmDate').value    || new Date().toISOString().slice(0,10),
+    expiry:  document.getElementById('nmExpiry').value  || '',
+    pinned:  document.getElementById('nmPinned').value === '1',
+    targets,  // empty = all tenants; non-empty = specific emails only
+    createdAt: editId ? undefined : new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  if(notice.createdAt === undefined) delete notice.createdAt;
+
+  // Save to localStorage
+  const notices = _nmGetNotices();
+  const existIdx = notices.findIndex(x => x.id === notice.id);
+  if(existIdx >= 0) notices[existIdx] = notice;
+  else notices.unshift(notice);
+  _nmSaveNotices(notices);
+
+  // Save to Firestore
+  if(window._db) {
+    window._db.collection('notices').doc(notice.id).set(notice)
+      .then(function(){ console.log('Notice saved to Firestore:', notice.id); })
+      .catch(function(e){ console.warn('Notice Firestore:', e.message); });
+  }
+
+  nmCloseForm();
+  nmRenderList();
+  loadNotices(); // refresh tenant-facing notices page too
+
+  notify('success',
+    editId ? 'Notice Updated' : 'Notice Published',
+    title,
+    [
+      targets.length ? 'Sent to ' + targets.length + ' specific tenant(s)' : 'Visible to all tenants',
+      notice.expiry ? 'Expires: ' + notice.expiry : 'No expiry set',
+      notice.pinned ? '📌 Pinned to top' : 'Normal order',
+    ]
+  );
+}
+
+function nmDeleteNotice(id) {
+  const notices = _nmGetNotices();
+  const n = notices.find(x => x.id === id);
+  if(!n) return;
+  if(!confirm('Delete notice: "' + n.title + '"?\n\nThis cannot be undone.')) return;
+
+  const updated = notices.filter(x => x.id !== id);
+  _nmSaveNotices(updated);
+
+  if(window._db) {
+    window._db.collection('notices').doc(id).delete().catch(function(e){ console.warn('Notice delete Firestore:', e.message); });
+  }
+
+  nmRenderList();
+  loadNotices();
+  notify('success', 'Notice Deleted', n.title);
+}
+
+function nmRenderList() {
+  const container = document.getElementById('nmList');
+  const meta = document.getElementById('nmListMeta');
+  if(!container) return;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const filter = document.getElementById('nmFilter')?.value || '';
+
+  // Merge localStorage notices + STATIC_NOTICES
+  const lsNotices = _nmGetNotices();
+  const lsIds = new Set(lsNotices.map(n => n.id));
+  const allNotices = [
+    ...lsNotices,
+    ...STATIC_NOTICES.filter(n => !lsIds.has(n.id))
+  ].sort((a,b) => {
+    if(a.pinned && !b.pinned) return -1;
+    if(!a.pinned && b.pinned) return 1;
+    return new Date(b.date||0) - new Date(a.date||0);
+  });
+
+  const isExpired = n => n.expiry && new Date(n.expiry) < today;
+  let shown = allNotices;
+  if(filter === 'active')  shown = allNotices.filter(n => !isExpired(n));
+  if(filter === 'expired') shown = allNotices.filter(n => isExpired(n));
+  if(filter === 'pinned')  shown = allNotices.filter(n => n.pinned);
+
+  if(meta) meta.textContent = shown.length + ' notice' + (shown.length!==1?'s':'') + ' · ' + allNotices.filter(n=>!isExpired(n)).length + ' active';
+
+  if(!shown.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem;margin-bottom:10px">📋</div><div>No notices match this filter.</div></div>';
+    return;
+  }
+
+  const fmtDate = d => { try{ return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); }catch(e){return d;} };
+  const T = NM_TYPES;
+  const isStatic = id => STATIC_NOTICES.some(n => n.id === id);
+
+  container.innerHTML = shown.map(n => {
+    const expired = isExpired(n);
+    const t = T[n.type] || T.info;
+    const targetsCount = (n.targets||[]).length;
+    const daysUntilExpiry = n.expiry ? Math.round((new Date(n.expiry) - today)/864e5) : null;
+    const expiryWarning = daysUntilExpiry !== null && daysUntilExpiry >= 0 && daysUntilExpiry <= 7
+      ? `<span style="font-size:.68rem;color:var(--red);font-weight:700">⏰ Expires in ${daysUntilExpiry}d</span>` : '';
+
+    return `<div class="nm-card${expired?' nm-expired':''}">
+      <div class="nm-card-head">
+        ${n.pinned ? '<span style="font-size:.75rem">📌</span>' : ''}
+        <span class="nc-badge ${t.cls}">${t.label}</span>
+        <span style="font-size:.84rem;font-weight:600;flex:1;min-width:0">${n.title}</span>
+        ${expired ? '<span class="nm-expired-pill">Expired</span>' : ''}
+        ${targetsCount ? `<span class="nm-targets-pill">👥 ${targetsCount} specific</span>` : '<span class="nm-targets-pill">🌐 All tenants</span>'}
+        ${expiryWarning}
+      </div>
+      <div class="nm-card-body">${n.body||''}</div>
+      <div class="nm-card-foot">
+        <div class="nm-meta">
+          Published: ${n.date ? fmtDate(n.date) : '--'}
+          ${n.expiry ? ' &nbsp;·&nbsp; Expires: ' + fmtDate(n.expiry) : ' &nbsp;·&nbsp; No expiry'}
+          ${n.updatedAt ? ' &nbsp;·&nbsp; Updated: ' + fmtDate(n.updatedAt) : ''}
+          ${isStatic(n.id) ? ' &nbsp;·&nbsp; <span style="color:var(--gold)">Built-in</span>' : ''}
+        </div>
+        <button class="btn btn-sm btn-outline" onclick="nmOpenForm('${n.id}')">✏️ Edit</button>
+        ${!isStatic(n.id) ? `<button class="btn btn-sm" style="background:rgba(140,31,31,.08);border:1px solid rgba(140,31,31,.25);color:var(--red);padding:5px 12px;border-radius:6px;font-size:.74rem;cursor:pointer" onclick="nmDeleteNotice('${n.id}')">🗑 Delete</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function renderGlobalAmenityList() {
   const el = document.getElementById('globalAmenityList');
   if (!el) return;
@@ -6831,7 +7263,8 @@ var _navInProgress = false;
 var PAGE_LABELS = {
   pgDashboard:   'Dashboard',
   pgMyProperty:  'My Tenancy',
-  pgNotices:     'Notices',
+  pgNotices:       'Notices',
+  pgNoticesAdmin:  'Manage Notices',
   pgVacant:      'Available Units',
   pgRentManager: 'Rent Manager',
   pgTenants:     'Tenants',
@@ -6900,7 +7333,8 @@ function _navTo(pgId) {
   var navMap = {
     pgDashboard:   'navDash',
     pgMyProperty:  'navMyProp',
-    pgNotices:     'navNotices',
+    pgNotices:       'navNotices',
+    pgNoticesAdmin:  'navNoticesAdmin',
     pgVacant:      'navVacant',
     pgRentManager: 'navRent',
     pgTenants:     'navTenants',
