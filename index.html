@@ -5154,10 +5154,7 @@ function _impBuildMappingUI() {
   const grid = document.getElementById('impMapGrid');
   // 4-column grid: CRS Field | → | Your Column dropdown | Default value input
   grid.style.gridTemplateColumns = '1fr 28px 1fr';
-  grid.innerHTML = `
-    <div class="imp-map-head">CRS Field</div>
-    <div class="imp-map-head c">→</div>
-    <div class="imp-map-head">Your Column &nbsp;<span style="color:#5a4a38;font-weight:400;font-size:.62rem">(or type a default below)</span></div>`;
+  grid.innerHTML = '<div class="imp-map-head">CRS Field</div><div class="imp-map-head c">&rarr;</div><div class="imp-map-head">Your Column <span style="color:#5a4a38;font-size:.62rem">(or type default below)</span></div>';
 
   const unmapped = _IMP_FIELDS.filter(f=>f.required && !_impColMap[f.key]);
   const warn = document.getElementById('impMapWarn');
@@ -5445,10 +5442,7 @@ function rmSmartImportFile(file) {
 function _rmBuildMappingUI() {
   const grid = document.getElementById('rmImpMapGrid');
   grid.style.gridTemplateColumns = '1fr 28px 1fr';
-  grid.innerHTML = `
-    <div class="imp-map-head">CRS Field</div>
-    <div class="imp-map-head c">→</div>
-    <div class="imp-map-head">Your Column &nbsp;<span style="color:#5a4a38;font-weight:400;font-size:.62rem">(or type a default below)</span></div>`;
+  grid.innerHTML = '<div class="imp-map-head">CRS Field</div><div class="imp-map-head c">&rarr;</div><div class="imp-map-head">Your Column <span style="color:#5a4a38;font-size:.62rem">(or type default below)</span></div>';
 
   const unmapped = _IMP_FIELDS.filter(f=>f.required&&!_rmColMap[f.key]);
   const warn = document.getElementById('rmImpMapWarn');
