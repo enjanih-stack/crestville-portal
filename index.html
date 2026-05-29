@@ -2644,27 +2644,40 @@ let rentLogs = (function() {
 })();
 
 function _refreshRentLogs() {
-  const stored = JSON.parse(localStorage.getItem('rentData_CRS_v3') || '[]');
-  // Merge: stored entries win on id conflict (most recently saved = truth)
+  let stored = [];
+  try { stored = JSON.parse(localStorage.getItem('rentData_CRS_v3') || '[]'); } catch(e) { stored = []; }
+
+  // Remove garbage rows: header rows or rows missing both unit and tenant
+  stored = stored.filter(r => {
+    if (!r || typeof r !== 'object') return false;
+    const unit = (r.unitId || r.unit || '').trim().toLowerCase();
+    if (unit === 'unit_id' || unit === 'unit' || unit === 'unit_label') return false;
+    const tenant = (r.tenant || '').trim().toLowerCase();
+    if (tenant === 'tenant_name' || tenant === 'tenant') return false;
+    if (!unit && !tenant) return false;
+    return true;
+  });
+
   if (stored.length) {
     const map = {};
-    rentLogs.forEach(r => { if(r.id) map[r.id] = r; });
-    stored.forEach(r => { if(r.id) map[r.id] = r; }); // stored overrides
+    rentLogs.forEach(r => { if (r.id) map[r.id] = r; });
+    stored.forEach(r => { if (r.id) map[r.id] = r; });
     rentLogs = Object.values(map);
-    // Also include any stored entries without ids
     stored.filter(r => !r.id).forEach(r => {
-      if(!rentLogs.some(e => e.unit === r.unit && e.tenant === r.tenant)) rentLogs.push(r);
+      if (!rentLogs.some(e => e.unit === r.unit && e.tenant === r.tenant)) rentLogs.push(r);
     });
   }
 
-  // -- Normalise all date fields to ISO YYYY-MM-DD --
+  // Normalise all date fields to ISO YYYY-MM-DD — clear unparseable ones
   rentLogs.forEach(r => {
     ['expiry','start','lastPayment','newRentDate'].forEach(field => {
-      if(r[field] && r[field] !== '') {
+      if (r[field] && r[field] !== '') {
         const iso = normaliseDate(r[field]);
         const dt = new Date(iso);
-        if(!isNaN(dt.getTime())) {
-          r[field] = dt.toISOString().slice(0,10);
+        if (!isNaN(dt.getTime())) {
+          r[field] = dt.toISOString().slice(0, 10);
+        } else {
+          r[field] = ''; // clear invalid dates instead of showing "Invalid Date"
         }
       }
     });
@@ -3312,6 +3325,8 @@ async function _bootApp(user, userData, adminMode) {
     if (isPermission) {
       console.warn('Firestore permissions -- fix: Firebase Console → Firestore → Rules → publish "allow read, write: if request.auth != null"');
     }
+    // If we have good local data but Firestore failed, push it up to fix Firestore
+    if (rentLogs.length > 0 && isAdmin) _pushCleanDataToFirestore();
     // Firestore failed -- try Apps Script backup
     try {
       await pullFromCloud(true);
@@ -3480,27 +3495,78 @@ async function _pullFromFirestore(silent) {
   if (!window._db) throw new Error('Firestore not ready');
   const snap = await window._db.collection('rentRecords').get();
   if (snap.empty) return; // nothing in Firestore yet -- keep local
+
   const firestoreRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   if (!firestoreRecords.length) return;
 
-  // Merge: Firestore wins on conflict (it's the canonical source)
-  const map = {};
-  rentLogs.forEach(r => { if(r.id) map[r.id] = r; });
-  firestoreRecords.forEach(r => { if(r.id) map[r.id] = r; });
-  rentLogs = Object.values(map);
+  // ── VALIDATE: reject corrupted Firestore records ──
+  function _isValidRecord(r) {
+    if (!r || typeof r !== 'object') return false;
+    // Must have a real unit name (not a header row)
+    const unit = (r.unitId || r.unit || '').trim();
+    if (!unit || unit.toLowerCase() === 'unit_id' || unit.toLowerCase() === 'unit') return false;
+    // Must have a real tenant name
+    const tenant = (r.tenant || '').trim();
+    if (!tenant || tenant.toLowerCase() === 'tenant_name' || tenant.toLowerCase() === 'tenant') return false;
+    // Dates must be valid ISO strings or empty — not "Invalid Date" or "NaN"
+    function badDate(d) {
+      if (!d) return false; // empty is OK
+      const s = String(d);
+      if (s.includes('Invalid') || s.includes('NaN') || s.includes('undefined')) return true;
+      if (s === 'null' || s === 'NaN') return true;
+      // Must parse to a real date
+      const dt = new Date(s);
+      return isNaN(dt.getTime());
+    }
+    if (badDate(r.start) || badDate(r.expiry) || badDate(r.lastPayment)) return false;
+    return true;
+  }
 
-  // Deduplicate by unitId keeping latest
+  const validFirestore = firestoreRecords.filter(_isValidRecord);
+  const rejected = firestoreRecords.length - validFirestore.length;
+  if (rejected > 0) console.warn(`_pullFromFirestore: rejected ${rejected} invalid Firestore records`);
+
+  // If ALL Firestore records are invalid, don't overwrite good local data
+  if (validFirestore.length === 0) {
+    console.warn('_pullFromFirestore: all Firestore records invalid — keeping local data');
+    // Push our clean local data up to Firestore to fix it
+    _pushCleanDataToFirestore();
+    return;
+  }
+
+  // ── MERGE: local wins for records already present; Firestore fills in the rest ──
+  const localMap = {};
+  rentLogs.forEach(r => { if (r.id) localMap[r.id] = r; });
+
+  validFirestore.forEach(r => {
+    if (!r.id) return;
+    const local = localMap[r.id];
+    if (local) {
+      // Only accept Firestore version if it has BETTER (newer) data
+      const localUpdated = local.updatedAt || local.importedAt || '';
+      const fsUpdated    = r.updatedAt || r.importedAt || '';
+      if (fsUpdated > localUpdated) localMap[r.id] = r;
+      // else keep local
+    } else {
+      // New record from Firestore not in local — add it
+      if (_isValidRecord(r)) localMap[r.id] = r;
+    }
+  });
+
+  rentLogs = Object.values(localMap);
+
+  // Deduplicate by unit+location keeping latest updatedAt
   const unitMap = new Map();
   rentLogs.forEach(r => {
     const key = ((r.unitId||r.unit||'')+'||'+(r.location||r.city||'')).toLowerCase().trim();
-    if(!key) return;
+    if (!key) return;
     const ex = unitMap.get(key);
-    if(!ex || (r.updatedAt||'') >= (ex.updatedAt||'')) unitMap.set(key, r);
+    if (!ex || (r.updatedAt||'') >= (ex.updatedAt||'')) unitMap.set(key, r);
   });
   rentLogs = Array.from(unitMap.values());
 
   saveLocal();
-  _canonicaliseUnitIds(); // fix unitIds and remove duplicates
+  _canonicaliseUnitIds();
 
   // Re-sync _myRecord
   if (window._myRecord && window._myRecord.id) {
@@ -3511,7 +3577,24 @@ async function _pullFromFirestore(silent) {
     if (fresh) window._myRecord = fresh;
   }
 
-  if (!silent) notify('success', 'Data Synced', `${rentLogs.length} records loaded from cloud.`);
+  if (!silent) notify('success', 'Data Synced', rentLogs.length + ' records loaded from cloud.');
+}
+
+/* Push clean local data to Firestore (called when Firestore has bad data) */
+function _pushCleanDataToFirestore() {
+  if (!window._db || !rentLogs.length) return;
+  try {
+    const batch = window._db.batch();
+    let count = 0;
+    rentLogs.forEach(r => {
+      if (!r.id || count >= 499) return;
+      batch.set(window._db.collection('rentRecords').doc(r.id), r);
+      count++;
+    });
+    batch.commit()
+      .then(() => console.log('_pushCleanDataToFirestore: pushed ' + count + ' clean records'))
+      .catch(e => console.warn('_pushCleanDataToFirestore failed:', e.message));
+  } catch(e) { console.warn('_pushCleanDataToFirestore error:', e); }
 }
 
 /* -- Sync banner helpers -- */
@@ -3814,11 +3897,13 @@ function renderExpiringTable() {
 /* --- RENT MANAGER TABLE ------------------------------ */
 
 function fmtTableDate(d) {
-  if (!d) return '--';
+  if (!d || d === '' || d === 'null' || d === 'undefined') return '--';
   try {
-    var dt = new Date(d);
+    const iso = normaliseDate(String(d));
+    const dt = new Date(iso);
+    if (isNaN(dt.getTime())) return '--';
     return dt.toLocaleDateString('en-NG', {day:'2-digit', month:'short', year:'numeric'});
-  } catch(e) { return d; }
+  } catch(e) { return '--'; }
 }
 
 let _rmGrouped = false;
