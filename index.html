@@ -65,7 +65,7 @@ window.dispatchEvent(new Event('firebaseReady'));
 </script>
 
 <script>
-// ── INTERCEPT FIREBASE ACTION URLs (password reset, email verify) ─────────────
+// -- INTERCEPT FIREBASE ACTION URLs (password reset, email verify) -------------
 (function() {
   const p = new URLSearchParams(window.location.search);
   const mode = p.get('mode');
@@ -73,7 +73,7 @@ window.dispatchEvent(new Event('firebaseReady'));
   if (!mode || !oobCode) return;
 
   if (mode === 'resetPassword') {
-    // Show password reset UI immediately — before anything else renders
+    // Show password reset UI immediately -- before anything else renders
     document.addEventListener('DOMContentLoaded', function() {
       // Hide loader immediately
       const loader = document.getElementById('globalLoader');
@@ -149,13 +149,13 @@ window.dispatchEvent(new Event('firebaseReady'));
       if (newPass !== confirm) { msgEl.textContent = 'Passwords do not match.'; return; }
 
       btn.disabled = true;
-      btn.textContent = 'Saving…';
+      btn.textContent = 'Saving...';
       try {
         await firebase.auth().confirmPasswordReset(oobCode, newPass);
         // Auto sign in with new password
         const email = document.getElementById('roEmailLabel').textContent.replace('Setting new password for: ','');
         msgEl.style.color = '#1a5c2e';
-        msgEl.textContent = '✅ Password saved! Signing you in…';
+        msgEl.textContent = '✅ Password saved! Signing you in...';
         btn.textContent = '✅ Done!';
         // Sign in automatically
         try {
@@ -2276,21 +2276,21 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 
 <script>
 'use strict';
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    PROPERTY MASTER LIST
-═══════════════════════════════════════════════════════ */
+------------------------------------------------------- */
 const PROPERTIES = [{"id": "OJ-1A", "label": "2BDR Flat 1A", "location": "11 Jibewa Somorin Close, Ojodu", "type": "2 Bedroom Flat", "city": "Ojodu"}, {"id": "OJ-2A", "label": "2BDR Flat 2A", "location": "11 Jibewa Somorin Close, Ojodu", "type": "2 Bedroom Flat", "city": "Ojodu"}, {"id": "OJ-3A", "label": "2BDR Flat 3A", "location": "11 Jibewa Somorin Close, Ojodu", "type": "2 Bedroom Flat", "city": "Ojodu"}, {"id": "OJ-4A", "label": "2BDR Flat 4A", "location": "11 Jibewa Somorin Close, Ojodu", "type": "2 Bedroom Flat", "city": "Ojodu"}, {"id": "OJ-1B", "label": "2BDR Flat 1B", "location": "11 Jibewa Somorin Close, Ojodu", "type": "2 Bedroom Flat", "city": "Ojodu"}, {"id": "OJ-3B", "label": "2BDR Flat 3B", "location": "11 Jibewa Somorin Close, Ojodu", "type": "2 Bedroom Flat", "city": "Ojodu"}, {"id": "OJ-2B", "label": "3BDR Flat 2B", "location": "11 Jibewa Somorin Close, Ojodu", "type": "3 Bedroom Flat", "city": "Ojodu"}, {"id": "OJ-4B", "label": "3BDR Flat 4B", "location": "11 Jibewa Somorin Close, Ojodu", "type": "3 Bedroom Flat", "city": "Ojodu"}, {"id": "OJ-SC", "label": "Self Contain 2C", "location": "11 Jibewa Somorin Close, Ojodu", "type": "Self Contained", "city": "Ojodu"}, {"id": "OJ-SH", "label": "Shop & Office", "location": "11 Jibewa Somorin Close, Ojodu", "type": "Commercial", "city": "Ojodu"}, {"id": "IB-RP", "label": "Room & Parlour Self Contain", "location": "Ababeji Engr's Residence Zone C, Ibadan", "type": "Room & Parlour", "city": "Ibadan"}, {"id": "IB-2B", "label": "2 Bedroom Flat", "location": "Ababeji Engr's Residence Zone C, Ibadan", "type": "2 Bedroom Flat", "city": "Ibadan"}, {"id": "IB-S1", "label": "Shop 1", "location": "Ababeji Engr's Residence Zone C, Ibadan", "type": "Commercial", "city": "Ibadan"}, {"id": "IB-S2", "label": "Shop 2", "location": "Ababeji Engr's Residence Zone C, Ibadan", "type": "Commercial", "city": "Ibadan"}, {"id": "IM-S1", "label": "Shop 1", "location": "Ababeji Mosque Building Zone C, Ibadan", "type": "Commercial", "city": "Ibadan"}, {"id": "IM-S2", "label": "Shop 2", "location": "Ababeji Mosque Building Zone C, Ibadan", "type": "Commercial", "city": "Ibadan"}, {"id": "IM-S3", "label": "Shop 3", "location": "Ababeji Mosque Building Zone C, Ibadan", "type": "Commercial", "city": "Ibadan"}, {"id": "IM-S4", "label": "Shop 4", "location": "Ababeji Mosque Building Zone C, Ibadan", "type": "Commercial", "city": "Ibadan"}, {"id": "IF-2B", "label": "2 Bedroom Flat", "location": "Ababeji Farm House Zone B, Ibadan", "type": "2 Bedroom Flat", "city": "Ibadan"}, {"id": "IF-SC", "label": "1 Rm Self Contained", "location": "Ababeji Farm House Zone B, Ibadan", "type": "Self Contained", "city": "Ibadan"}, {"id": "EN-2B", "label": "2BDR Flat", "location": "Plot 7 Iyana Idaw River Extension, Enugu", "type": "2 Bedroom Flat", "city": "Enugu"}, {"id": "EN-S1", "label": "Shop 1", "location": "Plot 7 Iyana Idaw River Extension, Enugu", "type": "Commercial", "city": "Enugu"}, {"id": "EN-S2", "label": "Shop 2", "location": "Plot 7 Iyana Idaw River Extension, Enugu", "type": "Commercial", "city": "Enugu"}, {"id": "EN-S3", "label": "Shop 3", "location": "Plot 7 Iyana Idaw River Extension, Enugu", "type": "Commercial", "city": "Enugu"}];
 
 const CLOUD_URL = "https://script.google.com/macros/s/AKfycbw_T79TJ60R0bLXe2x-phevLuwYYQwrGQAIjQ3yjtuSadQze09_28iX15H7qxxbDpjl/exec";
 const ADMIN_EMAILS = ['enjanih@gmail.com','crestechnologies@outlook.com','crestiton@gmail.com'];
 
-/* ═══════════════════════════════════════════════════════════════
+/* ---------------------------------------------------------------
    UNIFIED DATA LAYER
    rentLogs is the SINGLE SOURCE OF TRUTH for all tenant data.
    Always loaded fresh from localStorage so any import (Rent Manager
    or Properties page) is immediately visible everywhere.
    Call _refreshRentLogs() any time you need the latest snapshot.
-═══════════════════════════════════════════════════════════════ */
+--------------------------------------------------------------- */
 let rentLogs = JSON.parse(localStorage.getItem('rentData_CRS_v3')) || [];
 
 function _refreshRentLogs() {
@@ -2307,7 +2307,7 @@ function _refreshRentLogs() {
     });
   }
 
-  // ── Normalise all date fields to ISO YYYY-MM-DD ──
+  // -- Normalise all date fields to ISO YYYY-MM-DD --
   rentLogs.forEach(r => {
     ['expiry','start','lastPayment','newRentDate'].forEach(field => {
       if(r[field] && r[field] !== '') {
@@ -2325,7 +2325,7 @@ function _refreshRentLogs() {
 
 /* saveLocal is defined in the unified data layer above */
 
-/* Normalise a rentLogs record field name — handles both old field names
+/* Normalise a rentLogs record field name -- handles both old field names
    (tenant, tenantEmail, tenantPhone, tenantNIN, start, expiry, unitId)
    and new CSV import names (Tenant, Email, Phone, NIN, Tenancy_Start_Date etc.)
    Returns a unified object regardless of which importer created it.       */
@@ -2356,7 +2356,7 @@ function _normaliseRecord(r) {
   };
 }
 
-/* Unified tenant lookup — works regardless of which importer populated the record.
+/* Unified tenant lookup -- works regardless of which importer populated the record.
    Used by login verification, tenant dashboard, all pages.
    Returns a normalised record or null.                                           */
 function _findTenantRecord(emailInput, nameInput) {
@@ -2366,7 +2366,7 @@ function _findTenantRecord(emailInput, nameInput) {
   const normEmail = (emailInput||'').toLowerCase().trim();
   const normName  = strip(nameInput);
 
-  // Pass 1 — strict: email + name both match
+  // Pass 1 -- strict: email + name both match
   let match = rentLogs.find(r => {
     const n = _normaliseRecord(r);
     const rEmail = n.tenantEmail.toLowerCase();
@@ -2384,7 +2384,7 @@ function _findTenantRecord(emailInput, nameInput) {
   });
   if (match) return { record: _normaliseRecord(match), confidence: 'strict', raw: match };
 
-  // Pass 2 — email-only fallback
+  // Pass 2 -- email-only fallback
   if (normEmail) {
     match = rentLogs.find(r => {
       const n = _normaliseRecord(r);
@@ -2393,7 +2393,7 @@ function _findTenantRecord(emailInput, nameInput) {
     if (match) return { record: _normaliseRecord(match), confidence: 'email_only', raw: match };
   }
 
-  // Pass 3 — name-only fallback (for records with no email yet)
+  // Pass 3 -- name-only fallback (for records with no email yet)
   if (normName) {
     match = rentLogs.find(r => {
       const n = _normaliseRecord(r);
@@ -2407,7 +2407,7 @@ function _findTenantRecord(emailInput, nameInput) {
   return null;
 }
 
-/* Get a single tenant's record by email — used across all pages */
+/* Get a single tenant's record by email -- used across all pages */
 function _getTenantByEmail(email) {
   _refreshRentLogs();
   const normEmail = (email||'').toLowerCase().trim();
@@ -2415,11 +2415,11 @@ function _getTenantByEmail(email) {
   return raw ? _normaliseRecord(raw) : null;
 }
 
-/* ════════════════════════════════════════════════════════════
+/* ------------------------------------------------------------
    UNIFIED PROPERTY ↔ RENTLOGS LOOKUP
    Single function used by BOTH renderProperties AND renderRentManager.
    Matches by: exact unitId → property id → normalised label → partial label
-════════════════════════════════════════════════════════════ */
+------------------------------------------------------------ */
 function _norm(s){ return (s||'').toString().toLowerCase().replace(/[^a-z0-9]/g,''); }
 
 function _getRecordByPropId(propId) {
@@ -2436,7 +2436,7 @@ function _getRecordByPropId(propId) {
     if(n.unitId && _norm(n.unitId) === propNorm) return true;
     // 3. unit field matches
     if(n.unit && (_norm(n.unit) === propNorm || _norm(n.unit) === _norm(propId))) return true;
-    // 4. Partial match — label starts with or contains
+    // 4. Partial match -- label starts with or contains
     if(propNorm && n.unitId && propNorm.length > 4 &&
        (_norm(n.unitId).includes(propNorm) || propNorm.includes(_norm(n.unitId)))) return true;
     return false;
@@ -2444,7 +2444,7 @@ function _getRecordByPropId(propId) {
 }
 
 /* After any import, rewrite all unitId values to match PROPERTIES ids.
-   This is the key dedup step — ensures Properties and Rent Manager always agree. */
+   This is the key dedup step -- ensures Properties and Rent Manager always agree. */
 function _canonicaliseUnitIds() {
   let changed = 0;
   rentLogs.forEach(rec => {
@@ -2464,7 +2464,7 @@ function _canonicaliseUnitIds() {
     }
   });
 
-  // Deduplicate — for each canonical unitId keep the most recently updated record
+  // Deduplicate -- for each canonical unitId keep the most recently updated record
   const unitMap = new Map();
   rentLogs.forEach(r => {
     const key = (r.unitId || r.unit || '').toLowerCase().trim();
@@ -2489,20 +2489,20 @@ let chartInstance = null;
 let _selectedUnit = null;
 let _fbReady = false;
 
-/* ═══ FIREBASE WAIT ═══════════════════════════════════ */
+/* --- FIREBASE WAIT ----------------------------------- */
 function waitForFirebase(cb) {
   // Compat SDK is synchronous - call immediately
   cb();
 }
 
-/* ═══ TOAST ═══════════════════════════════════════════ */
+/* --- TOAST ------------------------------------------- */
 let _tt;
-/* ═══════════════════════════════════════════════════════════════
+/* ---------------------------------------------------------------
    RICH NOTIFICATION SYSTEM
    notify(type, title, message, details[], duration)
    type: 'success' | 'error' | 'warning' | 'info'
    Backwards-compatible: toast(msg) still works
-═══════════════════════════════════════════════════════════════ */
+--------------------------------------------------------------- */
 const _notifIcons = {success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
 let _notifQueue = [];
 
@@ -2555,7 +2555,7 @@ function notify(type='info', title='', message='', details=[], duration=4500) {
   return el;
 }
 
-// Backward-compatible toast — maps to notify
+// Backward-compatible toast -- maps to notify
 function toast(m='', d=3400) {
   if(!m) return;
   const isErr  = m.startsWith('⚠') || m.startsWith('✗') || m.toLowerCase().includes('fail') || m.toLowerCase().includes('error');
@@ -2565,7 +2565,7 @@ function toast(m='', d=3400) {
   notify(type, m.replace(/^[✓✅⚠✗📧☁📋⬆⬇🗑🔓🔒]+\s*/,''), '', [], d);
 }
 
-/* ── FORM FIELD VALIDATION HELPER ── */
+/* -- FORM FIELD VALIDATION HELPER -- */
 function _validateFields(rules) {
   // rules: [{id, label, test?}]
   // Returns {valid:bool, errors:[string], invalidIds:[string]}
@@ -2588,12 +2588,12 @@ function _validateFields(rules) {
   return {valid: errors.length === 0, errors, invalidIds};
 }
 
-/* ── SAVE BUTTON STATE HELPER ── */
+/* -- SAVE BUTTON STATE HELPER -- */
 function _setBtnLoading(btnEl, loading, originalText) {
   if(!btnEl) return;
   if(loading) {
     btnEl._origText = btnEl.innerHTML;
-    btnEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block"></span> Saving…</span>';
+    btnEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block"></span> Saving...</span>';
     btnEl.disabled = true;
   } else {
     btnEl.innerHTML = btnEl._origText || originalText || 'Save';
@@ -2601,14 +2601,14 @@ function _setBtnLoading(btnEl, loading, originalText) {
   }
 }
 
-/* ═══ CLOCK ═══════════════════════════════════════════ */
+/* --- CLOCK ------------------------------------------- */
 function updateClock() {
   const el = document.getElementById('liveClock');
   if(el) el.textContent = new Date().toLocaleDateString('en-NG',{weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 setInterval(updateClock, 1000); updateClock();
 
-/* ═══ AUTH ════════════════════════════════════════════ */
+/* --- AUTH -------------------------------------------- */
 function authTab(name, btn) {
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('on'));
   document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('on'));
@@ -2623,7 +2623,7 @@ async function doLogin() {
   if (errEl) { errEl.textContent = ''; errEl.style.color = 'var(--red)'; }
   if (!email) { if(errEl) errEl.textContent = 'Enter your email address.'; return; }
   if (!pass)  { if(errEl) errEl.textContent = 'Enter your password.'; return; }
-  if (errEl) { errEl.textContent = 'Signing in…'; errEl.style.color = 'var(--dim)'; }
+  if (errEl) { errEl.textContent = 'Signing in...'; errEl.style.color = 'var(--dim)'; }
   const btn = document.querySelector('.auth-btn');
   if (btn) btn.disabled = true;
   try {
@@ -2647,7 +2647,7 @@ async function sendPasswordReset() {
   }
   try {
     await firebase.auth().sendPasswordResetEmail(email);
-    if(errEl) { errEl.textContent = '✓ Reset email sent to '+email+' — check your inbox.'; errEl.style.color='var(--green)'; }
+    if(errEl) { errEl.textContent = '✓ Reset email sent to '+email+' -- check your inbox.'; errEl.style.color='var(--green)'; }
     const help = document.getElementById('loginHelp'); if(help) help.style.display='none';
   } catch(e) {
     if(errEl) { errEl.textContent = friendlyAuthError(e.code); errEl.style.color='var(--red)'; }
@@ -2656,7 +2656,7 @@ async function sendPasswordReset() {
 
 async function doGoogle() {
   const errEl = document.getElementById('loginErr');
-  if (errEl) { errEl.textContent = 'Opening Google sign-in…'; errEl.style.color='var(--dim)'; }
+  if (errEl) { errEl.textContent = 'Opening Google sign-in...'; errEl.style.color='var(--dim)'; }
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
@@ -2676,7 +2676,7 @@ async function doRegister() {
   if (!name)  { if(errEl) errEl.textContent='Enter your full name.'; return; }
   if (!email) { if(errEl) errEl.textContent='Enter your email.'; return; }
   if (!pass || pass.length < 6) { if(errEl) errEl.textContent='Password min 6 chars.'; return; }
-  if (errEl) errEl.textContent = 'Creating account…';
+  if (errEl) errEl.textContent = 'Creating account...';
   try {
     const cred = await firebase.auth().createUserWithEmailAndPassword(email, pass);
     await cred.user.sendEmailVerification();
@@ -2701,32 +2701,32 @@ function friendlyAuthError(code) {
     'auth/invalid-email':               'Invalid email address.',
     'auth/user-not-found':              'No account found. Register first or check email.',
     'auth/wrong-password':              'Incorrect password. Try again or reset below.',
-    'auth/email-already-in-use':        'Email already registered — use Sign In tab.',
+    'auth/email-already-in-use':        'Email already registered -- use Sign In tab.',
     'auth/weak-password':               'Password must be at least 6 characters.',
     'auth/invalid-credential':          'Incorrect email or password.',
-    'auth/too-many-requests':           'Too many attempts — wait a few minutes.',
-    'auth/email-not-verified':          'Please verify your email — check your inbox.',
+    'auth/too-many-requests':           'Too many attempts -- wait a few minutes.',
+    'auth/email-not-verified':          'Please verify your email -- check your inbox.',
     'auth/popup-closed-by-user':        'Google sign-in was closed. Try again.',
-    'auth/popup-blocked':               'Popup blocked — allow popups for this site.',
-    'auth/network-request-failed':      'Network error — check your connection.',
+    'auth/popup-blocked':               'Popup blocked -- allow popups for this site.',
+    'auth/network-request-failed':      'Network error -- check your connection.',
     'auth/operation-not-allowed':       'This sign-in method is not enabled.',
-    'auth/cancelled-popup-request':     'Only one sign-in at a time — try again.',
+    'auth/cancelled-popup-request':     'Only one sign-in at a time -- try again.',
   };
   console.error('Firebase auth error:', code);
-  return m[code] || ('Error (' + code + ') — please try again.');
+  return m[code] || ('Error (' + code + ') -- please try again.');
 }
 
-/* ═══ AUTH STATE CHANGE ═══════════════════════════════ */
-/* ══════════════════════════════════════════════════════════
+/* --- AUTH STATE CHANGE ------------------------------- */
+/* ----------------------------------------------------------
    OFFLINE DETECTION
-══════════════════════════════════════════════════════════ */
+---------------------------------------------------------- */
 window.addEventListener('online',  () => document.getElementById('offlineBanner').classList.remove('show'));
 window.addEventListener('offline', () => document.getElementById('offlineBanner').classList.add('show'));
 if (!navigator.onLine) document.getElementById('offlineBanner').classList.add('show');
 
-/* ══════════════════════════════════════════════════════════
-   AUTO-SAVE — persist form inputs to localStorage every 30s
-══════════════════════════════════════════════════════════ */
+/* ----------------------------------------------------------
+   AUTO-SAVE -- persist form inputs to localStorage every 30s
+---------------------------------------------------------- */
 function autoSaveFormData() {
   const fields = ['rmTenant','rmTenantEmail','rmAmount','rmStart','rmExpiry','rmNotes',
                   'fName','fEmail','fPhone','fOcc','fEmployer','fAddr'];
@@ -2755,9 +2755,9 @@ function restoreAutoSave() {
 }
 setInterval(autoSaveFormData, 30000);
 
-/* ══════════════════════════════════════════════════════════
-   ROLE SELECTOR — shown after every login
-══════════════════════════════════════════════════════════ */
+/* ----------------------------------------------------------
+   ROLE SELECTOR -- shown after every login
+---------------------------------------------------------- */
 const BASE_URL = 'https://enjanih-stack.github.io/crestville-portal';
 let _selectedRole = null;
 let _postAuthUser = null;
@@ -2857,7 +2857,7 @@ async function continueWithRole() {
       return;
     }
 
-    // Always use the freshest data — pulls from localStorage
+    // Always use the freshest data -- pulls from localStorage
     const result = _findTenantRecord(inputEmail, inputName);
 
     if (!result) {
@@ -2871,13 +2871,13 @@ async function continueWithRole() {
     // Amber warning for email-only match
     if (confidence === 'email_only') {
       errEl.style.cssText = 'background:rgba(201,150,12,.1);color:#b45309;display:block;padding:7px 10px;border-radius:5px;font-size:.76rem';
-      errEl.textContent = '⚠ Email matched but name differs from our record (' + (record.contractName||record.tenant) + '). Proceeding — contact admin to update your name on file.';
+      errEl.textContent = '⚠ Email matched but name differs from our record (' + (record.contractName||record.tenant) + '). Proceeding -- contact admin to update your name on file.';
     } else if (confidence === 'name_only') {
       errEl.style.cssText = 'background:rgba(201,150,12,.1);color:#b45309;display:block;padding:7px 10px;border-radius:5px;font-size:.76rem';
       errEl.textContent = '⚠ Name matched but no email on file yet. Your email will be saved to your record.';
     } else {
       errEl.style.cssText = 'background:rgba(26,92,46,.08);color:#15803d;display:block;padding:7px 10px;border-radius:5px;font-size:.76rem';
-      errEl.textContent = '✓ Identity verified — loading your portal…';
+      errEl.textContent = '✓ Identity verified -- loading your portal...';
     }
 
     // Link email to record if missing or different
@@ -2918,9 +2918,9 @@ function signOutAndReturn() {
   });
 }
 
-/* ══════════════════════════════════════════════════════════
-   _bootApp — shared app init after role is chosen
-══════════════════════════════════════════════════════════ */
+/* ----------------------------------------------------------
+   _bootApp -- shared app init after role is chosen
+---------------------------------------------------------- */
 async function _bootApp(user, userData, adminMode) {
   currentUser = user;
   isAdmin = adminMode;
@@ -2950,23 +2950,23 @@ async function _bootApp(user, userData, adminMode) {
   var savedState = restoreSessionState();
   if (savedState) setTimeout(function() { applySessionState(savedState); }, 800);
 
-  // ── AUTO SYNC: pull Firestore first, then fall back to Apps Script ──
+  // -- AUTO SYNC: pull Firestore first, then fall back to Apps Script --
   // If localStorage is empty show a loading indicator while we fetch
   const hasLocal = rentLogs.length > 0;
-  if (!hasLocal) _showSyncBanner('🔄 Loading your data from cloud…', 'info');
+  if (!hasLocal) _showSyncBanner('🔄 Loading your data from cloud...', 'info');
 
   try {
-    await _pullFromFirestore(hasLocal); // primary — Firestore rentRecords collection
+    await _pullFromFirestore(hasLocal); // primary -- Firestore rentRecords collection
   } catch(firestoreErr) {
     const isPermission = (firestoreErr.message||'').toLowerCase().includes('permission');
     if (isPermission) {
-      console.warn('Firestore permissions — fix: Firebase Console → Firestore → Rules → publish "allow read, write: if request.auth != null"');
+      console.warn('Firestore permissions -- fix: Firebase Console → Firestore → Rules → publish "allow read, write: if request.auth != null"');
     }
-    // Firestore failed — try Apps Script backup
+    // Firestore failed -- try Apps Script backup
     try {
       await pullFromCloud(true);
     } catch(e2) {
-      if (!hasLocal) _showSyncBanner('📴 No internet — showing cached data', 'warn');
+      if (!hasLocal) _showSyncBanner('📴 No internet -- showing cached data', 'warn');
     }
   }
 
@@ -3001,7 +3001,7 @@ async function _bootApp(user, userData, adminMode) {
           wMsg.textContent = getPropertyLabel(rec.unitId||rec.unit);
           wSub.textContent = days !== null
             ? (days<0 ? '⚠ Expired '+Math.abs(days)+' days ago'
-              : days<=60 ? '⏳ '+days+' days left — renew soon'
+              : days<=60 ? '⏳ '+days+' days left -- renew soon'
               : '✅ '+days+' days remaining')
             : 'Tenancy record found';
         } else {
@@ -3018,7 +3018,7 @@ async function _bootApp(user, userData, adminMode) {
   }
 }
 
-/* ── Resolve a raw unit label/id from CSV to canonical PROPERTIES id ── */
+/* -- Resolve a raw unit label/id from CSV to canonical PROPERTIES id -- */
 function _resolveUnitId(rawUnit, rawLocation) {
   if(!rawUnit && !rawLocation) return '';
   // 1. Direct PROPERTIES id match
@@ -3033,17 +3033,17 @@ function _resolveUnitId(rawUnit, rawLocation) {
   const normRaw = _norm(rawUnit);
   const byLabel = PROPERTIES.find(p => _norm(p.label) === normRaw);
   if(byLabel) return byLabel.id;
-  // 4. Partial match — label contains raw or vice versa
+  // 4. Partial match -- label contains raw or vice versa
   const partial = PROPERTIES.find(p => {
     const pn = _norm(p.label);
     return pn.length > 3 && (pn.includes(normRaw) || normRaw.includes(pn));
   });
   if(partial) return partial.id;
-  // 5. Fallback — use normalised raw value
+  // 5. Fallback -- use normalised raw value
   return _impNorm(rawUnit).replace(/_/g,' ') || rawUnit;
 }
 
-/* ── Build a clean incoming record from a mapped row ── */
+/* -- Build a clean incoming record from a mapped row -- */
 function _buildIncomingRecord(r, unitId, idx) {
   const prop = PROPERTIES.find(p => p.id === unitId);
   return {
@@ -3070,7 +3070,7 @@ function _buildIncomingRecord(r, unitId, idx) {
   };
 }
 
-/* ── Smart merge: existing record wins unless incoming has actual data ──
+/* -- Smart merge: existing record wins unless incoming has actual data --
    Rules:
    - Keep existing value if incoming field is empty/blank
    - Incoming wins for: amount, newRent, start, expiry, lastPayment, vacancy (core tenancy data)
@@ -3095,40 +3095,40 @@ function _smartMerge(existing, incoming) {
     importedAt:   existing.importedAt || incoming.importedAt,
     updatedAt:    new Date().toISOString(),
 
-    // Unit fields — existing wins (CSV shouldn't rename your properties)
+    // Unit fields -- existing wins (CSV shouldn't rename your properties)
     unitId:       existing.unitId || incoming.unitId,
     unit:         existing.unit   || incoming.unit,
     location:     keep(existing.location,  incoming.location),
     city:         keep(existing.city,      incoming.city),
     type:         keep(existing.type,      incoming.type),
 
-    // Tenant identity — incoming wins if it has data
+    // Tenant identity -- incoming wins if it has data
     tenant:       keep(existing.tenant,       incoming.tenant),
     contractName: keep(existing.contractName, incoming.contractName),
     tenantEmail:  keep(existing.tenantEmail,  incoming.tenantEmail),
     tenantPhone:  keep(existing.tenantPhone,  incoming.tenantPhone),
     tenantNIN:    keep(existing.tenantNIN,    incoming.tenantNIN),
 
-    // Financial — incoming wins (this is why you're re-importing — to update these)
+    // Financial -- incoming wins (this is why you're re-importing -- to update these)
     amount:      incoming.amount      || existing.amount      || '',
     newRent:     incoming.newRent     || existing.newRent     || '',
 
-    // Dates — incoming wins if provided; otherwise keep existing
+    // Dates -- incoming wins if provided; otherwise keep existing
     start:       incoming.start       || existing.start       || '',
     expiry:      incoming.expiry      || existing.expiry      || '',
     lastPayment: incoming.lastPayment || existing.lastPayment || '',
 
-    // Status — incoming wins if provided
+    // Status -- incoming wins if provided
     vacancy:     incoming.vacancy || existing.vacancy || 'occupied',
 
-    // Notes — merge both (don't lose existing notes)
+    // Notes -- merge both (don't lose existing notes)
     notes: [existing.notes, incoming.notes].filter(Boolean).join('; ').replace(/; $/, '').replace(/^; /, '') || '',
   };
 }
 async function _pullFromFirestore(silent) {
   if (!window._db) throw new Error('Firestore not ready');
   const snap = await window._db.collection('rentRecords').get();
-  if (snap.empty) return; // nothing in Firestore yet — keep local
+  if (snap.empty) return; // nothing in Firestore yet -- keep local
   const firestoreRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   if (!firestoreRecords.length) return;
 
@@ -3163,7 +3163,7 @@ async function _pullFromFirestore(silent) {
   if (!silent) notify('success', 'Data Synced', `${rentLogs.length} records loaded from cloud.`);
 }
 
-/* ── Sync banner helpers ── */
+/* -- Sync banner helpers -- */
 function _showSyncBanner(msg, type) {
   let el = document.getElementById('_syncBanner');
   if (!el) {
@@ -3186,9 +3186,9 @@ function _hideSyncBanner() {
   if (el) { el.style.transform = 'translateY(100%)'; setTimeout(()=>el.remove(), 350); }
 }
 
-/* ══════════════════════════════════════════════════════════
+/* ----------------------------------------------------------
    MAIN AUTH INIT
-══════════════════════════════════════════════════════════ */
+---------------------------------------------------------- */
 function initAuth() {
   firebase.auth().onAuthStateChanged(async user => {
     try { document.getElementById('globalLoader').classList.add('out'); } catch(e){}
@@ -3217,11 +3217,11 @@ function initAuth() {
 
       isAdmin = adminMode || userData.role === 'admin';
 
-      // Boot the app directly — show role selector only if admin
+      // Boot the app directly -- show role selector only if admin
       if (isAdmin) {
         showRoleSelector(user, userData);
       } else {
-        // Regular tenant — boot directly as existing tenant
+        // Regular tenant -- boot directly as existing tenant
         await _bootApp(user, userData, false);
       }
     } else {
@@ -3231,7 +3231,7 @@ function initAuth() {
       const fromLanding = document.referrer.includes('landing.html') || 
                           sessionStorage.getItem('crs_from_landing');
       if (!fromLanding && !window.location.hash) {
-        // First visit — go to landing page
+        // First visit -- go to landing page
         window.location.href = 'https://enjanih-stack.github.io/crestville-portal/landing.html';
       } else {
         showAuthScreen();
@@ -3257,7 +3257,7 @@ function showAuthScreen() {
   if (app)  app.style.display  = 'none';
 }
 
-/* ═══ NAVIGATION ══════════════════════════════════════ */
+/* --- NAVIGATION -------------------------------------- */
 function showPage(pgId, btn) {
   _pushHistory(pgId);
   document.querySelectorAll('.pg').forEach(p => p.classList.remove('on'));
@@ -3295,11 +3295,11 @@ function closeSidebar() {
   document.body.style.overflow = '';
 }
 
-/* ═══ PROPERTY DROPDOWNS ══════════════════════════════ */
+/* --- PROPERTY DROPDOWNS ------------------------------ */
 function populateUnitDropdowns() {
   const sel = document.getElementById('rmUnit');
   if(!sel) return;
-  sel.innerHTML = '<option value="">— Select unit —</option>';
+  sel.innerHTML = '<option value="">-- Select unit --</option>';
   const groups = {};
   PROPERTIES.forEach(p => {
     if(!groups[p.city]) groups[p.city] = [];
@@ -3311,14 +3311,14 @@ function populateUnitDropdowns() {
     props.forEach(p => {
       const opt = document.createElement('option');
       opt.value = p.id;
-      opt.textContent = p.label + ' — ' + p.location;
+      opt.textContent = p.label + ' -- ' + p.location;
       og.appendChild(opt);
     });
     sel.appendChild(og);
   });
 }
 
-/* ═══ RENDER ALL DATA ═════════════════════════════════ */
+/* --- RENDER ALL DATA --------------------------------- */
 function renderAll() {
   localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs));
   updateMetrics();
@@ -3336,10 +3336,10 @@ function renderAll() {
 function getPropertyById(id) { return PROPERTIES.find(p => p.id === id) || null; }
 function getPropertyLabel(id) {
   const p = getPropertyById(id);
-  return p ? p.label + ' — ' + p.location : id;
+  return p ? p.label + ' -- ' + p.location : id;
 }
 
-/* ═══ METRICS ═════════════════════════════════════════ */
+/* --- METRICS ----------------------------------------- */
 function updateMetrics() {
   const today = new Date(); today.setHours(0,0,0,0);
   let active=0, overdue=0, arrears=0, revenue=0;
@@ -3369,14 +3369,14 @@ function updateMetrics() {
   if(vb) vb.textContent = vacantCount;
 }
 
-/* ═══ CHART ═══════════════════════════════════════════ */
+/* --- CHART ------------------------------------------- */
 function renderChart() {
   const ctx = document.getElementById('revenueChart');
   if(!ctx) return;
   const filter = (document.getElementById('chartFilter')?.value||'').toLowerCase();
   const locs = {};
   rentLogs.forEach(e => {
-    const loc = (getPropertyLabel(e.unitId||e.unit)||'').split('—').pop().trim().split(',').pop().trim();
+    const loc = (getPropertyLabel(e.unitId||e.unit)||'').split('--').pop().trim().split(',').pop().trim();
     if(!filter || loc.toLowerCase().includes(filter)) {
       locs[loc] = (locs[loc]||0) + parseFloat(e.amount||0);
     }
@@ -3389,7 +3389,7 @@ function renderChart() {
   });
 }
 
-/* ═══ EXPIRING TABLE ══════════════════════════════════ */
+/* --- EXPIRING TABLE ---------------------------------- */
 function renderExpiringTable() {
   const tb = document.getElementById('expiringTable');
   if(!tb) return;
@@ -3415,10 +3415,10 @@ function renderExpiringTable() {
   }).join('');
 }
 
-/* ═══ RENT MANAGER TABLE ══════════════════════════════ */
+/* --- RENT MANAGER TABLE ------------------------------ */
 
 function fmtTableDate(d) {
-  if (!d) return '—';
+  if (!d) return '--';
   try {
     var dt = new Date(d);
     return dt.toLocaleDateString('en-NG', {day:'2-digit', month:'short', year:'numeric'});
@@ -3456,7 +3456,7 @@ function renderRentManager() {
     const n = _normaliseRecord(e);
     // Always show the canonical PROPERTIES label if we can match it
     const prop = PROPERTIES.find(p => p.id === (n.unitId||n.unit));
-    const label = prop ? `${prop.label} — ${prop.location}` : getPropertyLabel(n.unitId||n.unit);
+    const label = prop ? `${prop.label} -- ${prop.location}` : getPropertyLabel(n.unitId||n.unit);
     const idx = rentLogs.indexOf(e);
     const exp = e.expiry ? new Date(e.expiry) : null;
     if(exp) exp.setHours(0,0,0,0);
@@ -3479,7 +3479,7 @@ function renderRentManager() {
       : '';
     const expiryCell = e.expiry
       ? `<span style="font-size:.82rem">${fmtTableDate(e.expiry)}</span><br>${daysPillHtml}`
-      : '<span style="color:var(--dim);font-size:.8rem">—</span>';
+      : '<span style="color:var(--dim);font-size:.8rem">--</span>';
 
     const isLocked = _isLockedOut(_normaliseRecord(e));
     return `<tr style="${rowBg}${isLocked?'opacity:.6;':''}">
@@ -3492,7 +3492,7 @@ function renderRentManager() {
       </td>
       <td><strong>₦${Number(e.amount||0).toLocaleString()}</strong>${e.newRent?`<div style="font-size:.68rem;color:var(--gold);margin-top:2px;font-weight:600">→ ₦${Number(e.newRent).toLocaleString()}${e.newRentDate?' eff. '+fmtTableDate(e.newRentDate):''}</div>`:''}</td>
       <td style="font-size:.82rem">
-        ${e.start ? fmtTableDate(e.start) : '<span style="color:var(--dim)">—</span>'}
+        ${e.start ? fmtTableDate(e.start) : '<span style="color:var(--dim)">--</span>'}
         ${e.lastPayment ? '<div style="font-size:.68rem;color:var(--dim);margin-top:1px">Last paid: '+fmtTableDate(e.lastPayment)+'</div>' : ''}
       </td>
       <td>${expiryCell}</td>
@@ -3511,7 +3511,7 @@ function renderRentManager() {
   }).join('');
 }
 
-/* ═══ ADD / EDIT RENT RECORD ══════════════════════════ */
+/* --- ADD / EDIT RENT RECORD -------------------------- */
 function openRentModal(idx=null) {
   document.getElementById('rmEditId').value = idx !== null ? idx : '';
   document.getElementById('rentModalTitle').textContent = idx !== null ? 'Edit Record' : 'Add Rent Record';
@@ -3542,7 +3542,7 @@ function deleteRentRecord(idx) {
 }
 
 function saveRentRecord() {
-  // ── Validate ──
+  // -- Validate --
   const v = _validateFields([
     {id:'rmUnit',        label:'Unit',        msg:'Please select a property unit'},
     {id:'rmTenant',      label:'Tenant Name', msg:'Tenant name is required'},
@@ -3582,7 +3582,7 @@ function saveRentRecord() {
     updatedAt:    new Date().toISOString()
   };
 
-  // ── Save to localStorage immediately (synchronous, instant) ──
+  // -- Save to localStorage immediately (synchronous, instant) --
   if(isEdit && rentLogs[parseInt(editIdx)]) {
     rentLogs[parseInt(editIdx)] = {...rentLogs[parseInt(editIdx)], ...record};
   } else {
@@ -3591,7 +3591,7 @@ function saveRentRecord() {
   saveLocal();
   _canonicaliseUnitIds();
 
-  // ── Close modal and re-render immediately ──
+  // -- Close modal and re-render immediately --
   closeRentModal();
   renderAll();
   renderRentManager();
@@ -3599,15 +3599,15 @@ function saveRentRecord() {
 
   notify('success',
     isEdit ? 'Record Updated' : 'Record Added',
-    getPropertyLabel(unitId) + ' — ' + tenant,
+    getPropertyLabel(unitId) + ' -- ' + tenant,
     [
       'Rent: ₦' + Number(record.amount||0).toLocaleString(),
       record.expiry ? 'Expiry: ' + record.expiry : null,
-      '💾 Saved — syncing to cloud in background…',
+      '💾 Saved -- syncing to cloud in background...',
     ].filter(Boolean)
   );
 
-  // ── Firestore: pure fire-and-forget, NEVER blocks UI ──
+  // -- Firestore: pure fire-and-forget, NEVER blocks UI --
   if(window._db) {
     Promise.race([
       window._db.collection('rentRecords').doc(record.id).set(record),
@@ -3620,7 +3620,7 @@ function saveRentRecord() {
   }
 }
 
-/* ═══ VACANT UNITS ════════════════════════════════════ */
+/* --- VACANT UNITS ------------------------------------ */
 function getVacantUnits() {
   return PROPERTIES.filter(p => {
     const r = _getRecordByPropId(p.id);
@@ -3676,12 +3676,12 @@ function closeInterestModal() { document.getElementById('interestModal').classLi
 function goToKYT() {
   closeInterestModal();
   const url = _selectedUnit ?
-    'CRS_PreRental_Questionnaire_v3.html#' + btoa(JSON.stringify({q21_apartments: _selectedUnit.label+' — '+_selectedUnit.location})) :
+    'CRS_PreRental_Questionnaire_v3.html#' + btoa(JSON.stringify({q21_apartments: _selectedUnit.label+' -- '+_selectedUnit.location})) :
     'https://enjanih-stack.github.io/crestville-portal/CRS_PreRental_Questionnaire_v3.html';
   window.open(url,'_blank');
 }
 
-/* ═══ MY PROPERTY (tenant view) ═══════════════════════ */
+/* --- MY PROPERTY (tenant view) ----------------------- */
 async function loadMyProperty(userData) {
   const body = document.getElementById('myPropertyBody');
   if(!body || !currentUser) return;
@@ -3718,7 +3718,7 @@ async function loadMyProperty(userData) {
   const isExpiring  = daysLeft !== null && daysLeft >= 0 && daysLeft <= 60;
   const isCritical  = daysLeft !== null && daysLeft >= 0 && daysLeft <= 14;
   const tlColor     = isOverdue ? 'var(--red)' : isExpiring ? '#c9960c' : 'var(--green)';
-  const fmt = d => d ? new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : '—';
+  const fmt = d => d ? new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : '--';
 
   const renewBtn = document.getElementById('renewBtn');
   if(renewBtn) renewBtn.style.display = (isExpiring||isOverdue) ? '' : 'none';
@@ -3727,22 +3727,22 @@ async function loadMyProperty(userData) {
   let alertStrip = '';
   if(isOverdue) {
     alertStrip = `<div class="renewal-strip rs-urgent"><span class="rs-icon">🚨</span>
-      <div class="rs-body"><div class="rs-title">Tenancy Expired — Action Required</div>
+      <div class="rs-body"><div class="rs-title">Tenancy Expired -- Action Required</div>
       <div class="rs-desc">Your tenancy expired <strong>${Math.abs(daysLeft)} days ago</strong> on <strong>${fmt(myRecord.expiry)}</strong>. Please contact the landlord immediately to renew or vacate per Clause X.</div></div>
       <div class="rs-action"><button class="btn btn-red" onclick="openRenewalModal()">🔄 Renew Now</button></div></div>`;
   } else if(isCritical) {
     alertStrip = `<div class="renewal-strip rs-urgent"><span class="rs-icon">⚠️</span>
-      <div class="rs-body"><div class="rs-title">Expiring in ${daysLeft} Day${daysLeft===1?'':'s'} — Renew Immediately</div>
+      <div class="rs-body"><div class="rs-title">Expiring in ${daysLeft} Day${daysLeft===1?'':'s'} -- Renew Immediately</div>
       <div class="rs-desc">Your tenancy expires on <strong>${fmt(myRecord.expiry)}</strong>. Submit a renewal request immediately.</div></div>
       <div class="rs-action"><button class="btn btn-gold" onclick="openRenewalModal()">🔄 Renew Now</button></div></div>`;
   } else if(isExpiring) {
     alertStrip = `<div class="renewal-strip rs-warn"><span class="rs-icon">📅</span>
-      <div class="rs-body"><div class="rs-title">Renewal Reminder — ${daysLeft} Days Remaining</div>
+      <div class="rs-body"><div class="rs-title">Renewal Reminder -- ${daysLeft} Days Remaining</div>
       <div class="rs-desc">Your tenancy expires on <strong>${fmt(myRecord.expiry)}</strong>. Submit your renewal request at least 30 days in advance.</div></div>
       <div class="rs-action"><button class="btn btn-outline" onclick="openRenewalModal()">Request Renewal</button></div></div>`;
   } else {
     alertStrip = `<div class="renewal-strip rs-ok"><span class="rs-icon">✅</span>
-      <div class="rs-body"><div class="rs-title">Tenancy Active — ${daysLeft!==null?daysLeft+' days remaining':'Current'}</div>
+      <div class="rs-body"><div class="rs-title">Tenancy Active -- ${daysLeft!==null?daysLeft+' days remaining':'Current'}</div>
       <div class="rs-desc">Your tenancy runs until <strong>${fmt(myRecord.expiry)}</strong>. You will receive a reminder when 60 days remain.</div></div></div>`;
   }
 
@@ -3757,16 +3757,16 @@ async function loadMyProperty(userData) {
       <div class="t-hero-grid">
         <div class="t-stat"><div class="t-stat-label">Annual Rent</div><div class="t-stat-value">₦${Number(myRecord.amount||0).toLocaleString()}</div><div class="t-stat-sub">${myRecord.newRent?'→ ₦'+Number(myRecord.newRent).toLocaleString()+(myRecord.newRentDate?' eff. '+fmt(myRecord.newRentDate):''):'Per year'}</div></div>
         <div class="t-stat"><div class="t-stat-label">Start Date</div><div class="t-stat-value" style="font-size:.92rem">${fmt(myRecord.start)}</div><div class="t-stat-sub">Tenancy began</div></div>
-        <div class="t-stat"><div class="t-stat-label">Expiry Date</div><div class="t-stat-value" style="font-size:.92rem">${fmt(myRecord.expiry)}</div><div class="t-stat-sub">${daysLeft!==null?(isOverdue?Math.abs(daysLeft)+' days ago':daysLeft+' days left'):'—'}</div></div>
+        <div class="t-stat"><div class="t-stat-label">Expiry Date</div><div class="t-stat-value" style="font-size:.92rem">${fmt(myRecord.expiry)}</div><div class="t-stat-sub">${daysLeft!==null?(isOverdue?Math.abs(daysLeft)+' days ago':daysLeft+' days left'):'--'}</div></div>
         <div class="t-stat"><div class="t-stat-label">Status</div><div class="t-stat-value" style="font-size:.92rem">${isOverdue?'🔴 Expired':isExpiring?'🟡 Expiring':'🟢 Active'}</div><div class="t-stat-sub">${isOverdue?'Renewal required':isExpiring?'Renewal due':'In good standing'}</div></div>
         ${myRecord.lastPayment?`<div class="t-stat"><div class="t-stat-label">Last Payment</div><div class="t-stat-value" style="font-size:.9rem">${fmt(myRecord.lastPayment)}</div><div class="t-stat-sub">Most recent payment</div></div>`:''}
         ${myRecord.vacancy?`<div class="t-stat"><div class="t-stat-label">Occupancy</div><div class="t-stat-value" style="font-size:.9rem;text-transform:capitalize">${myRecord.vacancy}</div><div class="t-stat-sub">Current status</div></div>`:''}
       </div>
       <div style="margin-top:18px;position:relative;z-index:1">
         <div style="display:flex;justify-content:space-between;font-size:.62rem;color:#7a6e62;margin-bottom:5px">
-          <span>START ${startD?startD.toLocaleDateString('en-NG',{month:'short',year:'numeric'}):'—'}</span>
+          <span>START ${startD?startD.toLocaleDateString('en-NG',{month:'short',year:'numeric'}):'--'}</span>
           <span style="color:${tlColor};font-weight:700">${progressPct}% elapsed</span>
-          <span>EXPIRY ${expD?expD.toLocaleDateString('en-NG',{month:'short',year:'numeric'}):'—'}</span>
+          <span>EXPIRY ${expD?expD.toLocaleDateString('en-NG',{month:'short',year:'numeric'}):'--'}</span>
         </div>
         <div class="timeline-bar"><div class="timeline-fill" style="width:${progressPct}%;background:${tlColor}"></div></div>
       </div>
@@ -3786,7 +3786,7 @@ async function loadMyProperty(userData) {
         <table style="width:100%;border-collapse:collapse;font-size:.84rem">
           <tr style="border-bottom:1px solid var(--rule)">
             <td style="padding:9px 0;color:var(--dim);width:45%;font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Tenant Name (Portal)</td>
-            <td style="padding:9px 0;font-weight:600;color:var(--ink)">${myRecord.tenant||'—'}</td>
+            <td style="padding:9px 0;font-weight:600;color:var(--ink)">${myRecord.tenant||'--'}</td>
           </tr>
           ${myRecord.contractName && myRecord.contractName !== myRecord.tenant ? `<tr style="border-bottom:1px solid var(--rule)">
             <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Name on Agreement</td>
@@ -3794,7 +3794,7 @@ async function loadMyProperty(userData) {
           </tr>` : ''}
           <tr style="border-bottom:1px solid var(--rule)">
             <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Email on Record</td>
-            <td style="padding:9px 0">${myRecord.tenantEmail||'—'}</td>
+            <td style="padding:9px 0">${myRecord.tenantEmail||'--'}</td>
           </tr>
           ${myRecord.tenantPhone ? `<tr style="border-bottom:1px solid var(--rule)">
             <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Phone</td>
@@ -3806,11 +3806,11 @@ async function loadMyProperty(userData) {
           </tr>
           <tr style="border-bottom:1px solid var(--rule)">
             <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Location</td>
-            <td style="padding:9px 0">${myRecord.location||locStr||'—'}</td>
+            <td style="padding:9px 0">${myRecord.location||locStr||'--'}</td>
           </tr>
           <tr style="border-bottom:1px solid var(--rule)">
             <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Unit ID</td>
-            <td style="padding:9px 0;font-family:monospace;font-size:.82rem">${myRecord.unitId||myRecord.unit||'—'}</td>
+            <td style="padding:9px 0;font-family:monospace;font-size:.82rem">${myRecord.unitId||myRecord.unit||'--'}</td>
           </tr>
           <tr style="border-bottom:1px solid var(--rule)">
             <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Annual Rent</td>
@@ -3852,7 +3852,7 @@ async function loadMyProperty(userData) {
         <div style="margin-bottom:10px"><strong style="color:var(--ink)">60 days before expiry:</strong> You will receive an automatic reminder. Begin renewal discussions with the landlord.</div>
         <div style="margin-bottom:10px"><strong style="color:var(--ink)">30 days before expiry:</strong> Submit your formal renewal request. Landlord confirms new rent and tenure dates.</div>
         <div style="margin-bottom:10px"><strong style="color:var(--ink)">On renewal:</strong> A new digital tenancy agreement is issued and signed by all parties. Pay the agreed rent to confirm.</div>
-        <div style="margin-bottom:10px"><strong style="color:var(--ink)">Clause X — Obligation to Vacate:</strong> If not renewing, you must vacate on or before the expiry date and surrender vacant possession to the landlord.</div>
+        <div style="margin-bottom:10px"><strong style="color:var(--ink)">Clause X -- Obligation to Vacate:</strong> If not renewing, you must vacate on or before the expiry date and surrender vacant possession to the landlord.</div>
         <div><strong style="color:var(--ink)">Contact:</strong> crestechnologies@outlook.com · Victoria Estate #20, Ojodu, Ogun State</div>
       </div>
     </div>`;
@@ -3860,12 +3860,12 @@ async function loadMyProperty(userData) {
   loadNotices();
 }
 
-/* ═══ RENEWAL MODAL ═══════════════════════════════ */
+/* --- RENEWAL MODAL ------------------------------- */
 function _openRenewalModalInner() {
   const rec = window._myRecord;
   const info = document.getElementById('renewRecordInfo');
   if(info && rec) {
-    const fmt = d => d ? new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : '—';
+    const fmt = d => d ? new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : '--';
     info.innerHTML = `<strong>${getPropertyLabel(rec.unitId||rec.unit)}</strong><br>
       Current expiry: <strong>${fmt(rec.expiry)}</strong> &nbsp;·&nbsp; Annual rent: <strong>₦${Number(rec.amount||0).toLocaleString()}</strong>`;
   }
@@ -3893,7 +3893,7 @@ async function submitRenewalRequest() {
   const message  = document.getElementById('renewMessage').value.trim();
   const name = currentUser.displayName || currentUser.email.split('@')[0];
   const unit = getPropertyLabel(rec.unitId||rec.unit);
-  const fmt  = d => d ? new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : '—';
+  const fmt  = d => d ? new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : '--';
   const html = `<div style="font-family:Arial,sans-serif;max-width:600px;border:1px solid #e0d8c8;border-radius:8px;overflow:hidden">
     <div style="background:#0f0e0c;padding:16px 20px;text-align:center"><h2 style="color:#c9960c;margin:0;font-size:18px">Crestechnologies IS Ltd</h2><p style="color:#888;font-size:12px;margin:4px 0 0">Tenancy Renewal Request</p></div>
     <div style="padding:20px;background:#faf8f4">
@@ -3904,7 +3904,7 @@ async function submitRenewalRequest() {
         <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Unit</td><td style="padding:8px">${unit}</td></tr>
         <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Current Expiry</td><td style="padding:8px">${fmt(rec.expiry)}</td></tr>
         <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Renewal Duration</td><td style="padding:8px;font-weight:600">${duration}</td></tr>
-        <tr><td style="padding:8px;color:#888">Message</td><td style="padding:8px">${message||'—'}</td></tr>
+        <tr><td style="padding:8px;color:#888">Message</td><td style="padding:8px">${message||'--'}</td></tr>
       </table>
     </div>
     <div style="background:#0f0e0c;padding:10px 20px;text-align:center;font-size:11px;color:#888">Submitted: ${new Date().toLocaleString('en-NG')}</div>
@@ -3914,7 +3914,7 @@ async function submitRenewalRequest() {
   let errMsg = '';
   try {
     if(typeof window.sendCRSEmail === 'function')
-      sent = await window.sendCRSEmail(['crestechnologies@outlook.com','enjanih@gmail.com'],`[CRS Renewal] ${unit} — ${name}`,html);
+      sent = await window.sendCRSEmail(['crestechnologies@outlook.com','enjanih@gmail.com'],`[CRS Renewal] ${unit} -- ${name}`,html);
   } catch(e) { errMsg = e.message || 'Email service unavailable'; }
 
   _setBtnLoading(btn, false);
@@ -3925,7 +3925,7 @@ async function submitRenewalRequest() {
       `Duration: ${duration}`,
       `Current expiry: ${fmt(rec.expiry)}`,
       'You will receive a confirmation email shortly',
-      'Admin will review and contact you within 2–3 business days',
+      'Admin will review and contact you within 2-3 business days',
     ]);
   } else {
     notify('warning', 'Request Recorded (Email Pending)', `Your renewal request has been logged but the email could not be sent.${errMsg?' Reason: '+errMsg:''}`, [
@@ -3935,13 +3935,13 @@ async function submitRenewalRequest() {
   }
 }
 
-/* ═══ NOTICES ═════════════════════════════════════ */
+/* --- NOTICES ------------------------------------- */
 const STATIC_NOTICES = [
   {id:'n1',type:'info',badgeClass:'nb-info',title:'Welcome to the Crestville Tenant Portal',date:'2026-01-01',
-   body:'You can view your tenancy, submit renewals, raise deviation requests and receive notices — all in one place. Contact crestechnologies@outlook.com for any issues.'},
+   body:'You can view your tenancy, submit renewals, raise deviation requests and receive notices -- all in one place. Contact crestechnologies@outlook.com for any issues.'},
   {id:'n2',type:'gold',badgeClass:'nb-gold',title:'Rent Payment Reminder',date:'2026-05-01',
    body:'<strong>All tenants are reminded</strong> that rent is due on or before the tenancy expiry date. Late payment may attract penalties. Kindly pay promptly and request receipts from management.'},
-  {id:'n3',type:'info',badgeClass:'nb-info',title:'Estate Maintenance — Water & Generator',date:'2026-04-15',
+  {id:'n3',type:'info',badgeClass:'nb-info',title:'Estate Maintenance -- Water & Generator',date:'2026-04-15',
    body:'The borehole pump has been serviced and is fully operational. Generator maintenance is scheduled quarterly. Report any faults to caretaker Mr. Sobo Usman or contact management.'},
   {id:'n4',type:'green',badgeClass:'nb-green',title:'Estate Rules & Community Conduct',date:'2026-03-01',
    body:'<strong>Reminders:</strong><br>• No loud noise after 10 PM<br>• Dispose waste in designated bins<br>• No subletting without written consent<br>• Register visitors staying 7+ days with caretaker<br>• Keep common areas clean.'},
@@ -3971,12 +3971,12 @@ async function loadNotices() {
   const badge = document.getElementById('noticesBadge');
   if(badge) badge.style.display = notices.length ? '' : 'none';
 
-  // ── Rolling expiry banner + tenancy status notice (tenant view) ──
+  // -- Rolling expiry banner + tenancy status notice (tenant view) --
   renderExpiryBanner();
   renderTenancyStatusNotice();
 }
 
-/* ── ROLLING EXPIRY BANNER ── */
+/* -- ROLLING EXPIRY BANNER -- */
 function renderExpiryBanner() {
   const wrap  = document.getElementById('expiryBannerWrap');
   const track = document.getElementById('expiryBannerTrack');
@@ -4017,7 +4017,7 @@ function renderExpiryBanner() {
   // Duplicate items so scrolling loops seamlessly
   const html = [...items,...items].map(it =>
     `<div class="expiry-banner-item ${it.cls}">
-      <span class="eb-unit">${it.unit}${it.tenant?' — '+it.tenant:''}</span>
+      <span class="eb-unit">${it.unit}${it.tenant?' -- '+it.tenant:''}</span>
       <span style="font-size:.72rem;color:#9a8a6a">Expires ${it.expiry}</span>
       <span class="eb-days">${it.pill}</span>
     </div><span style="color:#2a2620;padding:0 8px;flex-shrink:0">|</span>`
@@ -4030,7 +4030,7 @@ function renderExpiryBanner() {
   track.style.animationDuration = speed + 's';
 }
 
-/* ── TENANCY STATUS NOTICE (Notices page, tenant view) ── */
+/* -- TENANCY STATUS NOTICE (Notices page, tenant view) -- */
 function renderTenancyStatusNotice() {
   const el = document.getElementById('tenancyStatusNotice');
   if(!el || isAdmin || !window._myRecord) { if(el) el.style.display='none'; return; }
@@ -4054,11 +4054,11 @@ function renderTenancyStatusNotice() {
     msg=`Your tenancy for <strong>${unit}</strong> expires <strong>today</strong> (${fmt(rec.expiry)}). Contact your landlord immediately.`;
   } else if(days <= 60) {
     bg='rgba(201,150,12,.07)'; border='var(--gold)'; icon='🟠';
-    title=`Renewal Due — ${days} Day${days===1?'':'s'} Remaining`;
+    title=`Renewal Due -- ${days} Day${days===1?'':'s'} Remaining`;
     msg=`Your tenancy for <strong>${unit}</strong> expires on <strong>${fmt(rec.expiry)}</strong>. Please submit a renewal request through the portal before it's too late.`;
   } else {
     bg='rgba(26,92,46,.06)'; border='var(--green)'; icon='🟢';
-    title=`Tenancy Active — ${days} Days Remaining`;
+    title=`Tenancy Active -- ${days} Days Remaining`;
     msg=`Your tenancy for <strong>${unit}</strong> is in good standing. Expiry: <strong>${fmt(rec.expiry)}</strong>.`;
   }
 
@@ -4076,7 +4076,7 @@ function generateReceiptByRecord(rec) {
 
 function generateReceiptByIdx(idx) { fillReceipt(rentLogs[idx]); window.print(); }
 
-/* ═══ CLOUD SYNC ══════════════════════════════════════ */
+/* --- CLOUD SYNC -------------------------------------- */
 async function syncToCloud() {
   const btn = document.querySelector('[onclick="syncToCloud()"]');
   _setBtnLoading(btn, true);
@@ -4084,10 +4084,10 @@ async function syncToCloud() {
   let firestoreOk = false, appsScriptOk = false;
   const errors = [];
 
-  // ── 1. Push to Firestore (primary) ──
+  // -- 1. Push to Firestore (primary) --
   try {
     if (!window._db) throw new Error('Firestore not initialised');
-    // Batch write — max 499 per batch
+    // Batch write -- max 499 per batch
     const batchSize = 499;
     for (let i = 0; i < rentLogs.length; i += batchSize) {
       const batch = window._db.batch();
@@ -4101,7 +4101,7 @@ async function syncToCloud() {
     errors.push('Firestore: ' + (e.message||'failed'));
   }
 
-  // ── 2. Push to Apps Script backup (15s timeout — cold start can take 10-15s) ──
+  // -- 2. Push to Apps Script backup (15s timeout -- cold start can take 10-15s) --
   try {
     const controller2 = new AbortController();
     const timer2 = setTimeout(() => controller2.abort(), 15000);
@@ -4110,24 +4110,24 @@ async function syncToCloud() {
     appsScriptOk = true;
   } catch(e) {
     const isTimeout = e.name === 'AbortError';
-    errors.push('Apps Script: ' + (isTimeout ? 'timed out (cold start — retry in 30s)' : (e.message||'failed')));
+    errors.push('Apps Script: ' + (isTimeout ? 'timed out (cold start -- retry in 30s)' : (e.message||'failed')));
   }
 
   _setBtnLoading(btn, false);
 
   if (firestoreOk) {
-    // Firestore is the primary source — success even if Apps Script failed
+    // Firestore is the primary source -- success even if Apps Script failed
     notify('success', 'Synced to Cloud',
-      `${rentLogs.length} records saved to Firestore — available on all devices.`, [
+      `${rentLogs.length} records saved to Firestore -- available on all devices.`, [
         '✓ Firestore database updated (primary)',
-        appsScriptOk ? '✓ Apps Script backup updated' : '⚠ Apps Script backup skipped — ' + (errors.find(e=>e.startsWith('Apps'))||'unavailable'),
+        appsScriptOk ? '✓ Apps Script backup updated' : '⚠ Apps Script backup skipped -- ' + (errors.find(e=>e.startsWith('Apps'))||'unavailable'),
         `Sync time: ${new Date().toLocaleTimeString('en-NG')}`,
         'Mobile and other devices will load this data on next login',
       ]);
   } else if (appsScriptOk) {
     notify('warning', 'Partially Synced',
       `${rentLogs.length} records saved to Apps Script backup only.`, [
-        '✗ Firestore unavailable — ' + (errors.find(e=>e.startsWith('Fire'))||'check Firebase Console permissions'),
+        '✗ Firestore unavailable -- ' + (errors.find(e=>e.startsWith('Fire'))||'check Firebase Console permissions'),
         '✓ Apps Script backup updated',
         'Fix Firestore rules in Firebase Console → Firestore → Rules',
       ]);
@@ -4172,22 +4172,22 @@ async function pullFromCloud(silent=false) {
   }
 }
 
-/* ═══ SEND EMAIL VIA FIREBASE ═════════════════════════ */
+/* --- SEND EMAIL VIA FIREBASE ------------------------- */
 
-/* ═══════════════════════════════════════════════════════════════════
-   60-DAY RENEWAL DEADLINE EMAIL — runs automatically after data loads
+/* -------------------------------------------------------------------
+   60-DAY RENEWAL DEADLINE EMAIL -- runs automatically after data loads
    Sends to the tenant's own email address
-═══════════════════════════════════════════════════════════════════ */
+------------------------------------------------------------------- */
 
-/* ═══════════════════════════════════════════════════════════════════
+/* -------------------------------------------------------------------
    TENANCY EXPIRY SYSTEM
    • Daily emails from 60 days → expiry day (every day in final 60)
    • Termination email on day 0 + lock-out
    • Rolling banner on Notices page
    • Tenant portal block on expired + terminated
-═══════════════════════════════════════════════════════════════════ */
+------------------------------------------------------------------- */
 
-/* ── localStorage keys ── */
+/* -- localStorage keys -- */
 const _LOCK_KEY  = 'crs_lockedTenants_v1';   // { email: {lockedAt, reason, unitId} }
 const _DAILY_KEY = 'crs_dailyAlerts_v1';      // { "email_YYYY-MM-DD": true }
 
@@ -4253,7 +4253,7 @@ function renderLockedTenantsList() {
     <div class="locked-item">
       <div style="font-size:1.2rem">🔒</div>
       <div class="locked-item-info">
-        <strong>${info.tenant||'Unknown'} — ${info.unitId||'—'}</strong>
+        <strong>${info.tenant||'Unknown'} -- ${info.unitId||'--'}</strong>
         <span>${email} · Locked: ${new Date(info.lockedAt).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})} · ${info.reason||'Tenancy expired'}</span>
       </div>
       <button class="btn-unlock" onclick="unlockTenant('${email}')">🔓 Reinstate Access</button>
@@ -4261,7 +4261,7 @@ function renderLockedTenantsList() {
   `).join('');
 }
 
-/* ── TENANT LOCK-OUT CHECK — runs on every page load for tenants ── */
+/* -- TENANT LOCK-OUT CHECK -- runs on every page load for tenants -- */
 function checkTenantLockout() {
   if(isAdmin || !currentUser) return;
   const rec = window._myRecord;
@@ -4280,7 +4280,7 @@ function checkTenantLockout() {
   const daysLeft = Math.round((expD - today) / 864e5);
 
   if(daysLeft < 0) {
-    // Expired — lock and show overlay
+    // Expired -- lock and show overlay
     _lockTenant(rec, 'Tenancy expired on ' + rec.expiry);
     document.getElementById('terminationOverlay').classList.add('on');
     // Send termination email
@@ -4318,12 +4318,12 @@ async function _sendTerminationEmail(rec) {
   </div>
 </div></body></html>`;
   if(typeof window.sendCRSEmail === 'function') {
-    await window.sendCRSEmail(email, '[Crestville] TENANCY TERMINATED — ' + unit, html);
-    await window.sendCRSEmail(['crestechnologies@outlook.com','enjanih@gmail.com'], '[ADMIN] Tenant Terminated: ' + name + ' — ' + unit, html);
+    await window.sendCRSEmail(email, '[Crestville] TENANCY TERMINATED -- ' + unit, html);
+    await window.sendCRSEmail(['crestechnologies@outlook.com','enjanih@gmail.com'], '[ADMIN] Tenant Terminated: ' + name + ' -- ' + unit, html);
   }
 }
 
-/* ── DAILY EMAIL ENGINE — fires for every tenant with ≤60 days left ── */
+/* -- DAILY EMAIL ENGINE -- fires for every tenant with ≤60 days left -- */
 const _sentRenewalAlerts = new Set(
   JSON.parse(localStorage.getItem('crs_sentAlerts_v1') || '[]')
 );
@@ -4342,15 +4342,15 @@ async function checkAndSendRenewalEmails(targetEmails) {
   const todayStr = today.toISOString().slice(0,10);
   const dailyAlerts = _getDailyAlerts();
 
-  // Safe date formatter — handles M/D/YYYY, DD/MM/YYYY, ISO etc.
+  // Safe date formatter -- handles M/D/YYYY, DD/MM/YYYY, ISO etc.
   const safeDate = d => {
     if(!d) return null;
     const normalised = normaliseDate(d); // convert M/D/YYYY → YYYY-MM-DD
     const dt = new Date(normalised);
     return isNaN(dt.getTime()) ? null : dt;
   };
-  const fmtDate  = d => { const dt=safeDate(d); return dt ? dt.toLocaleDateString('en-NG',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : '—'; };
-  const fmtShort = d => { const dt=safeDate(d); return dt ? dt.toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : '—'; };
+  const fmtDate  = d => { const dt=safeDate(d); return dt ? dt.toLocaleDateString('en-NG',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : '--'; };
+  const fmtShort = d => { const dt=safeDate(d); return dt ? dt.toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : '--'; };
 
   for (const rec of rentLogs) {
     if (!rec.tenantEmail || !rec.expiry) continue;
@@ -4382,7 +4382,7 @@ async function checkAndSendRenewalEmails(targetEmails) {
     // Daily emails from day 60 down to day 0
     if (daysLeft > 60 || daysLeft < 0) continue;
 
-    // Unique daily key — one email per tenant per day (skip if already sent today)
+    // Unique daily key -- one email per tenant per day (skip if already sent today)
     const dailyKey = `${rec.tenantEmail}_${todayStr}`;
     if (dailyAlerts[dailyKey] && !targetEmails) continue; // skip auto-daily; allow manual resend
 
@@ -4396,12 +4396,12 @@ async function checkAndSendRenewalEmails(targetEmails) {
       urgencyColour='#8c1f1f'; urgencyLabel='TENANCY EXPIRES TODAY'; bannerBg='#100404';
       bodyText=`<p style="margin:0 0 14px">Your tenancy for <strong>${unitLabel}</strong> expires <strong>TODAY, ${fmtDate(rec.expiry)}</strong>.</p>
         <div style="background:#fff0f0;border-left:4px solid #8c1f1f;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0">
-          <div style="font-weight:700;color:#8c1f1f;margin-bottom:8px">⚠ Legal Notice — Clause X</div>
+          <div style="font-weight:700;color:#8c1f1f;margin-bottom:8px">⚠ Legal Notice -- Clause X</div>
           <div style="font-size:13px;color:#6a1a1a;line-height:1.75">You are required to <strong>vacate and surrender vacant possession</strong> to Crestechnologies IS Ltd today unless a renewal is formally approved. Failure to do so may result in legal proceedings.</div>
         </div>`;
       ctaText='Contact Landlord Immediately'; footerNote='This is a formal legal notice. Portal access will be suspended after today.';
     } else if (daysLeft <= 7) {
-      urgencyColour='#c0392b'; urgencyLabel=`FINAL WARNING — ${daysLeft} DAY${daysLeft===1?'':'S'} TO EXPIRY`; bannerBg='#160606';
+      urgencyColour='#c0392b'; urgencyLabel=`FINAL WARNING -- ${daysLeft} DAY${daysLeft===1?'':'S'} TO EXPIRY`; bannerBg='#160606';
       bodyText=`<p style="margin:0 0 14px">Your tenancy expires in <strong style="color:#c0392b">${daysLeft} day${daysLeft===1?'':'s'}</strong> on <strong>${fmtDate(rec.expiry)}</strong>.</p>
         <div style="background:#fff0f0;border-left:4px solid #c0392b;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0">
           <div style="font-weight:700;color:#8c1f1f;margin-bottom:8px">🚨 Final Warning</div>
@@ -4409,23 +4409,23 @@ async function checkAndSendRenewalEmails(targetEmails) {
         </div>`;
       ctaText='Submit Renewal Immediately'; footerNote='This is your final daily notice. Portal access will be suspended on expiry.';
     } else if (daysLeft <= 14) {
-      urgencyColour='#c0392b'; urgencyLabel=`CRITICAL — ${daysLeft} DAYS REMAINING`; bannerBg='#1a0a08';
+      urgencyColour='#c0392b'; urgencyLabel=`CRITICAL -- ${daysLeft} DAYS REMAINING`; bannerBg='#1a0a08';
       bodyText=`<p style="margin:0 0 14px">Your tenancy expires in <strong style="color:#c0392b">${daysLeft} days</strong> on <strong>${fmtDate(rec.expiry)}</strong>.</p>
         <div style="background:#fff0f0;border-left:4px solid #c0392b;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0">
           <div style="font-weight:700;color:#8c1f1f;margin-bottom:8px">🚨 Immediate Action Required</div>
           <div style="font-size:13px;color:#6a1a1a;line-height:1.75">Log in to the portal and submit a renewal request today or confirm your vacating date in writing.</div>
         </div>`;
-      ctaText='Act Now — Submit Renewal or Vacating Notice'; footerNote='Daily reminders will continue until your renewal is confirmed or tenancy expires.';
+      ctaText='Act Now -- Submit Renewal or Vacating Notice'; footerNote='Daily reminders will continue until your renewal is confirmed or tenancy expires.';
     } else if (daysLeft <= 30) {
-      urgencyColour='#e8822a'; urgencyLabel=`URGENT — ${daysLeft} DAYS TO RENEWAL DEADLINE`; bannerBg='#1a1208';
+      urgencyColour='#e8822a'; urgencyLabel=`URGENT -- ${daysLeft} DAYS TO RENEWAL DEADLINE`; bannerBg='#1a1208';
       bodyText=`<p style="margin:0 0 14px">Your tenancy is expiring in <strong>${daysLeft} days</strong> on <strong>${fmtDate(rec.expiry)}</strong>.</p>
         <div style="background:#fff3e6;border-left:4px solid #e8822a;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0">
           <div style="font-weight:700;color:#8a4a00;margin-bottom:6px">⚠ ${daysLeft}-Day Notice</div>
           <div style="font-size:13px;color:#6a3800;line-height:1.7">Please log in to the tenant portal and submit your renewal request. If you intend to vacate, please notify us in writing at <strong>crestechnologies@outlook.com</strong>.</div>
         </div>`;
-      ctaText=`Submit Renewal Request — ${daysLeft} Days Left`; footerNote='You will receive this reminder daily until your renewal is confirmed.';
+      ctaText=`Submit Renewal Request -- ${daysLeft} Days Left`; footerNote='You will receive this reminder daily until your renewal is confirmed.';
     } else {
-      urgencyColour='#c9960c'; urgencyLabel=`RENEWAL NOTICE — ${daysLeft} DAYS REMAINING`; bannerBg='#1a1410';
+      urgencyColour='#c9960c'; urgencyLabel=`RENEWAL NOTICE -- ${daysLeft} DAYS REMAINING`; bannerBg='#1a1410';
       bodyText=`<p style="margin:0 0 14px">Your tenancy for <strong>${unitLabel}</strong> will expire in <strong>${daysLeft} days</strong> on <strong>${fmtDate(rec.expiry)}</strong>.</p>
         <div style="background:#fff8e6;border-left:4px solid #c9960c;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0">
           <div style="font-weight:700;color:#7a5a00;margin-bottom:6px">⏳ Action Required</div>
@@ -4465,7 +4465,7 @@ async function checkAndSendRenewalEmails(targetEmails) {
   </div>
 </div></body></html>`;
 
-    const subject = `[Crestville] ${urgencyLabel} — ${unitLabel}`;
+    const subject = `[Crestville] ${urgencyLabel} -- ${unitLabel}`;
 
     if (typeof window.sendCRSEmail === 'function') {
       await window.sendCRSEmail(rec.tenantEmail, subject, emailHtml);
@@ -4477,7 +4477,7 @@ async function checkAndSendRenewalEmails(targetEmails) {
   }
 }
 
-/* Manual trigger — admin can also send reminders on demand */
+/* Manual trigger -- admin can also send reminders on demand */
 function sendAllRenewalReminders() {
   // Open the tenant selector modal instead of blind blast
   openReminderModal();
@@ -4493,7 +4493,7 @@ function openReminderModal() {
     const dt = new Date(normaliseDate(d));
     return isNaN(dt.getTime()) ? null : dt;
   };
-  const fmt = d => { const dt=safeDate(d); return dt ? dt.toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}) : '—'; };
+  const fmt = d => { const dt=safeDate(d); return dt ? dt.toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}) : '--'; };
 
   // Categorise tenants
   const cats = { expiring: [], active: [], noExpiry: [] };
@@ -4524,8 +4524,8 @@ function openReminderModal() {
         ${isExpiring ? 'checked' : ''}
         style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:.84rem;color:var(--ink)">${r.tenant||r.contractName||'—'}</div>
-        <div style="font-size:.72rem;color:#666">${getPropertyLabel(r.unitId||r.unit)||r.unit||'—'}</div>
+        <div style="font-weight:600;font-size:.84rem;color:var(--ink)">${r.tenant||r.contractName||'--'}</div>
+        <div style="font-size:.72rem;color:#666">${getPropertyLabel(r.unitId||r.unit)||r.unit||'--'}</div>
         <div style="font-size:.7rem;color:#999">${r.tenantEmail}</div>
       </div>
       <span style="font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:20px;
@@ -4585,10 +4585,10 @@ async function sendReminderToSelected() {
   if(!selected.length) { notify('warning','No Tenants Selected','Please select at least one tenant.'); return; }
 
   const btn = document.getElementById('rmModalSendBtn');
-  if(btn) { btn.disabled=true; btn.textContent='Sending…'; }
+  if(btn) { btn.disabled=true; btn.textContent='Sending...'; }
 
   closeReminderModal();
-  notify('info','Sending Reminders…',`Sending to ${selected.length} tenant(s). This may take a moment.`);
+  notify('info','Sending Reminders...',`Sending to ${selected.length} tenant(s). This may take a moment.`);
 
   // Clear daily cache for selected tenants so emails go through
   const alerts = _getDailyAlerts();
@@ -4618,7 +4618,7 @@ window.sendCRSEmail = async (to, subject, html) => {
   } catch(e) { console.error('Email error:',e); return false; }
 };
 
-/* ═══ BOOT ════════════════════════════════════════════ */
+/* --- BOOT -------------------------------------------- */
 // Compat SDK is ready immediately - init directly
 try {
   initAuth();
@@ -4634,17 +4634,17 @@ setTimeout(() => {
 }, 3000);
 
 
-/* ════════════════════════════════════════════════════
+/* ----------------------------------------------------
    PROPERTIES ENHANCED
-════════════════════════════════════════════════════ */
+---------------------------------------------------- */
 
-/* ── PROP TAB SWITCH ── */
+/* -- PROP TAB SWITCH -- */
 function showPropTab(id, btn) {
   document.querySelectorAll('.prop-sub-page').forEach(p => p.classList.remove('on'));
   document.getElementById(id).classList.add('on');
 }
 
-/* ── RENDER PROPERTIES (enhanced) ── */
+/* -- RENDER PROPERTIES (enhanced) -- */
 function renderProperties() {
   try {
 
@@ -4728,7 +4728,7 @@ function renderProperties() {
         ${docCount > 0 ? `<div style="margin-top:6px"><span class="doc-count-pill">📁 ${docCount} doc${docCount>1?'s':''}</span></div>` : ''}
       </div>
       <div class="uc-bottom">
-        <div class="uc-rent">${rec ? '₦'+Number(rec.amount).toLocaleString() : '—'}</div>
+        <div class="uc-rent">${rec ? '₦'+Number(rec.amount).toLocaleString() : '--'}</div>
         <div style="display:flex;gap:6px">
           <button class="btn btn-sm btn-outline" onclick="openPropEdit('${p.id}')" title="Edit property details, amenities, images">🏠 Edit</button>
           ${occupied ? `<button class="btn btn-sm btn-outline" onclick="openTenantDrawer('${p.id}')">📁 Docs</button>
@@ -4753,7 +4753,7 @@ function editRentByUnit(propId) {
     const idx = rentLogs.findIndex(r => r === rec || r.id === rec.id);
     if(idx >= 0) { showPage('pgRentManager'); openRentModal(idx); return; }
   }
-  // No record yet — open the property edit modal (tenant details section)
+  // No record yet -- open the property edit modal (tenant details section)
   openPropEdit(propId);
 }
 
@@ -4767,15 +4767,15 @@ function addRecordForUnit(propId) {
   }, 100);
 }
 
-/* ── DOCUMENT COUNTS CACHE ── */
+/* -- DOCUMENT COUNTS CACHE -- */
 const _docCounts = {};
 
-/* ════════════════════════════════════════════════════
+/* ----------------------------------------------------
    CSV IMPORT
-════════════════════════════════════════════════════ */
+---------------------------------------------------- */
 
 
-/* ── EXPORT ALL RECORDS AS CSV ── */
+/* -- EXPORT ALL RECORDS AS CSV -- */
 function exportAllCSV() {
   var hdrs = ['Unit','Use','Address_Location','Tenant','Email','Amount','New_Rent','Tenancy_Expiry_Date','Tenancy_Start_Date','vacancy','Last_Payment_Date','Notes','Phone','NIN','Contract_Name'];
   var rows = rentLogs.map(function(r) {
@@ -4825,11 +4825,11 @@ function downloadCSVTemplate() {
   a.href = URL.createObjectURL(blob);
   a.download = 'CRS_RentImport_Template.csv';
   a.click();
-  if (typeof toast === 'function') toast('\u2713 CSV template downloaded — fill your data and import');
+  if (typeof toast === 'function') toast('\u2713 CSV template downloaded -- fill your data and import');
 }
-/* ════════════════════════════════════════════════════
+/* ----------------------------------------------------
    SMART CSV IMPORTER  (replaces legacy handleCSVImport)
-════════════════════════════════════════════════════ */
+---------------------------------------------------- */
 
 // CRS field definitions with alias lists
 // Covers: your exact headers (unit_id, unit_label, location, city, type, tenant_name,
@@ -4969,7 +4969,7 @@ function _impBuildMappingUI() {
     // Arrow cell
     const arr = document.createElement('div'); arr.className='imp-map-arr'; arr.textContent='→';
 
-    // Right cell — select + optional default input stacked
+    // Right cell -- select + optional default input stacked
     const rightCell = document.createElement('div');
     rightCell.style.cssText = 'display:flex;flex-direction:column;border-bottom:1px solid #2a2620;';
 
@@ -4978,8 +4978,8 @@ function _impBuildMappingUI() {
     sel.id = 'impMap_' + f.key;
     sel.style.borderRadius = _impColMap[f.key] ? '0 6px 6px 0' : '0 6px 0 0';
 
-    // Add "— skip —" then "✏ Type a default value…" sentinel, then columns
-    sel.innerHTML = `<option value="">— skip —</option><option value="__DEFAULT__" style="color:#c9960c">✏ Type a default value below…</option>`;
+    // Add "-- skip --" then "✏ Type a default value..." sentinel, then columns
+    sel.innerHTML = `<option value="">-- skip --</option><option value="__DEFAULT__" style="color:#c9960c">✏ Type a default value below...</option>`;
     _impRawHeaders.forEach(h=>{
       const o = document.createElement('option'); o.value=h; o.textContent=h;
       if(h === _impColMap[f.key]) o.selected = true;
@@ -4991,7 +4991,7 @@ function _impBuildMappingUI() {
     defInput.type = 'text';
     defInput.className = 'imp-default-input';
     defInput.id = 'impDefault_' + f.key;
-    defInput.placeholder = '✏ Type default for all rows — e.g. +234 801 234 5678';
+    defInput.placeholder = '✏ Type default for all rows -- e.g. +234 801 234 5678';
     defInput.value = _impDefaultValues[f.key] || '';
     const showDefault = !_impColMap[f.key] && _impDefaultValues[f.key];
     defInput.style.display = showDefault ? 'block' : 'none';
@@ -5055,7 +5055,7 @@ function _impBuildPreview() {
   const labels = {unit:'Unit',tenant:'Tenant',tenantEmail:'Email',amount:'Rent Amount',start:'Start',expiry:'Expiry',vacancy:'Status'};
   document.getElementById('impPreviewHead').innerHTML='<tr>'+cols.map(k=>`<th>${labels[k]||k}</th>`).join('')+'</tr>';
   document.getElementById('impPreviewBody').innerHTML=_impMapped.map(r=>'<tr>'+cols.map(k=>{
-    let v=r[k]||'—';
+    let v=r[k]||'--';
     if(k==='vacancy'){
       const lv=v.toLowerCase();
       const cls=lv.includes('occup')?'#5aaf7a':lv.includes('terminat')?'#e8b422':'#f57272';
@@ -5075,7 +5075,7 @@ function _impBuildPreview() {
     `<div class="imp-stat"><div class="imp-stat-n">${_impMapped.length-noEmail}</div><div class="imp-stat-l">Have Email</div></div>`;
   const okEl=document.getElementById('impAlertOk'); const warnEl=document.getElementById('impAlertWarn');
   okEl.style.display='flex'; document.getElementById('impAlertOkText').textContent=`${_impMapped.length} records ready to import. Review below.`;
-  if(noEmail>0){ warnEl.style.display='flex'; document.getElementById('impAlertWarnText').textContent=`${noEmail} record(s) have no email — workflow notifications won't reach them.`; }
+  if(noEmail>0){ warnEl.style.display='flex'; document.getElementById('impAlertWarnText').textContent=`${noEmail} record(s) have no email -- workflow notifications won't reach them.`; }
   else warnEl.style.display='none';
 }
 
@@ -5090,13 +5090,13 @@ async function smartDoImport() {
     const r=_impMapped[i];
     if(!r.unit&&!r.tenant){ skipped++; continue; }
 
-    // ── Find canonical PROPERTIES id using fuzzy match ──
+    // -- Find canonical PROPERTIES id using fuzzy match --
     const unitId = _resolveUnitId(r.unit, r.location);
 
-    // ── Build incoming record — only non-empty values ──
+    // -- Build incoming record -- only non-empty values --
     const incoming = _buildIncomingRecord(r, unitId, i);
 
-    // ── Find existing record using robust matching ──
+    // -- Find existing record using robust matching --
     const existRaw = _getRecordByPropId(unitId) ||
       rentLogs.find(e => _norm(e.unitId||e.unit) === _norm(r.unit));
     const existIdx = existRaw ? rentLogs.indexOf(existRaw) : -1;
@@ -5107,11 +5107,11 @@ async function smartDoImport() {
       updated++; log(`↻ Row ${r._row}: Merged into ${unitId} · ${incoming.tenant||rentLogs[existIdx].tenant||'(vacant)'}`, 'info');
     } else {
       rentLogs.push(incoming); added++;
-      log(`✓ Row ${r._row}: Added — ${unitId} · ${incoming.tenant||'(vacant)'}`, 'ok');
+      log(`✓ Row ${r._row}: Added -- ${unitId} · ${incoming.tenant||'(vacant)'}`, 'ok');
     }
   }
 
-  // ── DEDUPLICATE: keep the most recently updated record per unitId ──
+  // -- DEDUPLICATE: keep the most recently updated record per unitId --
   const seen = new Map();
   rentLogs.forEach(r => {
     const key = (r.unitId||r.unit||'').toLowerCase().trim();
@@ -5123,10 +5123,10 @@ async function smartDoImport() {
   const beforeCount = rentLogs.length;
   rentLogs = Array.from(seen.values());
   dupes = beforeCount - rentLogs.length;
-  if(dupes > 0) log(`🗑 ${dupes} duplicate unit(s) removed — kept most recently updated`, 'warn');
+  if(dupes > 0) log(`🗑 ${dupes} duplicate unit(s) removed -- kept most recently updated`, 'warn');
   _canonicaliseUnitIds(); // ensure all unitIds match PROPERTIES ids
 
-  log(`─── Complete: ${added} added · ${updated} updated · ${skipped} skipped · ${dupes} dupes removed ───`,'info');
+  log(`--- Complete: ${added} added · ${updated} updated · ${skipped} skipped · ${dupes} dupes removed ---`,'info');
 
   // Save localStorage
   localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs));
@@ -5147,7 +5147,7 @@ async function smartDoImport() {
   _impShowStage(4);
   document.getElementById('impStage4').scrollIntoView({behavior:'smooth',block:'nearest'});
 
-  // Firestore sync — background with timeout, plain .then() chain
+  // Firestore sync -- background with timeout, plain .then() chain
   log('☁ Syncing to Firestore...','info');
   if(window._db) {
     const batch = window._db.batch(); let bc = 0;
@@ -5159,13 +5159,13 @@ async function smartDoImport() {
       batch.commit(),
       new Promise(function(_,r){ setTimeout(function(){ r(new Error('timeout')); }, 8000); })
     ]).then(function(){
-      log('✓ Firestore sync complete — '+Math.min(rentLogs.length,499)+' records saved','ok');
+      log('✓ Firestore sync complete -- '+Math.min(rentLogs.length,499)+' records saved','ok');
       toast('✓ Import + cloud sync complete: '+rentLogs.length+' records');
     }).catch(function(e){
-      log('⚠ Firestore sync skipped — '+(e.message||'check connection'),'warn');
+      log('⚠ Firestore sync skipped -- '+(e.message||'check connection'),'warn');
     });
   } else {
-    log('⚠ Firestore not ready — data saved locally only','warn');
+    log('⚠ Firestore not ready -- data saved locally only','warn');
   }
 }
 
@@ -5196,11 +5196,11 @@ function clearImport() { resetSmartImport(); }
 function logImport(msg,type='ok'){const el=document.getElementById('importLog');const cls=type==='err'?'log-err':type==='warn'?'log-warn':type==='info'?'log-info':'';el.innerHTML+=`<div class="${cls}">${msg}</div>`;el.scrollTop=el.scrollHeight;}
 function setImportProgress(pct){document.getElementById('importProgressFill').style.width=pct+'%';}
 
-/* ════════════════════════════════════════════════════
-   RENT MANAGER — INLINE IMPORT INSTANCE
+/* ----------------------------------------------------
+   RENT MANAGER -- INLINE IMPORT INSTANCE
    Reuses _IMP_FIELDS, _impNorm, _impAutoDetect, _impParseCSV
    but with separate state + rm-prefixed element IDs
-════════════════════════════════════════════════════ */
+---------------------------------------------------- */
 let _rmRawHeaders=[], _rmRawRows=[], _rmColMap={}, _rmMapped=[], _rmDefaultValues={};
 
 function toggleRmImport() {
@@ -5264,7 +5264,7 @@ function _rmBuildMappingUI() {
     sel.className = 'imp-map-sel '+(_rmColMap[f.key]?'matched':'unmatched');
     sel.id = 'rmImpMap_'+f.key;
     sel.style.borderRadius = _rmColMap[f.key] ? '0 6px 6px 0' : '0 6px 0 0';
-    sel.innerHTML = `<option value="">— skip —</option><option value="__DEFAULT__" style="color:#c9960c">✏ Type a default value below…</option>`;
+    sel.innerHTML = `<option value="">-- skip --</option><option value="__DEFAULT__" style="color:#c9960c">✏ Type a default value below...</option>`;
     _rmRawHeaders.forEach(h=>{
       const o=document.createElement('option'); o.value=h; o.textContent=h;
       if(h===_rmColMap[f.key]) o.selected=true;
@@ -5274,7 +5274,7 @@ function _rmBuildMappingUI() {
     const defInput = document.createElement('input');
     defInput.type='text'; defInput.className='imp-default-input';
     defInput.id = 'rmImpDefault_'+f.key;
-    defInput.placeholder = '✏ Type default for all rows…';
+    defInput.placeholder = '✏ Type default for all rows...';
     defInput.value = _rmDefaultValues[f.key] || '';
     const showDef = !_rmColMap[f.key] && _rmDefaultValues[f.key];
     defInput.style.display = showDef ? 'block' : 'none';
@@ -5325,7 +5325,7 @@ function rmSmartApplyMapping() {
   const labels={unit:'Unit',tenant:'Tenant',tenantEmail:'Email',amount:'Rent (₦)',start:'Start',expiry:'Expiry',vacancy:'Status'};
   document.getElementById('rmImpPreviewHead').innerHTML='<tr>'+cols.map(k=>`<th>${labels[k]}</th>`).join('')+'</tr>';
   document.getElementById('rmImpPreviewBody').innerHTML=_rmMapped.map(r=>'<tr>'+cols.map(k=>{
-    let v=r[k]||'—';
+    let v=r[k]||'--';
     if(k==='vacancy'){const lv=v.toLowerCase();const c=lv.includes('occup')?'#5aaf7a':lv.includes('terminat')?'#e8b422':'#f57272';v=`<span style="color:${c};font-weight:600;font-size:.7rem;text-transform:uppercase">${v}</span>`;}
     return `<td title="${r[k]||''}">${v}</td>`;
   }).join('')+'</tr>').join('');
@@ -5341,7 +5341,7 @@ function rmSmartApplyMapping() {
   document.getElementById('rmImpAlertOk').style.display='flex';
   document.getElementById('rmImpAlertOkText').textContent=`${_rmMapped.length} records ready. Review below then click Import.`;
   const wa=document.getElementById('rmImpAlertWarn');
-  if(noEmail>0){wa.style.display='flex';document.getElementById('rmImpAlertWarnText').textContent=`${noEmail} record(s) have no email — notifications won't reach them.`;}
+  if(noEmail>0){wa.style.display='flex';document.getElementById('rmImpAlertWarnText').textContent=`${noEmail} record(s) have no email -- notifications won't reach them.`;}
   else wa.style.display='none';
   _rmShowStage(3);
   document.getElementById('rmImpStage3').scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -5368,11 +5368,11 @@ async function rmSmartDoImport() {
       updated++;log(`↻ Row ${r._row}: Merged into ${unitId} · ${incoming.tenant||rentLogs[existIdx].tenant||'(vacant)'}`, 'info');
     } else {
       rentLogs.push(incoming);added++;
-      log(`✓ Row ${r._row}: Added — ${unitId} · ${incoming.tenant||'(vacant)'}`, 'ok');
+      log(`✓ Row ${r._row}: Added -- ${unitId} · ${incoming.tenant||'(vacant)'}`, 'ok');
     }
   }
 
-  // ── DEDUPLICATE: keep the most recently updated record per unitId ──
+  // -- DEDUPLICATE: keep the most recently updated record per unitId --
   const seen=new Map();
   rentLogs.forEach(r=>{
     const key=(r.unitId||r.unit||'').toLowerCase().trim();
@@ -5384,10 +5384,10 @@ async function rmSmartDoImport() {
   const bc=rentLogs.length;
   rentLogs=Array.from(seen.values());
   dupes=bc-rentLogs.length;
-  if(dupes>0)log(`🗑 ${dupes} duplicate unit(s) removed — kept most recently updated`,'warn');
+  if(dupes>0)log(`🗑 ${dupes} duplicate unit(s) removed -- kept most recently updated`,'warn');
   _canonicaliseUnitIds(); // ensure all unitIds align with PROPERTIES ids
 
-  log(`─── Complete: ${added} added · ${updated} updated · ${skipped} skipped · ${dupes} dupes removed ───`,'info');
+  log(`--- Complete: ${added} added · ${updated} updated · ${skipped} skipped · ${dupes} dupes removed ---`,'info');
   localStorage.setItem('rentData_CRS_v3',JSON.stringify(rentLogs));
   // Re-sync current tenant's record if logged in as tenant
   if (!isAdmin && currentUser) {
@@ -5404,7 +5404,7 @@ async function rmSmartDoImport() {
   toast(`✓ Import complete: ${added+updated} records`);
   _rmShowStage(4);
   document.getElementById('rmImpStage4').scrollIntoView({behavior:'smooth',block:'nearest'});
-  // Firestore sync — background with timeout, plain .then() chain
+  // Firestore sync -- background with timeout, plain .then() chain
   log('☁ Syncing to Firestore...','info');
   if(window._db) {
     const batch=window._db.batch(); let bc=0;
@@ -5413,12 +5413,12 @@ async function rmSmartDoImport() {
       batch.commit(),
       new Promise(function(_,r){setTimeout(function(){r(new Error('timeout'));},8000);})
     ]).then(function(){
-      log('✓ Firestore sync complete — '+Math.min(rentLogs.length,499)+' records saved','ok');
+      log('✓ Firestore sync complete -- '+Math.min(rentLogs.length,499)+' records saved','ok');
       toast('✓ Import + cloud sync complete: '+rentLogs.length+' records');
     }).catch(function(e){
-      log('⚠ Firestore sync skipped — '+(e.message||'check connection'),'warn');
+      log('⚠ Firestore sync skipped -- '+(e.message||'check connection'),'warn');
     });
-  } else { log('⚠ Firestore not ready — saved locally only','warn'); }
+  } else { log('⚠ Firestore not ready -- saved locally only','warn'); }
 }
 
 function rmSmartDownloadCSV(){
@@ -5441,7 +5441,7 @@ function rmResetImport(){
 
 function _rmShowStage(n){[1,2,3,4].forEach(i=>{const el=document.getElementById('rmImpStage'+i);if(el)el.classList.toggle('on',i<=n);});}
 
-/* ── Drag-and-drop for RM drop zone ── */
+/* -- Drag-and-drop for RM drop zone -- */
 (function setupRmDragDrop(){
   const ready=()=>{
     const zone=document.getElementById('rmCsvDropZone');if(!zone)return;
@@ -5467,7 +5467,7 @@ function normaliseDate(d) {
   const ymd = d.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
   if(ymd) return `${ymd[1]}-${ymd[2].padStart(2,'0')}-${ymd[3].padStart(2,'0')}`;
 
-  // M/D/YYYY or MM/DD/YYYY — your CSV export format (US style)
+  // M/D/YYYY or MM/DD/YYYY -- your CSV export format (US style)
   // Detect: if first number > 12 it must be D/M, otherwise assume M/D (your format)
   const slash = d.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if(slash) {
@@ -5476,7 +5476,7 @@ function normaliseDate(d) {
       // First part can't be month → must be D/M/YYYY
       return `${yr}-${b.toString().padStart(2,'0')}-${a.toString().padStart(2,'0')}`;
     } else {
-      // First part ≤ 12 — treat as M/D/YYYY (your spreadsheet export style)
+      // First part ≤ 12 -- treat as M/D/YYYY (your spreadsheet export style)
       return `${yr}-${a.toString().padStart(2,'0')}-${b.toString().padStart(2,'0')}`;
     }
   }
@@ -5515,9 +5515,9 @@ function autoMatchUnitId(label, location) {
   return match ? match.id : '';
 }
 
-/* ════════════════════════════════════════════════════
+/* ----------------------------------------------------
    TENANT DOCUMENT DRAWER
-════════════════════════════════════════════════════ */
+---------------------------------------------------- */
 
 let _currentTenantUnit = null;
 let _currentDocCategory = 'tenancy_agreement';
@@ -5532,15 +5532,15 @@ function openTenantDrawer(unitId) {
   document.getElementById('drawerOverlay').classList.add('on');
   drawer.classList.add('on');
 
-  document.getElementById('drawerTitle').textContent = (p?.label||unitId) + ' — Documents';
+  document.getElementById('drawerTitle').textContent = (p?.label||unitId) + ' -- Documents';
 
   // Tenant info
   const ti = document.getElementById('drawerTenantInfo');
   ti.innerHTML = [
-    ['Tenant Name', rec?.tenant||'—'],
-    ['Email', rec?.tenantEmail||'—'],
-    ['Phone', rec?.tenantPhone||'—'],
-    ['NIN', rec?.tenantNIN||'—'],
+    ['Tenant Name', rec?.tenant||'--'],
+    ['Email', rec?.tenantEmail||'--'],
+    ['Phone', rec?.tenantPhone||'--'],
+    ['NIN', rec?.tenantNIN||'--'],
   ].map(([l,v]) => `<div class="ti-item"><label>${l}</label><span>${v}</span></div>`).join('');
 
   // Tenancy info
@@ -5551,13 +5551,13 @@ function openTenantDrawer(unitId) {
   const tn = document.getElementById('drawerTenancyInfo');
   tn.innerHTML = [
     ['Unit', p?.label||unitId],
-    ['Location', p?.location||'—'],
-    ['Annual Rent', rec?.amount ? '₦'+Number(rec.amount).toLocaleString() : '—'],
-    ['Start Date', rec?.start||'—'],
-    ['Expiry Date', rec?.expiry||'—'],
-    ['Days Left', days !== null ? (days<0?Math.abs(days)+' days overdue':days+' days left') : '—'],
+    ['Location', p?.location||'--'],
+    ['Annual Rent', rec?.amount ? '₦'+Number(rec.amount).toLocaleString() : '--'],
+    ['Start Date', rec?.start||'--'],
+    ['Expiry Date', rec?.expiry||'--'],
+    ['Days Left', days !== null ? (days<0?Math.abs(days)+' days overdue':days+' days left') : '--'],
     ['Status', rec?.vacancy||'occupied'],
-    ['Notes', rec?.notes||'—'],
+    ['Notes', rec?.notes||'--'],
   ].map(([l,v]) => `<div class="ti-item"><label>${l}</label><span>${v}</span></div>`).join('');
 
   // Reset category button styles
@@ -5651,7 +5651,7 @@ async function handleDocUpload(input) {
         });
       } else { throw new Error('Storage not ready'); }
     } catch(e) {
-      // Fallback: store as local object URL (session only — prompt to enable Storage)
+      // Fallback: store as local object URL (session only -- prompt to enable Storage)
       url = URL.createObjectURL(file);
       const fill = document.getElementById(rowId+'_fill');
       if(fill) fill.style.width = '100%';
@@ -5716,7 +5716,7 @@ async function loadAllTenantDocs() {
   } catch(e) { console.log('Load tenant docs:', e); }
 }
 
-/* ── DRAG & DROP on CSV drop zone ── */
+/* -- DRAG & DROP on CSV drop zone -- */
 (function setupDragDrop() {
   const ready = () => {
     const zone = document.getElementById('csvDropZone');
@@ -5734,9 +5734,9 @@ async function loadAllTenantDocs() {
 })();
 
 
-/* ════════════════════════════════════
+/* ------------------------------------
    SWITCH ROLE + REFRESH FUNCTIONS
-════════════════════════════════════ */
+------------------------------------ */
 function openSwitchRole() {
   const email = currentUser ? (currentUser.email||'') : '';
   document.getElementById('srCurrentEmail').textContent = email;
@@ -5763,7 +5763,7 @@ async function switchToRole(role) {
     return;
   }
   if (role === 'existing_tenant') {
-    // Show the pre-built HTML modal — no JS string building
+    // Show the pre-built HTML modal -- no JS string building
     const m = document.getElementById('quickVerifyModal');
     if (m) {
       document.getElementById('qvName').value = '';
@@ -5812,11 +5812,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
-/* ════════════════════════════════════════════════════════════
+/* ------------------------------------------------------------
    PROPERTY EDITOR
-════════════════════════════════════════════════════════════ */
+------------------------------------------------------------ */
 
-// Global amenities list — stored in localStorage + Firestore
+// Global amenities list -- stored in localStorage + Firestore
 const DEFAULT_AMENITIES = [
   // Core residential
   '2 Bedrooms','3 Bedrooms','Living Room','Dining Room','Kitchen',
@@ -5837,7 +5837,7 @@ const DEFAULT_AMENITIES = [
   'On-site Concierge'
 ];
 
-// Amenity descriptions — shown in cards and as tooltips
+// Amenity descriptions -- shown in cards and as tooltips
 const AMENITY_DESCRIPTIONS = {
   'Professional Janitorial & Waste Services': 'A structured and regular waste collection and janitorial system keeps communal areas clean, hygienic, and pleasant throughout the year.',
   'Large Car Storage Space':                  'Generous parking and vehicle storage provisions within the compound, accommodating multiple cars per household with ease.',
@@ -5901,7 +5901,7 @@ async function loadPropExtras() {
   } catch(e) { console.warn('loadPropExtras:', e); }
 }
 
-/* ── OPEN / CLOSE EDITOR ── */
+/* -- OPEN / CLOSE EDITOR -- */
 let _editingPropId = null;
 let _editVacancy = 'occupied';
 let _editAmenities = [];
@@ -5927,7 +5927,7 @@ function openPropEdit(propId) {
   document.getElementById('peNewRent').value     = extra.newRent || (rec ? rec.newRent : '') || '';
   document.getElementById('peNewRentDate').value = extra.newRentDate || (rec ? rec.newRentDate : '') || '';
 
-  // Tenant fields — populate from linked rentLogs record
+  // Tenant fields -- populate from linked rentLogs record
   const linked = document.getElementById('peTenantLinkedBadge');
   if (rec && rec.tenant) {
     document.getElementById('peTenant').value        = rec.tenant        || '';
@@ -5967,7 +5967,7 @@ function closePropEdit() {
   _editingPropId = null;
 }
 
-/* ── VACANCY ── */
+/* -- VACANCY -- */
 function setVacancy(v) {
   _editVacancy = v;
   document.getElementById('vtOccupied').classList.toggle('active', v === 'occupied');
@@ -5976,7 +5976,7 @@ function setVacancy(v) {
     v === 'occupied' ? 'Currently marked as occupied' : 'Currently marked as vacant / available';
 }
 
-/* ── AMENITIES ── */
+/* -- AMENITIES -- */
 function renderAmenitySelectGrid() {
   var grid = document.getElementById('amenitySelectGrid');
   if (!grid) return;
@@ -6064,7 +6064,7 @@ function removeAmenityFromEdit(i) {
   renderAmenitySelectGrid();
 }
 
-/* ── IMAGES ── */
+/* -- IMAGES -- */
 function loadPropImage(slot, input) {
   const file = input.files[0];
   if (!file) return;
@@ -6097,13 +6097,13 @@ function renderPropImages() {
   });
 }
 
-/* ── SAVE ── */
+/* -- SAVE -- */
 function savePropEdit() {
   if (!_editingPropId) return;
   const p = PROPERTIES.find(x => x.id === _editingPropId);
   if (!p) return;
 
-  // ── Validate ──
+  // -- Validate --
   const v = _validateFields([
     {id:'peLabel',    label:'Property Label', msg:'Property label / name is required'},
     {id:'peRent',     label:'Annual Rent',    msg:'Annual rent must be a positive number',
@@ -6143,13 +6143,13 @@ function savePropEdit() {
   const newExpiry      = document.getElementById('peTenancyExpiry').value;
   const newLastPay     = document.getElementById('peTenantLastPay').value;
 
-  // ── 1. Update PROPERTIES array ──
+  // -- 1. Update PROPERTIES array --
   p.label    = newLabel;
   p.city     = newCity;
   p.type     = newType;
   p.location = newLocation;
 
-  // ── 2. Save propExtras ──
+  // -- 2. Save propExtras --
   setPropExtra(_editingPropId, {
     amenities:     _editAmenities,
     img0:          _editImages[0],
@@ -6161,7 +6161,7 @@ function savePropEdit() {
     newRentDate:   newRentDate,
   });
 
-  // ── 3. Find or create rentLogs record ──
+  // -- 3. Find or create rentLogs record --
   _refreshRentLogs();
   let recIdx = rentLogs.findIndex(e =>
     (e.unitId||e.unit) === _editingPropId ||
@@ -6190,7 +6190,7 @@ function savePropEdit() {
   };
 
   if (recIdx >= 0) {
-    // Merge into existing record — preserve id and other fields
+    // Merge into existing record -- preserve id and other fields
     rentLogs[recIdx] = { ...rentLogs[recIdx], ...updatedRecord };
   } else {
     // Create new record if none exists
@@ -6202,10 +6202,10 @@ function savePropEdit() {
     recIdx = rentLogs.length - 1;
   }
 
-  // ── 4. Save to localStorage ──
+  // -- 4. Save to localStorage --
   saveLocal();
 
-  // ── 5. Re-sync _myRecord if this is the logged-in tenant's unit ──
+  // -- 5. Re-sync _myRecord if this is the logged-in tenant's unit --
   if (!isAdmin && currentUser && window._myRecord) {
     const myEmail = (currentUser.email||'').toLowerCase();
     if ((updatedRecord.tenantEmail||'').toLowerCase() === myEmail ||
@@ -6214,7 +6214,7 @@ function savePropEdit() {
     }
   }
 
-  // ── 6. Sync to Firestore — plain .then(), never blocks UI ──
+  // -- 6. Sync to Firestore -- plain .then(), never blocks UI --
   if(window._db) {
     const _syncRec = rentLogs[recIdx];
     Promise.race([
@@ -6227,7 +6227,7 @@ function savePropEdit() {
     });
   }
 
-  // ── 7. Refresh all views ──
+  // -- 7. Refresh all views --
   closePropEdit();
   renderProperties();
   renderRentManager();
@@ -6237,7 +6237,7 @@ function savePropEdit() {
     setTimeout(renderTenantDashboard, 300);
   }
 
-  // ── 8. Rich success notification ──
+  // -- 8. Rich success notification --
   const changes = [];
   if (newRentNew)  changes.push(`New rent: ₦${Number(newRentNew).toLocaleString()}${newRentDate?' (eff. '+newRentDate+')':''}`);
   if (newExpiry)   changes.push(`Expiry: ${newExpiry}`);
@@ -6245,9 +6245,9 @@ function savePropEdit() {
   if (newStart)    changes.push(`Start: ${newStart}`);
   if (_editVacancy === 'vacant') changes.push('Unit marked as vacant');
 
-  // Validate before finishing (non-blocking — already done above if new flow)
+  // Validate before finishing (non-blocking -- already done above if new flow)
   notify('success',
-    `${newLabel} — Saved`,
+    `${newLabel} -- Saved`,
     `Property and tenant details updated successfully.`,
     [
       `Current rent: ₦${Number(newRentAmt||0).toLocaleString()}`,
@@ -6258,9 +6258,9 @@ function savePropEdit() {
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   RENT MANAGER — PASTE ROW IMPORT MODE
-════════════════════════════════════════════════════════════ */
+/* ------------------------------------------------------------
+   RENT MANAGER -- PASTE ROW IMPORT MODE
+------------------------------------------------------------ */
 
 const RM_PASTE_DEFAULT_HEADERS = 'unit\ttenant\temail\tphone\tamount\tnew_rent\tstart_date\texpiry_date\tlast_payment\tvacancy\tnotes';
 
@@ -6346,11 +6346,11 @@ function rmPastePreview() {
   const labels = {unit:'Unit',tenant:'Tenant',tenantEmail:'Email',amount:'Rent',start:'Start',expiry:'Expiry',vacancy:'Status'};
 
   area.innerHTML = `
-    <div class="imp-alert imp-alert-ok" style="margin-bottom:8px"><span>✅</span><span>${rows.length} row(s) parsed — review below then click Import.</span></div>
+    <div class="imp-alert imp-alert-ok" style="margin-bottom:8px"><span>✅</span><span>${rows.length} row(s) parsed -- review below then click Import.</span></div>
     <div class="imp-table-wrap" style="max-height:220px">
       <table class="imp-table">
         <thead><tr>${cols.map(k=>`<th>${labels[k]}</th>`).join('')}</tr></thead>
-        <tbody>${rows.map(r=>'<tr>'+cols.map(k=>`<td title="${r[k]||''}">${r[k]||'—'}</td>`).join('')+'</tr>').join('')}</tbody>
+        <tbody>${rows.map(r=>'<tr>'+cols.map(k=>`<td title="${r[k]||''}">${r[k]||'--'}</td>`).join('')+'</tr>').join('')}</tbody>
       </table>
     </div>`;
   if(actions) actions.style.display='block';
@@ -6383,17 +6383,17 @@ function rmPasteDoImport() {
     if(existIdx >= 0) {
       rentLogs[existIdx] = _smartMerge(rentLogs[existIdx], incoming);
       updated++;
-      log(`↻ Row ${r._row}: Merged — ${unitId} · ${incoming.tenant || rentLogs[existIdx].tenant || '(vacant)'}`, 'info');
+      log(`↻ Row ${r._row}: Merged -- ${unitId} · ${incoming.tenant || rentLogs[existIdx].tenant || '(vacant)'}`, 'info');
     } else {
       rentLogs.push(incoming); added++;
-      log(`✓ Row ${r._row}: Added — ${unitId} · ${incoming.tenant || '(vacant)'}`, 'ok');
+      log(`✓ Row ${r._row}: Added -- ${unitId} · ${incoming.tenant || '(vacant)'}`, 'ok');
     }
   });
 
   saveLocal();
   _canonicaliseUnitIds();
   renderAll(); renderRentManager(); renderProperties();
-  log(`─── Done: ${added} added · ${updated} updated · ${skipped} skipped ───`, 'info');
+  log(`--- Done: ${added} added · ${updated} updated · ${skipped} skipped ---`, 'info');
 
   notify('success', 'Paste Import Complete',
     `${added + updated} records processed from pasted data.`,
@@ -6408,10 +6408,10 @@ function rmPasteDoImport() {
       (function(){const b=window._db.batch();let c=0;rentLogs.forEach(r=>{if(r.id&&c<499){b.set(window._db.collection('rentRecords').doc(r.id),r);c++;}});return b.commit();})(),
       new Promise(function(_,r){setTimeout(function(){r(new Error('timeout'));},8000);})
     ]).then(function(){ log('☁ Synced to Firestore','ok'); })
-      .catch(function(e){ log('⚠ Firestore sync skipped — '+e.message,'warn'); });
+      .catch(function(e){ log('⚠ Firestore sync skipped -- '+e.message,'warn'); });
   }
 }
-════════════════════════════════════════════════════════════ */
+
 function renderGlobalAmenityList() {
   const el = document.getElementById('globalAmenityList');
   if (!el) return;
@@ -6566,9 +6566,9 @@ function enrichPropertyCardsWithImages() {
 }
 
 
-/* ════════════════════════════════════════════════════
-   PAGE HISTORY — Back / Forward navigation
-════════════════════════════════════════════════════ */
+/* ----------------------------------------------------
+   PAGE HISTORY -- Back / Forward navigation
+---------------------------------------------------- */
 var _pageHistory   = [];  // stack of page IDs visited
 var _historyIndex  = -1;  // current position in stack
 var _navInProgress = false;
@@ -6667,9 +6667,9 @@ function _navTo(pgId) {
 }
 
 
-/* ════════════════════════════════════════════════
-   TENANT DASHBOARD — status card + app tracker
-════════════════════════════════════════════════ */
+/* ------------------------------------------------
+   TENANT DASHBOARD -- status card + app tracker
+------------------------------------------------ */
 function renderTenantDashboard() {
   // Always refresh from localStorage and normalise field names
   _refreshRentLogs();
@@ -6679,7 +6679,7 @@ function renderTenantDashboard() {
   var rec = rawRec ? _normaliseRecord(rawRec) : null;
   if (rec) window._myRecord = rec; // keep in sync
 
-  // ── TENANCY STATUS CARD ────────────────────────────────────────
+  // -- TENANCY STATUS CARD ----------------------------------------
   var today = new Date(); today.setHours(0,0,0,0);
   var startD  = rec && rec.start  ? new Date(rec.start)  : null;
   var expiryD = rec && rec.expiry ? new Date(rec.expiry) : null;
@@ -6695,7 +6695,7 @@ function renderTenantDashboard() {
   var isCritical = daysLeft !== null && daysLeft >= 0 && daysLeft <= 14;
 
   var fmt = function(d) {
-    return d ? new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}) : '—';
+    return d ? new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}) : '--';
   };
 
   // Glow colour
@@ -6715,23 +6715,23 @@ function renderTenantDashboard() {
     var propObj   = PROPERTIES.find(function(p){return p.id===(rec.unitId||rec.unit);});
     var loc       = rec.location || (propObj ? propObj.location : '') || '';
 
-    _setText('tdUnit', propLabel || '—');
+    _setText('tdUnit', propLabel || '--');
     _setText('tdLoc',  loc ? '📍 ' + loc : '');
-    _setText('tdRent', rec.amount ? '₦' + Number(rec.amount).toLocaleString() : '—');
+    _setText('tdRent', rec.amount ? '₦' + Number(rec.amount).toLocaleString() : '--');
     _setText('tdStart', fmt(rec.start));
     _setText('tdExpiry', fmt(rec.expiry));
     _setText('tdStatus', isOverdue ? '🔴 Expired' : isExpiring ? '🟡 Expiring' : '🟢 Active');
     _setText('tdStatusSub', isOverdue ? 'Renewal required' : isExpiring ? 'Renew soon' : 'In good standing');
 
-    // Days remaining pill — RED when ≤60 days
+    // Days remaining pill -- RED when ≤60 days
     var pill = document.getElementById('tdDaysPill');
     if (pill) {
       if (daysLeft !== null) {
         var pillClass = isCritical ? 'drp-danger' : isExpiring ? 'drp-danger' : daysLeft <= 90 ? 'drp-warn' : 'drp-ok';
         var pillIcon  = isOverdue ? '🚨' : isExpiring ? '⚠️' : '✅';
         var pillText  = isOverdue
-          ? Math.abs(daysLeft) + ' days overdue — contact landlord immediately'
-          : daysLeft + ' days remaining' + (daysLeft <= 60 ? ' — renew now' : '');
+          ? Math.abs(daysLeft) + ' days overdue -- contact landlord immediately'
+          : daysLeft + ' days remaining' + (daysLeft <= 60 ? ' -- renew now' : '');
         pill.innerHTML = '<span class="days-remaining-pill ' + pillClass + '">' + pillIcon + ' ' + pillText + '</span>';
         // Pulse if critical
         if (isExpiring) pill.querySelector('.days-remaining-pill').style.fontWeight = '700';
@@ -6749,11 +6749,11 @@ function renderTenantDashboard() {
   } else {
     _setText('tdUnit', 'No tenancy record linked');
     _setText('tdLoc',  'Contact crestechnologies@outlook.com to link your account');
-    _setText('tdRent','—'); _setText('tdStart','—'); _setText('tdExpiry','—'); _setText('tdStatus','—');
+    _setText('tdRent','--'); _setText('tdStart','--'); _setText('tdExpiry','--'); _setText('tdStatus','--');
     var p = document.getElementById('tdDaysPill'); if(p) p.innerHTML = '';
   }
 
-  // ── APPLICATION TRACKER ────────────────────────────────────────
+  // -- APPLICATION TRACKER ----------------------------------------
   // Determine which steps are done based on whether tenant has a record
   var hasRecord = !!rec;
   var hasExpiry = rec && rec.expiry;
@@ -6786,7 +6786,7 @@ function renderTenantDashboard() {
     },
     {
       name:    'Sign Tenancy Agreement',
-      desc:    'Receive and sign the digital tenancy agreement — all parties sign including Clause X acknowledgement',
+      desc:    'Receive and sign the digital tenancy agreement -- all parties sign including Clause X acknowledgement',
       done:    hasRecord,
       action:  null
     },
@@ -6851,19 +6851,19 @@ function _setText(id, val) {
 }
 
 
-/* ════════════════════════════════════════════════════════════
-   WORKFLOW ENGINE — Tenant + Admin step-gated process
-════════════════════════════════════════════════════════════ */
+/* ------------------------------------------------------------
+   WORKFLOW ENGINE -- Tenant + Admin step-gated process
+------------------------------------------------------------ */
 
 var WF_STEPS_RENEWAL = [
   {id:'renewal_submitted',  label:'Renewal Request',        tenantAction:true,  adminReview:false, desc:'Tenant submits renewal request with guarantor details'},
   {id:'payment_slip_issued',label:'Payment Slip Issued',    tenantAction:false, adminReview:false, adminAction:true, desc:'Admin issues payment advice slip to tenant'},
   {id:'payment_submitted',  label:'Payment Submitted',      tenantAction:true,  adminReview:false, desc:'Tenant submits payment receipt'},
   {id:'payment_approved',   label:'Payment Approved',       tenantAction:false, adminReview:true,  desc:'Admin reviews and approves/rejects payment'},
-  {id:'eform_sent',         label:'Tenancy eForm Completed',tenantAction:true,  adminReview:false, desc:'Tenant completes eForm — consent sent to guarantors/witnesses'},
+  {id:'eform_sent',         label:'Tenancy eForm Completed',tenantAction:true,  adminReview:false, desc:'Tenant completes eForm -- consent sent to guarantors/witnesses'},
   {id:'guarantor_consent',  label:'Guarantor Consent',      tenantAction:false, adminReview:false, adminAction:false, desc:'Waiting for guarantor/referee/landlord/witness consent emails'},
   {id:'eform_approved',     label:'eForm Approved',         tenantAction:false, adminReview:true,  desc:'Admin approves tenancy eForm and all consents'},
-  {id:'complete',           label:'Complete',               tenantAction:false, adminReview:false, desc:'Tenancy renewed — records updated, eForm available for download'},
+  {id:'complete',           label:'Complete',               tenantAction:false, adminReview:false, desc:'Tenancy renewed -- records updated, eForm available for download'},
 ];
 
 var WF_STEPS_NEW = [
@@ -6871,15 +6871,15 @@ var WF_STEPS_NEW = [
   {id:'payment_slip_issued',label:'Payment Slip Issued',    tenantAction:false, adminReview:false, adminAction:true, desc:'Admin issues payment advice slip'},
   {id:'payment_submitted',  label:'Payment Submitted',      tenantAction:true,  adminReview:false, desc:'Tenant submits payment receipt'},
   {id:'payment_approved',   label:'Payment Approved',       tenantAction:false, adminReview:true,  desc:'Admin reviews and approves/rejects payment'},
-  {id:'eform_sent',         label:'Tenancy eForm Completed',tenantAction:true,  adminReview:false, desc:'Tenant completes eForm — consent sent to guarantors/witnesses'},
+  {id:'eform_sent',         label:'Tenancy eForm Completed',tenantAction:true,  adminReview:false, desc:'Tenant completes eForm -- consent sent to guarantors/witnesses'},
   {id:'guarantor_consent',  label:'Guarantor Consent',      tenantAction:false, adminReview:false, adminAction:false, desc:'Waiting for all consents'},
   {id:'eform_approved',     label:'eForm Approved',         tenantAction:false, adminReview:true,  desc:'Admin approves eForm and all consents'},
-  {id:'complete',           label:'Complete',               tenantAction:false, adminReview:false, desc:'Tenancy active — eForm available for download'},
+  {id:'complete',           label:'Complete',               tenantAction:false, adminReview:false, desc:'Tenancy active -- eForm available for download'},
 ];
 
 var _currentWorkflow = null;
 
-/* ── LOAD WORKFLOW FOR CURRENT TENANT ── */
+/* -- LOAD WORKFLOW FOR CURRENT TENANT -- */
 async function loadTenantWorkflow() {
   var rec = window._myRecord;
   if (!rec || !currentUser) return null;
@@ -6897,7 +6897,7 @@ async function loadTenantWorkflow() {
   return _currentWorkflow;
 }
 
-/* ── SAVE WORKFLOW ── */
+/* -- SAVE WORKFLOW -- */
 async function saveWorkflow(wf) {
   try {
     wf.updatedAt = new Date().toISOString();
@@ -6906,14 +6906,14 @@ async function saveWorkflow(wf) {
   } catch(e) { console.warn('Workflow save failed:', e); }
 }
 
-/* ── GET STEP INDEX ── */
+/* -- GET STEP INDEX -- */
 function getStepIndex(wf) {
   var steps = wf.type === 'new_tenant' ? WF_STEPS_NEW : WF_STEPS_RENEWAL;
   var idx = steps.findIndex(function(s) { return s.id === wf.currentStep; });
   return idx >= 0 ? idx : 0;
 }
 
-/* ── RENDER TENANT WORKFLOW TRACKER ── */
+/* -- RENDER TENANT WORKFLOW TRACKER -- */
 function renderTenantWorkflowTracker(wf) {
   var container = document.getElementById('wfTrackerContainer');
   if (!container) return;
@@ -6977,7 +6977,7 @@ function renderTenantWorkflowTracker(wf) {
 
 var PORTAL_BASE = 'https://enjanih-stack.github.io/crestville-portal';
 
-/* ── OPEN RENEWAL MODAL — check for existing pending workflow ── */
+/* -- OPEN RENEWAL MODAL -- check for existing pending workflow -- */
 async function openRenewalModal() {
   var wf = await loadTenantWorkflow();
   if (wf && wf.status !== 'complete' && wf.status !== 'rejected' && wf.status !== 'amendment') {
@@ -6985,7 +6985,7 @@ async function openRenewalModal() {
     showPendingWorkflowModal(wf);
     return;
   }
-  // If rejected or amendment — allow resubmission
+  // If rejected or amendment -- allow resubmission
   _openRenewalModalInner();
 }
 
@@ -7054,7 +7054,7 @@ function showPendingWorkflowModal(wf) {
   }
 }
 
-/* ── SUBMIT RENEWAL WITH WORKFLOW + GUARANTORS ── */
+/* -- SUBMIT RENEWAL WITH WORKFLOW + GUARANTORS -- */
 async function submitRenewalWithWorkflow(formData) {
   var rec = window._myRecord;
   if (!rec || !currentUser) { toast('⚠ No tenancy record found'); return; }
@@ -7088,7 +7088,7 @@ async function submitRenewalWithWorkflow(formData) {
   try {
     await window._db.collection('mail').add({
       to: ['crestechnologies@outlook.com','enjanih@gmail.com'],
-      message: {subject:'[CRS] Renewal Request — ' + wf.unitLabel + ' — ' + wf.tenantName + ' — ' + ref, html}
+      message: {subject:'[CRS] Renewal Request -- ' + wf.unitLabel + ' -- ' + wf.tenantName + ' -- ' + ref, html}
     });
   } catch(e) {}
 
@@ -7112,10 +7112,10 @@ function buildRenewalEmailHtml(d, wf, ref) {
     + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888;width:150px">Tenant</td><td style="padding:8px;font-weight:600">' + wf.tenantName + '</td></tr>'
     + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Email</td><td style="padding:8px">' + wf.tenantEmail + '</td></tr>'
     + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Unit</td><td style="padding:8px">' + wf.unitLabel + '</td></tr>'
-    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Current Expiry</td><td style="padding:8px">' + (wf.currentExpiry||'—') + '</td></tr>'
-    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Duration</td><td style="padding:8px;font-weight:600">' + (d.renewalDuration||'—') + '</td></tr>'
-    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Guarantor 1</td><td style="padding:8px">' + (d.guarantors&&d.guarantors[0] ? d.guarantors[0].name + ' &lt;' + d.guarantors[0].email + '&gt;' : '—') + '</td></tr>'
-    + '<tr><td style="padding:8px;color:#888">Guarantor 2</td><td style="padding:8px">' + (d.guarantors&&d.guarantors[1] ? d.guarantors[1].name + ' &lt;' + d.guarantors[1].email + '&gt;' : '—') + '</td></tr>'
+    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Current Expiry</td><td style="padding:8px">' + (wf.currentExpiry||'--') + '</td></tr>'
+    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Duration</td><td style="padding:8px;font-weight:600">' + (d.renewalDuration||'--') + '</td></tr>'
+    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Guarantor 1</td><td style="padding:8px">' + (d.guarantors&&d.guarantors[0] ? d.guarantors[0].name + ' &lt;' + d.guarantors[0].email + '&gt;' : '--') + '</td></tr>'
+    + '<tr><td style="padding:8px;color:#888">Guarantor 2</td><td style="padding:8px">' + (d.guarantors&&d.guarantors[1] ? d.guarantors[1].name + ' &lt;' + d.guarantors[1].email + '&gt;' : '--') + '</td></tr>'
     + '</table></div>'
     + '<div style="background:#0f0e0c;padding:10px;text-align:center;font-size:11px;color:#7a6e62">Crestechnologies IS Ltd &middot; RC 1643396</div></div>';
 }
@@ -7137,7 +7137,7 @@ function sendGuarantorConsentEmail(g, formData, ref) {
   window._db.collection('mail').add({
     to: [g.email],
     message: {
-      subject: '[CRS] Guarantor Consent Request — ' + (formData.tenantName||'Tenant') + ' — Ref: ' + ref,
+      subject: '[CRS] Guarantor Consent Request -- ' + (formData.tenantName||'Tenant') + ' -- Ref: ' + ref,
       html: '<div style="font-family:Arial;max-width:600px">'
         + '<div style="background:#0f0e0c;padding:18px 24px;border-bottom:3px solid #c9960c">'
         + '<div style="font-size:16px;color:#fff;font-family:Georgia">Guarantor Consent Request</div>'
@@ -7154,7 +7154,7 @@ function sendGuarantorConsentEmail(g, formData, ref) {
   }).catch(function(e){});
 }
 
-/* ── ADMIN: LOAD ALL WORKFLOWS ── */
+/* -- ADMIN: LOAD ALL WORKFLOWS -- */
 async function loadAdminWorkflows() {
   try {
     var snap = await window._db.collection('workflows')
@@ -7174,7 +7174,7 @@ async function loadAdminWorkflows() {
   }
 }
 
-/* ── ADMIN: ADVANCE WORKFLOW STEP ── */
+/* -- ADMIN: ADVANCE WORKFLOW STEP -- */
 async function adminAdvanceWorkflow(wfId, action, notes) {
   try {
     var doc = await window._db.collection('workflows').doc(wfId).get();
@@ -7189,7 +7189,7 @@ async function adminAdvanceWorkflow(wfId, action, notes) {
       wf.currentStep = nextStep ? nextStep.id : 'complete';
       wf.status = nextStep ? 'active' : 'complete';
       wf.rejectionReason = '';
-      toast('✓ Step approved — workflow advanced to: ' + (nextStep ? nextStep.label : 'Complete'));
+      toast('✓ Step approved -- workflow advanced to: ' + (nextStep ? nextStep.label : 'Complete'));
 
       // If advancing to payment_slip_issued, open payment slip generator
       if (wf.currentStep === 'payment_submitted') {
@@ -7208,7 +7208,7 @@ async function adminAdvanceWorkflow(wfId, action, notes) {
       wf.currentStep = 'payment_submitted';
       wf.status = 'active';
       wf.steps = (wf.steps||[]).concat([{id:'payment_slip_issued', completedAt:new Date().toISOString(), by:'admin'}]);
-      toast('✓ Payment slip issued — tenant can now submit payment');
+      toast('✓ Payment slip issued -- tenant can now submit payment');
     }
 
     await saveWorkflow(wf);
@@ -7222,7 +7222,7 @@ async function notifyTenantWorkflowComplete(wf) {
     await window._db.collection('mail').add({
       to: [wf.tenantEmail],
       message: {
-        subject: '[CRS] Tenancy Process Complete — ' + wf.unitLabel,
+        subject: '[CRS] Tenancy Process Complete -- ' + wf.unitLabel,
         html: '<div style="font-family:Arial;max-width:600px;background:#0f0e0c;padding:20px">'
           + '<div style="font-family:Georgia;font-size:18px;color:#c9960c">Tenancy Process Complete</div>'
           + '<p style="color:#e8dfc8;font-size:14px;margin-top:14px">Dear ' + wf.tenantName + ',</p>'
@@ -7234,7 +7234,7 @@ async function notifyTenantWorkflowComplete(wf) {
   } catch(e) {}
 }
 
-/* ── PAYMENT RECEIPT SUBMISSION ── */
+/* -- PAYMENT RECEIPT SUBMISSION -- */
 async function openPaymentSubmitModal() {
   document.getElementById('paySubmitModal').classList.add('on');
 }
@@ -7270,16 +7270,16 @@ async function submitPaymentReceipt() {
   try {
     await window._db.collection('mail').add({
       to:['crestechnologies@outlook.com','enjanih@gmail.com'],
-      message:{subject:'[CRS] Payment Submitted — '+wf.unitLabel+' — '+wf.tenantName, html}
+      message:{subject:'[CRS] Payment Submitted -- '+wf.unitLabel+' -- '+wf.tenantName, html}
     });
   } catch(e){}
 
   renderTenantWorkflowTracker(wf);
   closePaySubmitModal();
-  toast('✓ Payment receipt submitted — awaiting admin approval');
+  toast('✓ Payment receipt submitted -- awaiting admin approval');
 }
 
-/* ── ADMIN: RENDER WORKFLOW QUEUE ── */
+/* -- ADMIN: RENDER WORKFLOW QUEUE -- */
 function renderAdminWorkflowQueue(workflows) {
   var container = document.getElementById('adminWfQueue');
   if (!container) return;
@@ -7306,14 +7306,14 @@ function renderAdminWorkflowQueue(workflows) {
 
     return '<div class="wf-queue-card">'
       + '<div class="wfq-head">'
-        + '<div><div class="wfq-unit">' + (wf.unitLabel||wf.unitId||'—') + ' <span style="font-size:.7rem;color:#9a8a6a">' + typeLabel + '</span></div>'
+        + '<div><div class="wfq-unit">' + (wf.unitLabel||wf.unitId||'--') + ' <span style="font-size:.7rem;color:#9a8a6a">' + typeLabel + '</span></div>'
         + '<div class="wfq-tenant">' + (wf.tenantName||'') + ' · ' + (wf.tenantEmail||'') + '</div></div>'
-        + '<span style="font-size:.76rem;font-weight:700;color:' + statusColour + '">' + (curStep ? curStep.label : wf.currentStep||'—') + '</span>'
+        + '<span style="font-size:.76rem;font-weight:700;color:' + statusColour + '">' + (curStep ? curStep.label : wf.currentStep||'--') + '</span>'
       + '</div>'
       + '<div class="wfq-body">'
-        + '<div class="wfq-step-row"><span class="wfq-step-label">Current Step</span><span class="wfq-step-status">' + (curStep ? curStep.desc : '—') + '</span></div>'
-        + '<div class="wfq-step-row"><span class="wfq-step-label">Submitted</span><span class="wfq-step-status">' + (wf.createdAt ? new Date(wf.createdAt).toLocaleDateString('en-NG') : '—') + '</span></div>'
-        + '<div class="wfq-step-row"><span class="wfq-step-label">Type</span><span class="wfq-step-status">' + (wf.type||'—').replace('_',' ') + '</span></div>'
+        + '<div class="wfq-step-row"><span class="wfq-step-label">Current Step</span><span class="wfq-step-status">' + (curStep ? curStep.desc : '--') + '</span></div>'
+        + '<div class="wfq-step-row"><span class="wfq-step-label">Submitted</span><span class="wfq-step-status">' + (wf.createdAt ? new Date(wf.createdAt).toLocaleDateString('en-NG') : '--') + '</span></div>'
+        + '<div class="wfq-step-row"><span class="wfq-step-label">Type</span><span class="wfq-step-status">' + (wf.type||'--').replace('_',' ') + '</span></div>'
         + (wf.guarantors && wf.guarantors.length ? '<div class="wfq-step-row"><span class="wfq-step-label">Guarantors</span><span class="wfq-step-status">' + wf.guarantors.map(function(g){return g.name+'('+g.consentStatus+')';}).join(', ') + '</span></div>' : '')
         + (wf.paymentReceipt ? '<div class="wfq-step-row"><span class="wfq-step-label">Payment</span><span class="wfq-step-status">₦'+Number(wf.paymentReceipt.amtPaid||0).toLocaleString()+' · '+wf.paymentReceipt.txRef+'</span></div>' : '')
         + '<div class="wfq-actions">' + actionBtns + '</div>'
@@ -7322,7 +7322,7 @@ function renderAdminWorkflowQueue(workflows) {
   }).join('');
 }
 
-/* ── ADMIN ACTION MODAL ── */
+/* -- ADMIN ACTION MODAL -- */
 function showAdminActionModal(wfId, action) {
   var modal = document.getElementById('adminActionModal');
   if (!modal) return;
@@ -7391,9 +7391,9 @@ function submitRenewalViaWorkflow() {
 }
 
 
-/* ════════════════════════════════════════════════════════════
+/* ------------------------------------------------------------
    APPLICATION STATUS SYSTEM
-════════════════════════════════════════════════════════════ */
+------------------------------------------------------------ */
 
 var _allWorkflows  = [];   // cache for admin
 var _adminFilter   = 'all';
@@ -7432,7 +7432,7 @@ function getFilterKey(wf) {
   return 'pending';
 }
 
-/* ── BUILD ONE STATUS CARD ── */
+/* -- BUILD ONE STATUS CARD -- */
 function buildStatusCard(wf, isAdmin) {
   var typeInfo   = WF_TYPE_LABELS[wf.type] || {icon:'📋', label:'Application'};
   var statusKey  = getWfStatusKey(wf);
@@ -7442,10 +7442,10 @@ function buildStatusCard(wf, isAdmin) {
 
   var createdStr = wf.createdAt
     ? new Date(wf.createdAt).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})
-    : '—';
+    : '--';
   var updatedStr = wf.updatedAt
     ? new Date(wf.updatedAt).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})
-    : '—';
+    : '--';
 
   // Timeline dots
   var timelineHtml = steps.map(function(step, i) {
@@ -7472,7 +7472,7 @@ function buildStatusCard(wf, isAdmin) {
   var curStep = steps[curIdx] || {};
   var stepDesc = wf.status === 'complete' ? 'All steps completed successfully'
     : wf.status === 'rejected' ? 'Request has been declined'
-    : curStep.desc || '—';
+    : curStep.desc || '--';
 
   // Action buttons
   var actionsHtml = '';
@@ -7517,7 +7517,7 @@ function buildStatusCard(wf, isAdmin) {
       + '<div class="sc-left">'
         + '<div class="sc-icon" style="background:rgba(201,150,12,.1)">' + typeInfo.icon + '</div>'
         + '<div>'
-          + '<div class="sc-title">' + typeInfo.label + (isAdmin ? ' — ' + (wf.tenantName||wf.tenantEmail||'') : '') + '</div>'
+          + '<div class="sc-title">' + typeInfo.label + (isAdmin ? ' -- ' + (wf.tenantName||wf.tenantEmail||'') : '') + '</div>'
           + '<div class="sc-ref">' + (wf.unitLabel||wf.unitId||'') + (wf.id ? ' · ' + wf.id.split('_').pop() : '') + '</div>'
         + '</div>'
       + '</div>'
@@ -7527,7 +7527,7 @@ function buildStatusCard(wf, isAdmin) {
       + '<div class="sc-meta">'
         + '<div class="sc-meta-item">Submitted: <strong>' + createdStr + '</strong></div>'
         + '<div class="sc-meta-item">Updated: <strong>' + updatedStr + '</strong></div>'
-        + '<div class="sc-meta-item">Current: <strong>' + (curStep.label || (wf.status==='complete'?'Complete':'—')) + '</strong></div>'
+        + '<div class="sc-meta-item">Current: <strong>' + (curStep.label || (wf.status==='complete'?'Complete':'--')) + '</strong></div>'
         + (wf.guarantors && wf.guarantors.length ? '<div class="sc-meta-item">Guarantors: <strong>' + wf.guarantors.length + '</strong></div>' : '')
       + '</div>'
       + '<div style="font-size:.76rem;color:var(--dim);margin-bottom:8px">' + stepDesc + '</div>'
@@ -7538,18 +7538,18 @@ function buildStatusCard(wf, isAdmin) {
   + '</div>';
 }
 
-/* ── ADMIN: LOAD ALL STATUS CARDS ── */
+/* -- ADMIN: LOAD ALL STATUS CARDS -- */
 async function loadAllStatusCards() {
   var container = document.getElementById('adminStatusList');
   if (!container) return;
-  container.innerHTML = '<div class="status-empty"><div class="se-icon">⏳</div><div class="se-msg">Loading…</div></div>';
+  container.innerHTML = '<div class="status-empty"><div class="se-icon">⏳</div><div class="se-msg">Loading...</div></div>';
 
   try {
     var snap = await window._db.collection('workflows').orderBy('updatedAt','desc').limit(100).get();
     _allWorkflows = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
     renderAdminStatusCards(_adminFilter);
   } catch(e) {
-    container.innerHTML = '<div class="status-empty"><div class="se-icon">⚠️</div><div class="se-msg">Could not load — check connection</div></div>';
+    container.innerHTML = '<div class="status-empty"><div class="se-icon">⚠️</div><div class="se-msg">Could not load -- check connection</div></div>';
   }
 }
 
@@ -7590,11 +7590,11 @@ function filterStatusCards(filter, btn) {
   renderAdminStatusCards(filter);
 }
 
-/* ── TENANT: LOAD STATUS CARDS ── */
+/* -- TENANT: LOAD STATUS CARDS -- */
 async function loadTenantStatusCards() {
   var container = document.getElementById('tenantStatusList');
   if (!container || !currentUser) return;
-  container.innerHTML = '<div class="status-empty"><div class="se-icon">⏳</div><div class="se-msg">Loading…</div></div>';
+  container.innerHTML = '<div class="status-empty"><div class="se-icon">⏳</div><div class="se-msg">Loading...</div></div>';
 
   try {
     var snap = await window._db.collection('workflows')
@@ -7618,7 +7618,7 @@ async function loadTenantStatusCards() {
       window._tenantWorkflows = wfs;
       renderTenantStatusCards(wfs, 'all');
     } catch(e2){
-      container.innerHTML = '<div class="status-empty"><div class="se-icon">⚠️</div><div class="se-msg">Could not load — check connection</div></div>';
+      container.innerHTML = '<div class="status-empty"><div class="se-icon">⚠️</div><div class="se-msg">Could not load -- check connection</div></div>';
     }
   }
 }
@@ -7643,7 +7643,7 @@ function filterTenantStatus(filter, btn) {
   renderTenantStatusCards(window._tenantWorkflows || [], filter);
 }
 
-/* ── AMENDMENT MODAL (admin) ── */
+/* -- AMENDMENT MODAL (admin) -- */
 function showAmendmentModal(wfId) {
   var modal = document.getElementById('adminActionModal');
   if (!modal) return;
@@ -7655,14 +7655,14 @@ function showAmendmentModal(wfId) {
   modal.classList.add('on');
 }
 
-/* ── HOOK INTO BOOT ── */
+/* -- HOOK INTO BOOT -- */
 var _origLoadAdminWorkflows = typeof loadAdminWorkflows === 'function' ? loadAdminWorkflows : null;
 async function loadAdminWorkflows() {
   if (_origLoadAdminWorkflows) await _origLoadAdminWorkflows();
   loadAllStatusCards();
 }
 
-/* ── EXTEND adminAdvanceWorkflow to handle amendment ── */
+/* -- EXTEND adminAdvanceWorkflow to handle amendment -- */
 var _origAdminAdvance = typeof adminAdvanceWorkflow === 'function' ? adminAdvanceWorkflow : null;
 async function adminAdvanceWorkflow(wfId, action, notes) {
   if (action === 'amendment') {
@@ -7679,7 +7679,7 @@ async function adminAdvanceWorkflow(wfId, action, notes) {
         await window._db.collection('mail').add({
           to:[wf.tenantEmail],
           message:{
-            subject:'[CRS] Amendment Required — ' + wf.unitLabel,
+            subject:'[CRS] Amendment Required -- ' + wf.unitLabel,
             html:'<div style="font-family:Arial;max-width:600px;background:#0f0e0c;padding:20px">'
               +'<div style="font-family:Georgia;font-size:18px;color:#c9960c">Amendment Required</div>'
               +'<p style="color:#9a8a6a;font-size:14px;margin-top:14px">Dear '+wf.tenantName+',</p>'
@@ -7700,7 +7700,7 @@ async function adminAdvanceWorkflow(wfId, action, notes) {
   await loadAllStatusCards();
 }
 
-/* ── AUTO LOAD on boot ── */
+/* -- AUTO LOAD on boot -- */
 setTimeout(function() {
   if (isAdmin) {
     loadAllStatusCards();
@@ -7715,9 +7715,9 @@ function closePendingWfModal() {
   if (el) el.classList.remove('on');
 }
 
-/* ════════════════════════════════════════════════════════════
-   IDLE TIMEOUT SYSTEM — 2 min inactivity → 30s warning → sign out
-════════════════════════════════════════════════════════════ */
+/* ------------------------------------------------------------
+   IDLE TIMEOUT SYSTEM -- 2 min inactivity → 30s warning → sign out
+------------------------------------------------------------ */
 var IDLE_TIMEOUT_MS  = 2 * 60 * 1000;  // 2 minutes inactivity
 var IDLE_WARNING_MS  = 30 * 1000;       // 30 second countdown warning
 var _idleTimer       = null;
@@ -7726,7 +7726,7 @@ var _idleActive      = false;
 var _lastActivity    = Date.now();
 var SESSION_STATE_KEY = 'crs_session_state';
 
-/* ── SAVE SESSION STATE ── */
+/* -- SAVE SESSION STATE -- */
 function saveSessionState() {
   if (!currentUser) return;
   var state = {
@@ -7744,7 +7744,7 @@ function saveSessionState() {
   } catch(e) {}
 }
 
-/* ── RESTORE SESSION STATE ── */
+/* -- RESTORE SESSION STATE -- */
 function restoreSessionState() {
   try {
     var raw = localStorage.getItem(SESSION_STATE_KEY);
@@ -7784,15 +7784,15 @@ function applySessionState(state) {
   }
   // Clean up
   localStorage.removeItem(SESSION_STATE_KEY);
-  toast('✓ Welcome back — restored to where you left off', 3000);
+  toast('✓ Welcome back -- restored to where you left off', 3000);
 }
 
-/* ── START IDLE WATCHER ── */
+/* -- START IDLE WATCHER -- */
 function startIdleTimer() {
   _idleActive = true;
   _lastActivity = Date.now();
 
-  // Activity events — reset timer on any interaction
+  // Activity events -- reset timer on any interaction
   var events = ['mousemove','mousedown','keypress','touchstart','scroll','click','keydown'];
   events.forEach(function(ev) {
     document.addEventListener(ev, onUserActivity, {passive:true});
@@ -7878,7 +7878,7 @@ function idleSignOut() {
   });
 }
 
-/* ── HOOK INTO _bootApp — start timer + restore state ── */
+/* -- HOOK INTO _bootApp -- start timer + restore state -- */
 var _origBootApp = typeof _bootApp === 'function' ? _bootApp : null;
 
 </script>
