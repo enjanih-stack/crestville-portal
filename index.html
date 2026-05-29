@@ -778,23 +778,165 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .dp-warn   { background: rgba(234,120,20,.12); color: #b45309; border: 1.5px solid rgba(234,120,20,.35); }
 .dp-ok     { background: rgba(26,92,46,.1);    color: #15803d; border: 1.5px solid rgba(26,92,46,.25); }
 
-/* ── RESPONSIVE ── */
+/* ══════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — complete single-page vertical layout
+   No horizontal scroll. Sidebar slides over content.
+══════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); }
-  .sidebar.open { transform: translateX(0); box-shadow: 4px 0 30px rgba(0,0,0,.3); }
-  .content-area { margin-left: 0; }
-  .topbar { display: flex; }
-  .page-body { padding: 16px; }
-  .page-header { padding: 14px 16px; }
-  .form-grid.c2 { grid-template-columns: 1fr; }
-  .units-grid { grid-template-columns: 1fr; }
-  .metrics { grid-template-columns: 1fr 1fr; }
-  .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 199; display: none; }
+
+  /* ── Prevent ALL horizontal overflow ── */
+  html, body { overflow-x: hidden !important; max-width: 100vw; }
+  #vApp { overflow-x: hidden !important; max-width: 100vw; }
+
+  /* ── Sidebar: off-screen by default, slides in over content ── */
+  .sidebar {
+    transform: translateX(-100%);
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: 280px !important;
+    z-index: 300;
+    box-shadow: none;
+    transition: transform .28s cubic-bezier(.4,0,.2,1),
+                box-shadow .28s ease;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 6px 0 40px rgba(0,0,0,.5);
+  }
+
+  /* ── Content area: full width, no margin ── */
+  .content-area {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* ── Topbar: always visible on mobile ── */
+  .topbar {
+    display: flex !important;
+    position: sticky; top: 0; z-index: 200;
+    padding: 12px 16px;
+  }
+
+  /* ── Hamburger dot button ── */
+  .hamburger {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(201,150,12,.15);
+    border: 1.5px solid rgba(201,150,12,.4) !important;
+    display: flex !important;
+    align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    color: var(--gold) !important;
+    padding: 0 !important;
+    transition: background .15s;
+  }
+  .hamburger:active { background: rgba(201,150,12,.3); }
+
+  /* ── Overlay behind open sidebar ── */
+  .sidebar-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 299;
+    display: none;
+    backdrop-filter: blur(2px);
+  }
   .sidebar-overlay.on { display: block; }
+
+  /* ── Page body padding ── */
+  .page-body { padding: 14px 14px 80px; }
+  .page-header { padding: 12px 14px; gap: 8px; }
+  .page-header h1 { font-size: 1.15rem; }
+  .page-header .ph-sub { font-size: .72rem; }
+
+  /* ── Page nav bar ── */
+  .page-nav-bar { padding: 8px 14px; }
+
+  /* ── Dashboard metrics: 2 columns ── */
+  .metrics {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .metric-card { padding: 14px 14px; }
+  .mc-value { font-size: 1.4rem; }
+
+  /* ── Form grids: single column ── */
+  .form-grid.c2,
+  .form-grid.c3 { grid-template-columns: 1fr !important; }
+
+  /* ── Properties grid: 1 column ── */
+  .units-grid { grid-template-columns: 1fr !important; }
+
+  /* ── Table: horizontal scroll within cell, no page scroll ── */
+  .overflow-table,
+  .imp-table-wrap,
+  .sec-body.overflow-table {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    max-width: calc(100vw - 28px);
+  }
+
+  /* ── Buttons row: wrap ── */
+  .page-header > div:last-child {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .page-header .btn { font-size: .72rem; padding: 7px 12px; }
+
+  /* ── Modal: full screen on mobile ── */
+  .prop-edit-card,
+  .modal-card,
+  .sr-card,
+  .role-card-wrap {
+    max-width: 100% !important;
+    border-radius: 14px 14px 0 0 !important;
+    max-height: 92vh;
+  }
+  .prop-edit-modal,
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  /* ── Tenant hero grid: 2x2 ── */
+  .t-hero-grid { grid-template-columns: 1fr 1fr !important; }
+  .t-hero { padding: 20px 18px 18px; }
+  .t-stat-value { font-size: 1rem; }
+
+  /* ── Import mapping grid ── */
+  .imp-map-grid { grid-template-columns: 1fr 20px 1fr !important; }
+
+  /* ── Unlock panel grid ── */
+  .unlock-grid { grid-template-columns: 1fr !important; }
+
+  /* ── Stat chips ── */
+  .imp-stats { gap: 6px; }
+  .imp-stat { min-width: 64px; padding: 8px 10px; }
+  .imp-stat-n { font-size: 1.2rem; }
+
+  /* ── Notification stack ── */
+  #crsNotifStack {
+    top: auto !important;
+    bottom: 16px !important;
+    right: 10px !important;
+    left: 10px !important;
+    max-width: 100% !important;
+  }
+  .crs-notif { min-width: 0 !important; width: 100%; }
+
+  /* ── Action buttons in tables ── */
+  .data-table td:last-child { white-space: nowrap; }
+
+  /* ── Expiry banner ── */
+  .expiry-banner-wrap { border-radius: 0; margin: 0 -14px 14px; }
 }
+
 @media (max-width: 420px) {
-  .metrics { grid-template-columns: 1fr; }
-  .auth-card { padding: 28px 20px; }
+  .metrics { grid-template-columns: 1fr !important; }
+  .t-hero-grid { grid-template-columns: 1fr 1fr !important; }
+  .auth-card { padding: 24px 16px; }
+  .page-body { padding: 12px 12px 80px; }
+  .btn { font-size: .72rem; padding: 8px 12px; }
 }
 
 /* ── PROPERTY EDITOR MODAL ── */
@@ -1012,7 +1154,19 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .sc-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
 .sc-title{font-size:.88rem;font-weight:600;color:var(--ink);margin-bottom:2px}
 .sc-ref{font-size:.7rem;color:var(--dim);font-family:monospace}
-/* EXPIRY BANNER — rolling ticker on Notices page */
+/* REMINDER MODAL */
+#reminderModal{position:fixed;inset:0;z-index:1200;background:rgba(15,14,12,.75);display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);padding:0}
+#reminderModal.on{display:flex}
+.rm-modal-card{background:#fff;border-radius:14px 14px 0 0;width:100%;max-width:560px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,.18)}
+.rm-modal-head{background:var(--ink);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.rm-modal-head h3{font-family:'Cormorant Garamond',serif;color:#fff;font-size:1rem;font-weight:700;margin:0}
+.rm-modal-tools{display:flex;gap:6px;padding:10px 14px;background:#f9f7f2;border-bottom:1px solid #e8e2d8;flex-shrink:0;flex-wrap:wrap;align-items:center}
+.rm-modal-tools button{background:none;border:1px solid #d0c8b8;border-radius:6px;padding:5px 12px;font-size:.72rem;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--ink);font-weight:600;transition:background .1s}
+.rm-modal-tools button:hover{background:#f0ebe1}
+.rm-modal-list{flex:1;overflow-y:auto;min-height:100px}
+.rm-modal-foot{padding:14px 16px;border-top:1px solid #e8e2d8;display:flex;align-items:center;gap:10px;background:#faf8f4;flex-shrink:0}
+.rm-modal-count{font-size:.76rem;color:#888;flex:1}
+@media(min-width:560px){#reminderModal{align-items:center;padding:16px}.rm-modal-card{border-radius:14px;max-height:80vh}}
 .expiry-banner-wrap{overflow:hidden;background:var(--ink);border-radius:8px;padding:0;margin-bottom:18px;border:1px solid #2a2620;position:relative}
 .expiry-banner-track{display:flex;white-space:nowrap;animation:bannerScroll 28s linear infinite}
 .expiry-banner-track:hover{animation-play-state:paused}
@@ -1427,7 +1581,13 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <a href="https://enjanih-stack.github.io/crestville-portal/landing.html" class="home-btn" style="padding:6px 10px;font-size:.78rem">🏠</a>
-        <button class="hamburger" onclick="toggleSidebar()">☰</button>
+        <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu" id="hamburgerBtn">
+          <span style="display:flex;flex-direction:column;gap:4px;pointer-events:none">
+            <span style="width:18px;height:2px;background:currentColor;border-radius:2px;display:block"></span>
+            <span style="width:14px;height:2px;background:currentColor;border-radius:2px;display:block"></span>
+            <span style="width:18px;height:2px;background:currentColor;border-radius:2px;display:block"></span>
+          </span>
+        </button>
       </div>
     </div>
 
@@ -1612,7 +1772,18 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
           <div id="rmImportPanel" style="display:none;margin-bottom:18px">
             <div class="import-panel">
               <h3>📤 Mass Import — Update Rent Records</h3>
-              <p>Upload any CSV or spreadsheet export. Columns are auto-detected regardless of header naming. Existing records with matching unit IDs are updated; new units are added.</p>
+              <p>Upload CSV <em>or</em> paste rows directly. Existing records are <strong>merged field-by-field</strong> — only fields with data update the record; empty fields keep existing values.</p>
+
+              <!-- Mode tabs -->
+              <div style="display:flex;gap:0;margin-bottom:14px;border:1px solid #2a2620;border-radius:6px;overflow:hidden">
+                <button id="rmImpTabCsv" onclick="rmImpSetMode('csv')"
+                  style="flex:1;padding:8px;background:var(--gold);color:var(--ink);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.76rem;font-weight:700">📄 Upload CSV</button>
+                <button id="rmImpTabPaste" onclick="rmImpSetMode('paste')"
+                  style="flex:1;padding:8px;background:#1a1814;color:#9a8a6a;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.76rem;font-weight:600">📋 Paste Row(s)</button>
+              </div>
+
+              <!-- CSV upload mode -->
+              <div id="rmImpModeCsv">
 
               <!-- Stage 1: Drop zone -->
               <div class="imp-stage on" id="rmImpStage1">
@@ -1697,6 +1868,47 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
                 <strong style="color:#9a8a6a">Optional:</strong> Address_Location, Email, Phone, Tenancy_Start_Date, Tenancy_Expiry_Date, vacancy, New_Rent, Last_Payment_Date, NIN, Contract_Name, Notes &nbsp;·&nbsp;
                 <span style="color:#3a3428">&#9432; Any column naming style accepted automatically</span>
               </div>
+
+              </div><!-- /rmImpModeCsv -->
+
+              <!-- Paste row mode -->
+              <div id="rmImpModePaste" style="display:none">
+                <div class="imp-alert imp-alert-info" style="margin-bottom:12px">
+                  <span>ℹ️</span>
+                  <span>Copy a row from Excel or Google Sheets and paste it below. The system will detect columns automatically.<br>
+                  <strong>Column order expected:</strong> Unit · Tenant · Email · Phone · Rent · New Rent · Start Date · Expiry Date · Last Payment · Vacancy · Notes</span>
+                </div>
+
+                <div style="margin-bottom:10px">
+                  <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+                    <label style="font-size:.72rem;font-weight:700;color:#9a8a6a;text-transform:uppercase;letter-spacing:.08em">Column Header Row</label>
+                    <span style="font-size:.67rem;color:#5a4a38">(paste your header row first, or use the default)</span>
+                    <button onclick="rmPasteUseDefaultHeaders()" style="background:rgba(201,150,12,.15);border:1px solid rgba(201,150,12,.3);color:#c9960c;padding:3px 10px;border-radius:4px;font-size:.68rem;cursor:pointer;font-family:'DM Sans',sans-serif">Use Default</button>
+                  </div>
+                  <input type="text" id="rmPasteHeaderRow" placeholder="unit  tenant  email  phone  amount  new_rent  start_date  expiry_date  last_payment  vacancy  notes"
+                    style="width:100%;padding:8px 10px;background:#0f0e0c;border:1px solid #2a2620;color:#e8dfc8;font-family:'DM Mono',monospace;font-size:.72rem;border-radius:6px;outline:none"/>
+                </div>
+
+                <div style="margin-bottom:10px">
+                  <label style="font-size:.72rem;font-weight:700;color:#9a8a6a;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px">Data Rows <span style="color:#5a4a38;font-weight:400">(paste one or more rows — tab-separated from Excel/Sheets)</span></label>
+                  <textarea id="rmPasteDataRows" rows="6" placeholder="Paste rows here — from Excel (Ctrl+C a selection then Ctrl+V here)&#10;&#10;Example:&#10;2BDR Flat 1A  Mr. Ekene Iheme  ekene@gmail.com  08012345678  800000  1250000  25/03/2026  26/03/2027  25/03/2026  occupied"
+                    style="width:100%;padding:10px;background:#0f0e0c;border:1px solid #2a2620;color:#e8dfc8;font-family:'DM Mono',monospace;font-size:.72rem;border-radius:6px;outline:none;resize:vertical;line-height:1.7"></textarea>
+                </div>
+
+                <div style="margin-bottom:12px">
+                  <button class="btn btn-gold" onclick="rmPastePreview()" style="margin-right:8px">👁 Preview Rows</button>
+                  <button class="btn btn-outline" onclick="document.getElementById('rmPasteDataRows').value='';document.getElementById('rmPastePreviewArea').innerHTML=''">✕ Clear</button>
+                </div>
+
+                <div id="rmPastePreviewArea"></div>
+
+                <div id="rmPasteActions" style="display:none;margin-top:10px">
+                  <button class="btn btn-gold" onclick="rmPasteDoImport()">⬆ Import Pasted Rows</button>
+                </div>
+
+                <div id="rmPasteLog" class="import-log" style="margin-top:10px;display:none"></div>
+              </div><!-- /rmImpModePaste -->
+
             </div>
           </div>
 
@@ -2094,6 +2306,20 @@ function _refreshRentLogs() {
       if(!rentLogs.some(e => e.unit === r.unit && e.tenant === r.tenant)) rentLogs.push(r);
     });
   }
+
+  // ── Normalise all date fields to ISO YYYY-MM-DD ──
+  rentLogs.forEach(r => {
+    ['expiry','start','lastPayment','newRentDate'].forEach(field => {
+      if(r[field] && r[field] !== '') {
+        const iso = normaliseDate(r[field]);
+        const dt = new Date(iso);
+        if(!isNaN(dt.getTime())) {
+          r[field] = dt.toISOString().slice(0,10);
+        }
+      }
+    });
+  });
+
   return rentLogs;
 }
 
@@ -2792,7 +3018,113 @@ async function _bootApp(user, userData, adminMode) {
   }
 }
 
-/* ── Pull rentRecords from Firestore — primary sync source ── */
+/* ── Resolve a raw unit label/id from CSV to canonical PROPERTIES id ── */
+function _resolveUnitId(rawUnit, rawLocation) {
+  if(!rawUnit && !rawLocation) return '';
+  // 1. Direct PROPERTIES id match
+  const direct = PROPERTIES.find(p => p.id === rawUnit);
+  if(direct) return direct.id;
+  // 2. Try autoMatchUnitId if it exists
+  if(typeof autoMatchUnitId === 'function') {
+    const am = autoMatchUnitId(rawUnit, rawLocation);
+    if(am) return am;
+  }
+  // 3. Normalised label match
+  const normRaw = _norm(rawUnit);
+  const byLabel = PROPERTIES.find(p => _norm(p.label) === normRaw);
+  if(byLabel) return byLabel.id;
+  // 4. Partial match — label contains raw or vice versa
+  const partial = PROPERTIES.find(p => {
+    const pn = _norm(p.label);
+    return pn.length > 3 && (pn.includes(normRaw) || normRaw.includes(pn));
+  });
+  if(partial) return partial.id;
+  // 5. Fallback — use normalised raw value
+  return _impNorm(rawUnit).replace(/_/g,' ') || rawUnit;
+}
+
+/* ── Build a clean incoming record from a mapped row ── */
+function _buildIncomingRecord(r, unitId, idx) {
+  const prop = PROPERTIES.find(p => p.id === unitId);
+  return {
+    id:           _impNorm(unitId)+'_imp_'+Date.now()+'_'+idx,
+    unitId:       unitId,
+    unit:         prop ? prop.label : (r.unit || unitId),
+    location:     r.location || (prop ? prop.location : ''),
+    city:         r.city     || (prop ? prop.city : ''),
+    type:         r.type     || (prop ? prop.type : 'Residential'),
+    tenant:       r.tenant   || r.contractName || '',
+    contractName: r.contractName || r.tenant || '',
+    tenantEmail:  r.tenantEmail  || '',
+    tenantPhone:  r.tenantPhone  || '',
+    tenantNIN:    r.tenantNIN    || '',
+    amount:       normaliseAmount(r.amount),
+    newRent:      normaliseAmount(r.newRent),
+    start:        normaliseDate(r.start),
+    expiry:       normaliseDate(r.expiry),
+    lastPayment:  normaliseDate(r.lastPayment),
+    vacancy:      (r.vacancy||'').toLowerCase().includes('vacant') ? 'vacant' : (r.vacancy||'occupied'),
+    notes:        r.notes || '',
+    importedAt:   new Date().toISOString(),
+    updatedAt:    new Date().toISOString()
+  };
+}
+
+/* ── Smart merge: existing record wins unless incoming has actual data ──
+   Rules:
+   - Keep existing value if incoming field is empty/blank
+   - Incoming wins for: amount, newRent, start, expiry, lastPayment, vacancy (core tenancy data)
+   - Incoming wins for tenant/email/phone only if they have a value
+   - Never overwrite a non-empty existing field with empty                    */
+function _smartMerge(existing, incoming) {
+  const keep = (existVal, incomingVal) => {
+    const ev = (existVal||'').toString().trim();
+    const iv = (incomingVal||'').toString().trim();
+    return iv || ev; // incoming wins if it has data; otherwise keep existing
+  };
+  const keepExisting = (existVal, incomingVal) => {
+    // Only use incoming if existing is truly empty
+    const ev = (existVal||'').toString().trim();
+    const iv = (incomingVal||'').toString().trim();
+    return ev || iv; // existing wins; only fill from incoming if existing is blank
+  };
+
+  return {
+    // Preserve id and import timestamp
+    id:           existing.id || incoming.id,
+    importedAt:   existing.importedAt || incoming.importedAt,
+    updatedAt:    new Date().toISOString(),
+
+    // Unit fields — existing wins (CSV shouldn't rename your properties)
+    unitId:       existing.unitId || incoming.unitId,
+    unit:         existing.unit   || incoming.unit,
+    location:     keep(existing.location,  incoming.location),
+    city:         keep(existing.city,      incoming.city),
+    type:         keep(existing.type,      incoming.type),
+
+    // Tenant identity — incoming wins if it has data
+    tenant:       keep(existing.tenant,       incoming.tenant),
+    contractName: keep(existing.contractName, incoming.contractName),
+    tenantEmail:  keep(existing.tenantEmail,  incoming.tenantEmail),
+    tenantPhone:  keep(existing.tenantPhone,  incoming.tenantPhone),
+    tenantNIN:    keep(existing.tenantNIN,    incoming.tenantNIN),
+
+    // Financial — incoming wins (this is why you're re-importing — to update these)
+    amount:      incoming.amount      || existing.amount      || '',
+    newRent:     incoming.newRent     || existing.newRent     || '',
+
+    // Dates — incoming wins if provided; otherwise keep existing
+    start:       incoming.start       || existing.start       || '',
+    expiry:      incoming.expiry      || existing.expiry      || '',
+    lastPayment: incoming.lastPayment || existing.lastPayment || '',
+
+    // Status — incoming wins if provided
+    vacancy:     incoming.vacancy || existing.vacancy || 'occupied',
+
+    // Notes — merge both (don't lose existing notes)
+    notes: [existing.notes, incoming.notes].filter(Boolean).join('; ').replace(/; $/, '').replace(/^; /, '') || '',
+  };
+}
 async function _pullFromFirestore(silent) {
   if (!window._db) throw new Error('Firestore not ready');
   const snap = await window._db.collection('rentRecords').get();
@@ -2932,7 +3264,8 @@ function showPage(pgId, btn) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('on'));
   document.getElementById(pgId).classList.add('on');
   if(btn) btn.classList.add('on');
-  closeSidebar();
+  // Auto-close sidebar on mobile after navigation
+  if (window.innerWidth <= 768) closeSidebar();
   if(pgId === 'pgVacant') renderVacant();
   if(pgId === 'pgProperties') renderProperties();
   if(pgId === 'pgRentManager') { renderRentManager(); if(isAdmin) renderLockedTenantsList(); }
@@ -2942,12 +3275,24 @@ function showPage(pgId, btn) {
 }
 function openForm(url) { window.open(url, '_blank'); }
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('on');
+  const sb  = document.getElementById('sidebar');
+  const ov  = document.getElementById('sidebarOverlay');
+  const isOpen = sb.classList.contains('open');
+  if (isOpen) {
+    sb.classList.remove('open');
+    if (ov) ov.classList.remove('on');
+    document.body.style.overflow = '';
+  } else {
+    sb.classList.add('open');
+    if (ov) ov.classList.add('on');
+    if (window.innerWidth <= 768) document.body.style.overflow = 'hidden';
+  }
 }
 function closeSidebar() {
   document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebarOverlay').classList.remove('on');
+  const ov = document.getElementById('sidebarOverlay');
+  if (ov) ov.classList.remove('on');
+  document.body.style.overflow = '';
 }
 
 /* ═══ PROPERTY DROPDOWNS ══════════════════════════════ */
@@ -3730,7 +4075,6 @@ function generateReceiptByRecord(rec) {
 }
 
 function generateReceiptByIdx(idx) { fillReceipt(rentLogs[idx]); window.print(); }
-function generateReceiptByRecord(raw) { try { fillReceipt(JSON.parse(raw)); window.print(); } catch(e){} }
 
 /* ═══ CLOUD SYNC ══════════════════════════════════════ */
 async function syncToCloud() {
@@ -3988,32 +4332,62 @@ function _markAlertSent(key) {
   localStorage.setItem('crs_sentAlerts_v1', JSON.stringify([..._sentRenewalAlerts]));
 }
 
-async function checkAndSendRenewalEmails() {
+async function checkAndSendRenewalEmails(targetEmails) {
+  // targetEmails: optional Set/Array of emails to restrict sending to
   if (!isAdmin) return;
+  _refreshRentLogs();
   if (!rentLogs.length) return;
 
   const today = new Date(); today.setHours(0,0,0,0);
   const todayStr = today.toISOString().slice(0,10);
   const dailyAlerts = _getDailyAlerts();
 
+  // Safe date formatter — handles M/D/YYYY, DD/MM/YYYY, ISO etc.
+  const safeDate = d => {
+    if(!d) return null;
+    const normalised = normaliseDate(d); // convert M/D/YYYY → YYYY-MM-DD
+    const dt = new Date(normalised);
+    return isNaN(dt.getTime()) ? null : dt;
+  };
+  const fmtDate  = d => { const dt=safeDate(d); return dt ? dt.toLocaleDateString('en-NG',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : '—'; };
+  const fmtShort = d => { const dt=safeDate(d); return dt ? dt.toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : '—'; };
+
   for (const rec of rentLogs) {
     if (!rec.tenantEmail || !rec.expiry) continue;
     if (rec.vacancy === 'vacant') continue;
 
-    const expD = new Date(rec.expiry); expD.setHours(0,0,0,0);
+    // If targetEmails provided, only send to those
+    if (targetEmails && targetEmails.length &&
+        !targetEmails.includes(rec.tenantEmail)) continue;
+
+    const expD = safeDate(rec.expiry);
+    if (!expD) continue; // skip records with unparseable date
+
+    expD.setHours(0,0,0,0);
     const daysLeft = Math.round((expD - today) / 864e5);
+
+    // Guard against NaN (should not happen after safeDate, but belt-and-braces)
+    if (isNaN(daysLeft)) {
+      console.warn('checkAndSendRenewalEmails: NaN daysLeft for', rec.tenantEmail, 'expiry:', rec.expiry);
+      continue;
+    }
+
+    // Normalise stored expiry to ISO if it isn't already (fixes future NaN)
+    const isoExpiry = expD.toISOString().slice(0,10);
+    if (rec.expiry !== isoExpiry) {
+      const idx = rentLogs.indexOf(rec);
+      if (idx >= 0) { rentLogs[idx].expiry = isoExpiry; }
+    }
 
     // Daily emails from day 60 down to day 0
     if (daysLeft > 60 || daysLeft < 0) continue;
 
-    // Unique daily key — one email per tenant per day
+    // Unique daily key — one email per tenant per day (skip if already sent today)
     const dailyKey = `${rec.tenantEmail}_${todayStr}`;
-    if (dailyAlerts[dailyKey]) continue;
+    if (dailyAlerts[dailyKey] && !targetEmails) continue; // skip auto-daily; allow manual resend
 
-    const tenantName = rec.tenant || rec.tenantEmail.split('@')[0];
-    const unitLabel  = getPropertyLabel(rec.unitId || rec.unit);
-    const fmtDate    = d => { try{ return new Date(d).toLocaleDateString('en-NG',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }catch(e){return d;} };
-    const fmtShort   = d => { try{ return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}); }catch(e){return d;} };
+    const tenantName = rec.tenant || rec.contractName || rec.tenantEmail.split('@')[0];
+    const unitLabel  = getPropertyLabel(rec.unitId || rec.unit) || rec.unit || rec.unitId || 'Your unit';
 
     // Colour & tone by days remaining
     let urgencyColour, urgencyLabel, bannerBg, bodyText, ctaText, footerNote;
@@ -4104,23 +4478,134 @@ async function checkAndSendRenewalEmails() {
 }
 
 /* Manual trigger — admin can also send reminders on demand */
-async function sendAllRenewalReminders() {
-  const count = rentLogs.filter(e => {
-    if (!e.tenantEmail || !e.expiry || e.vacancy === 'vacant') return false;
-    const days = Math.round((new Date(e.expiry) - new Date())/(864e5));
-    return days >= 0 && days <= 60;
-  }).length;
+function sendAllRenewalReminders() {
+  // Open the tenant selector modal instead of blind blast
+  openReminderModal();
+}
 
-  if (!count) { toast('No tenants within 60 days of expiry'); return; }
-  if (!confirm(`Send renewal reminder emails to ${count} tenant(s) expiring within 60 days?`)) return;
+function openReminderModal() {
+  _refreshRentLogs();
 
+  // Build the tenant list
+  const today = new Date(); today.setHours(0,0,0,0);
+  const safeDate = d => {
+    if(!d) return null;
+    const dt = new Date(normaliseDate(d));
+    return isNaN(dt.getTime()) ? null : dt;
+  };
+  const fmt = d => { const dt=safeDate(d); return dt ? dt.toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}) : '—'; };
 
+  // Categorise tenants
+  const cats = { expiring: [], active: [], noExpiry: [] };
+  rentLogs.forEach(r => {
+    if (!r.tenantEmail || r.vacancy === 'vacant') return;
+    const expD = safeDate(r.expiry);
+    if (!expD) { cats.noExpiry.push(r); return; }
+    expD.setHours(0,0,0,0);
+    const days = Math.round((expD - today) / 864e5);
+    if (days >= 0 && days <= 60) cats.expiring.push({...r, _days: days});
+    else if (days > 60) cats.active.push({...r, _days: days});
+  });
+  cats.expiring.sort((a,b) => a._days - b._days);
+  cats.active.sort((a,b) => a._days - b._days);
 
-  // Temporarily clear sent cache so all get resent
-  _sentRenewalAlerts.clear();
-  localStorage.removeItem('crs_sentAlerts_v1');
-  await checkAndSendRenewalEmails();
-  toast(`✓ Reminder emails sent to ${count} tenant(s)`, 4000);
+  const allTenants = [...cats.expiring, ...cats.active, ...cats.noExpiry];
+
+  // Build modal HTML
+  const rows = allTenants.map((r, i) => {
+    const isExpiring = r._days !== undefined && r._days <= 60;
+    const pillColour = r._days === undefined ? '#9a8a6a'
+      : r._days <= 14 ? '#c0392b' : r._days <= 60 ? '#c9960c' : '#1a9a4a';
+    const pillText = r._days !== undefined ? r._days + 'd left' : 'No expiry';
+    return `<label style="display:flex;align-items:center;gap:12px;padding:10px 14px;
+        border-bottom:1px solid #f0ede6;cursor:pointer;transition:background .1s"
+        onmouseover="this.style.background='#faf5e8'" onmouseout="this.style.background=''">
+      <input type="checkbox" class="rm-chk" value="${r.tenantEmail}"
+        ${isExpiring ? 'checked' : ''}
+        style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:.84rem;color:var(--ink)">${r.tenant||r.contractName||'—'}</div>
+        <div style="font-size:.72rem;color:#666">${getPropertyLabel(r.unitId||r.unit)||r.unit||'—'}</div>
+        <div style="font-size:.7rem;color:#999">${r.tenantEmail}</div>
+      </div>
+      <span style="font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:20px;
+        background:${pillColour}18;color:${pillColour};border:1px solid ${pillColour}40;
+        white-space:nowrap;flex-shrink:0">${pillText}</span>
+    </label>`;
+  }).join('');
+
+  const modal = document.getElementById('reminderModal');
+  if (!modal) return;
+  document.getElementById('rmModalList').innerHTML = rows ||
+    '<div style="padding:24px;text-align:center;color:#888">No tenants with email addresses found.</div>';
+  document.getElementById('rmModalCount').textContent =
+    `${cats.expiring.length} expiring within 60 days pre-selected`;
+  modal.classList.add('on');
+}
+
+function closeReminderModal() {
+  const m = document.getElementById('reminderModal'); if(m) m.classList.remove('on');
+}
+
+function rmModalSelectAll(checked) {
+  document.querySelectorAll('.rm-chk').forEach(cb => cb.checked = checked);
+  rmModalUpdateCount();
+}
+
+function rmModalSelectExpiring() {
+  // Re-check only expiring (60d or less)
+  document.querySelectorAll('.rm-chk').forEach(cb => {
+    const row = cb.closest('label');
+    const pill = row ? row.querySelector('span') : null;
+    if(pill) {
+      const txt = pill.textContent;
+      const days = parseInt(txt);
+      cb.checked = !isNaN(days) && days <= 60;
+    }
+  });
+  rmModalUpdateCount();
+}
+
+function rmModalUpdateCount() {
+  const sel = document.querySelectorAll('.rm-chk:checked').length;
+  const countEl = document.getElementById('rmModalCount');
+  if(countEl) countEl.textContent = sel + ' tenant(s) selected';
+}
+
+function rmModalFilter(query) {
+  const q = (query||'').toLowerCase().trim();
+  document.querySelectorAll('#rmModalList label').forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = (!q || text.includes(q)) ? '' : 'none';
+  });
+}
+
+async function sendReminderToSelected() {
+  const selected = [...document.querySelectorAll('.rm-chk:checked')].map(cb => cb.value);
+  if(!selected.length) { notify('warning','No Tenants Selected','Please select at least one tenant.'); return; }
+
+  const btn = document.getElementById('rmModalSendBtn');
+  if(btn) { btn.disabled=true; btn.textContent='Sending…'; }
+
+  closeReminderModal();
+  notify('info','Sending Reminders…',`Sending to ${selected.length} tenant(s). This may take a moment.`);
+
+  // Clear daily cache for selected tenants so emails go through
+  const alerts = _getDailyAlerts();
+  const todayStr = new Date().toISOString().slice(0,10);
+  selected.forEach(email => { delete alerts[`${email}_${todayStr}`]; });
+  _saveDailyAlerts(alerts);
+
+  try {
+    await checkAndSendRenewalEmails(selected);
+    notify('success','Reminders Sent',
+      `Renewal reminders sent to ${selected.length} tenant(s).`,
+      selected.map(e => '✉ ' + e)
+    );
+  } catch(err) {
+    notify('error','Send Failed', err.message || 'Unknown error');
+  }
+  if(btn) { btn.disabled=false; btn.textContent='📧 Send Reminders'; }
 }
 
 
@@ -4595,7 +5080,7 @@ function _impBuildPreview() {
 }
 
 async function smartDoImport() {
-  _refreshRentLogs(); // always start from latest localStorage state
+  _refreshRentLogs();
   const logEl = document.getElementById('importLog');
   logEl.innerHTML = '';
   const log = (msg,type='ok')=>{ const cls=type==='err'?'log-err':type==='warn'?'log-warn':type==='info'?'log-info':''; logEl.innerHTML+=`<div class="${cls}">${msg}</div>`; logEl.scrollTop=logEl.scrollHeight; };
@@ -4604,36 +5089,25 @@ async function smartDoImport() {
   for(let i=0;i<_impMapped.length;i++){
     const r=_impMapped[i];
     if(!r.unit&&!r.tenant){ skipped++; continue; }
-    const unitId = autoMatchUnitId(r.unit, r.location) || _impNorm(r.unit).replace(/_/g,' ') || r.unit;
-    const record = {
-      id: _impNorm(unitId)+'_'+Date.now()+'_'+i,
-      unitId,
-      unit: r.unit,
-      location: r.location,
-      city: r.city,
-      type: r.type||'Residential',
-      tenant: r.tenant||r.contractName,
-      contractName: r.contractName||r.tenant,
-      tenantEmail: r.tenantEmail,
-      tenantPhone: r.tenantPhone,
-      tenantNIN: r.tenantNIN,
-      amount: normaliseAmount(r.amount),
-      newRent: normaliseAmount(r.newRent),
-      start: normaliseDate(r.start),
-      expiry: normaliseDate(r.expiry),
-      lastPayment: normaliseDate(r.lastPayment),
-      vacancy: (r.vacancy||'').toLowerCase().includes('vacant')?'vacant':(r.vacancy||'occupied'),
-      notes: r.notes,
-      importedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    const existIdx = rentLogs.findIndex(e=>e.unitId===unitId);
-    if(existIdx>=0){
-      rentLogs[existIdx]={...rentLogs[existIdx],...record,id:rentLogs[existIdx].id};
-      updated++; log(`↻ Row ${r._row}: Updated — ${unitId} · ${record.tenant||'(vacant)'}`, 'info');
+
+    // ── Find canonical PROPERTIES id using fuzzy match ──
+    const unitId = _resolveUnitId(r.unit, r.location);
+
+    // ── Build incoming record — only non-empty values ──
+    const incoming = _buildIncomingRecord(r, unitId, i);
+
+    // ── Find existing record using robust matching ──
+    const existRaw = _getRecordByPropId(unitId) ||
+      rentLogs.find(e => _norm(e.unitId||e.unit) === _norm(r.unit));
+    const existIdx = existRaw ? rentLogs.indexOf(existRaw) : -1;
+
+    if(existIdx >= 0) {
+      // SMART MERGE: only overwrite fields where incoming has actual data
+      rentLogs[existIdx] = _smartMerge(rentLogs[existIdx], incoming);
+      updated++; log(`↻ Row ${r._row}: Merged into ${unitId} · ${incoming.tenant||rentLogs[existIdx].tenant||'(vacant)'}`, 'info');
     } else {
-      rentLogs.push(record); added++;
-      log(`✓ Row ${r._row}: Added — ${unitId} · ${record.tenant||'(vacant)'}`, 'ok');
+      rentLogs.push(incoming); added++;
+      log(`✓ Row ${r._row}: Added — ${unitId} · ${incoming.tenant||'(vacant)'}`, 'ok');
     }
   }
 
@@ -4874,29 +5348,28 @@ function rmSmartApplyMapping() {
 }
 
 async function rmSmartDoImport() {
-  _refreshRentLogs(); // pull latest state before merging
+  _refreshRentLogs();
   const logEl=document.getElementById('rmImportLog'); logEl.innerHTML='';
   const log=(msg,type='ok')=>{const cls=type==='err'?'log-err':type==='warn'?'log-warn':type==='info'?'log-info':'';logEl.innerHTML+=`<div class="${cls}">${msg}</div>`;logEl.scrollTop=logEl.scrollHeight;};
   let added=0,updated=0,skipped=0,dupes=0;
   for(let i=0;i<_rmMapped.length;i++){
     const r=_rmMapped[i];
     if(!r.unit&&!r.tenant){skipped++;continue;}
-    const unitId=autoMatchUnitId(r.unit,r.location)||_impNorm(r.unit)||r.unit;
-    const record={
-      id:_impNorm(unitId)+'_'+Date.now()+'_'+i, unitId,
-      unit:r.unit, location:r.location, city:r.city, type:r.type||'Residential',
-      tenant:r.tenant||r.contractName, contractName:r.contractName||r.tenant,
-      tenantEmail:r.tenantEmail, tenantPhone:r.tenantPhone, tenantNIN:r.tenantNIN,
-      amount:normaliseAmount(r.amount),
-      newRent:normaliseAmount(r.newRent),
-      start:normaliseDate(r.start), expiry:normaliseDate(r.expiry),
-      lastPayment:normaliseDate(r.lastPayment),
-      vacancy:(r.vacancy||'').toLowerCase().includes('vacant')?'vacant':(r.vacancy||'occupied'),
-      notes:r.notes, importedAt:new Date().toISOString(), updatedAt:new Date().toISOString()
-    };
-    const existIdx=rentLogs.findIndex(e=>e.unitId===unitId);
-    if(existIdx>=0){rentLogs[existIdx]={...rentLogs[existIdx],...record,id:rentLogs[existIdx].id};updated++;log(`↻ Row ${r._row}: Updated — ${unitId} · ${record.tenant||'(vacant)'}`, 'info');}
-    else{rentLogs.push(record);added++;log(`✓ Row ${r._row}: Added — ${unitId} · ${record.tenant||'(vacant)'}`, 'ok');}
+
+    const unitId = _resolveUnitId(r.unit, r.location);
+    const incoming = _buildIncomingRecord(r, unitId, i);
+
+    const existRaw = _getRecordByPropId(unitId) ||
+      rentLogs.find(e => _norm(e.unitId||e.unit) === _norm(r.unit));
+    const existIdx = existRaw ? rentLogs.indexOf(existRaw) : -1;
+
+    if(existIdx>=0){
+      rentLogs[existIdx]=_smartMerge(rentLogs[existIdx], incoming);
+      updated++;log(`↻ Row ${r._row}: Merged into ${unitId} · ${incoming.tenant||rentLogs[existIdx].tenant||'(vacant)'}`, 'info');
+    } else {
+      rentLogs.push(incoming);added++;
+      log(`✓ Row ${r._row}: Added — ${unitId} · ${incoming.tenant||'(vacant)'}`, 'ok');
+    }
   }
 
   // ── DEDUPLICATE: keep the most recently updated record per unitId ──
@@ -5786,7 +6259,158 @@ function savePropEdit() {
 }
 
 /* ════════════════════════════════════════════════════════════
-   GLOBAL AMENITIES MANAGER
+   RENT MANAGER — PASTE ROW IMPORT MODE
+════════════════════════════════════════════════════════════ */
+
+const RM_PASTE_DEFAULT_HEADERS = 'unit\ttenant\temail\tphone\tamount\tnew_rent\tstart_date\texpiry_date\tlast_payment\tvacancy\tnotes';
+
+const RM_PASTE_FIELD_MAP = [
+  'unit','tenant','tenantEmail','tenantPhone','amount','newRent',
+  'start','expiry','lastPayment','vacancy','notes'
+];
+
+function rmImpSetMode(mode) {
+  const csvDiv   = document.getElementById('rmImpModeCsv');
+  const pasteDiv = document.getElementById('rmImpModePaste');
+  const csvBtn   = document.getElementById('rmImpTabCsv');
+  const pasteBtn = document.getElementById('rmImpTabPaste');
+  if(!csvDiv || !pasteDiv) return;
+
+  if(mode === 'csv') {
+    csvDiv.style.display   = 'block';
+    pasteDiv.style.display = 'none';
+    if(csvBtn)   { csvBtn.style.background=  'var(--gold)'; csvBtn.style.color='var(--ink)'; }
+    if(pasteBtn) { pasteBtn.style.background='#1a1814'; pasteBtn.style.color='#9a8a6a'; }
+  } else {
+    csvDiv.style.display   = 'none';
+    pasteDiv.style.display = 'block';
+    if(pasteBtn) { pasteBtn.style.background='var(--gold)'; pasteBtn.style.color='var(--ink)'; }
+    if(csvBtn)   { csvBtn.style.background=  '#1a1814'; csvBtn.style.color='#9a8a6a'; }
+  }
+}
+
+function rmPasteUseDefaultHeaders() {
+  const el = document.getElementById('rmPasteHeaderRow');
+  if(el) el.value = RM_PASTE_DEFAULT_HEADERS;
+}
+
+function _rmParsePastedRows() {
+  const headerRow = (document.getElementById('rmPasteHeaderRow').value || RM_PASTE_DEFAULT_HEADERS).trim();
+  const dataText  = document.getElementById('rmPasteDataRows').value.trim();
+  if(!dataText) return [];
+
+  // Detect separator from header row (tab or multiple spaces)
+  const sep = headerRow.includes('\t') ? '\t' : /\s{2,}/.test(headerRow) ? /\s{2,}/ : '\t';
+
+  const headers = typeof sep === 'string'
+    ? headerRow.split(sep).map(h => _impNorm(h))
+    : headerRow.split(sep).map(h => _impNorm(h));
+
+  // Map header names to _IMP_FIELDS keys
+  const fieldMap = {};
+  headers.forEach((h, i) => {
+    const match = _IMP_FIELDS.find(f => f.aliases.includes(h) || f.key === h);
+    if(match) fieldMap[i] = match.key;
+    else fieldMap[i] = h; // keep raw name
+  });
+
+  const lines = dataText.split('\n').filter(l => l.trim());
+  return lines.map((line, li) => {
+    const cells = typeof sep === 'string'
+      ? line.split(sep)
+      : line.split(sep);
+    const obj = {_row: li + 1};
+    headers.forEach((h, i) => {
+      const key = fieldMap[i] || h;
+      obj[key] = (cells[i] || '').trim();
+    });
+    // If no header row provided, fall back to positional mapping
+    if(!headerRow && RM_PASTE_FIELD_MAP[0]) {
+      RM_PASTE_FIELD_MAP.forEach((key, i) => { if(cells[i]) obj[key] = (cells[i]||'').trim(); });
+    }
+    return obj;
+  });
+}
+
+function rmPastePreview() {
+  const rows = _rmParsePastedRows();
+  const area = document.getElementById('rmPastePreviewArea');
+  const actions = document.getElementById('rmPasteActions');
+  if(!rows.length) {
+    area.innerHTML = '<div class="imp-alert imp-alert-warn" style="margin-top:8px"><span>⚠️</span><span>No data found. Paste your rows in the text area above.</span></div>';
+    if(actions) actions.style.display='none';
+    return;
+  }
+
+  const cols = ['unit','tenant','tenantEmail','amount','start','expiry','vacancy'];
+  const labels = {unit:'Unit',tenant:'Tenant',tenantEmail:'Email',amount:'Rent',start:'Start',expiry:'Expiry',vacancy:'Status'};
+
+  area.innerHTML = `
+    <div class="imp-alert imp-alert-ok" style="margin-bottom:8px"><span>✅</span><span>${rows.length} row(s) parsed — review below then click Import.</span></div>
+    <div class="imp-table-wrap" style="max-height:220px">
+      <table class="imp-table">
+        <thead><tr>${cols.map(k=>`<th>${labels[k]}</th>`).join('')}</tr></thead>
+        <tbody>${rows.map(r=>'<tr>'+cols.map(k=>`<td title="${r[k]||''}">${r[k]||'—'}</td>`).join('')+'</tr>').join('')}</tbody>
+      </table>
+    </div>`;
+  if(actions) actions.style.display='block';
+}
+
+function rmPasteDoImport() {
+  const rows = _rmParsePastedRows();
+  const logEl = document.getElementById('rmPasteLog');
+  logEl.style.display = 'block'; logEl.innerHTML = '';
+  const log = (msg, type='ok') => {
+    const cls = type==='err'?'log-err':type==='warn'?'log-warn':type==='info'?'log-info':'';
+    logEl.innerHTML += `<div class="${cls}">${msg}</div>`;
+    logEl.scrollTop = logEl.scrollHeight;
+  };
+
+  if(!rows.length) { log('⚠ No rows to import', 'warn'); return; }
+
+  _refreshRentLogs();
+  let added=0, updated=0, skipped=0;
+
+  rows.forEach((r, i) => {
+    if(!r.unit && !r.tenant) { skipped++; return; }
+    const unitId = _resolveUnitId(r.unit || '', r.location || '');
+    const incoming = _buildIncomingRecord(r, unitId, i);
+
+    const existRaw = _getRecordByPropId(unitId) ||
+      rentLogs.find(e => _norm(e.unitId||e.unit) === _norm(r.unit||''));
+    const existIdx = existRaw ? rentLogs.indexOf(existRaw) : -1;
+
+    if(existIdx >= 0) {
+      rentLogs[existIdx] = _smartMerge(rentLogs[existIdx], incoming);
+      updated++;
+      log(`↻ Row ${r._row}: Merged — ${unitId} · ${incoming.tenant || rentLogs[existIdx].tenant || '(vacant)'}`, 'info');
+    } else {
+      rentLogs.push(incoming); added++;
+      log(`✓ Row ${r._row}: Added — ${unitId} · ${incoming.tenant || '(vacant)'}`, 'ok');
+    }
+  });
+
+  saveLocal();
+  _canonicaliseUnitIds();
+  renderAll(); renderRentManager(); renderProperties();
+  log(`─── Done: ${added} added · ${updated} updated · ${skipped} skipped ───`, 'info');
+
+  notify('success', 'Paste Import Complete',
+    `${added + updated} records processed from pasted data.`,
+    [added ? `${added} new records added` : null,
+     updated ? `${updated} existing records updated` : null,
+     '📋 Rent Manager and Properties refreshed'].filter(Boolean)
+  );
+
+  // Background Firestore sync
+  if(window._db) {
+    Promise.race([
+      (function(){const b=window._db.batch();let c=0;rentLogs.forEach(r=>{if(r.id&&c<499){b.set(window._db.collection('rentRecords').doc(r.id),r);c++;}});return b.commit();})(),
+      new Promise(function(_,r){setTimeout(function(){r(new Error('timeout'));},8000);})
+    ]).then(function(){ log('☁ Synced to Firestore','ok'); })
+      .catch(function(e){ log('⚠ Firestore sync skipped — '+e.message,'warn'); });
+  }
+}
 ════════════════════════════════════════════════════════════ */
 function renderGlobalAmenityList() {
   const el = document.getElementById('globalAmenityList');
@@ -7293,6 +7917,30 @@ var _origBootApp = typeof _bootApp === 'function' ? _bootApp : null;
   </div>
 </div>
 
+
+<!-- ═══ REMINDER MODAL ═══ -->
+<div id="reminderModal">
+  <div class="rm-modal-card">
+    <div class="rm-modal-head">
+      <h3>📧 Send Renewal Reminders</h3>
+      <button onclick="closeReminderModal()" style="background:none;border:none;color:#9a8a6a;font-size:1.2rem;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div class="rm-modal-tools">
+      <button onclick="rmModalSelectExpiring()">🟠 Expiring (≤60d)</button>
+      <button onclick="rmModalSelectAll(true)">☑ Select All</button>
+      <button onclick="rmModalSelectAll(false)">☐ Deselect All</button>
+      <input type="text" id="rmModalSearch" placeholder="🔍 Search tenant or unit…"
+        oninput="rmModalFilter(this.value)"
+        style="border:1px solid #e0d8c8;border-radius:6px;padding:5px 10px;font-size:.76rem;font-family:'DM Sans',sans-serif;outline:none;min-width:160px;margin-left:auto"/>
+    </div>
+    <div class="rm-modal-list" id="rmModalList" onchange="rmModalUpdateCount()"></div>
+    <div class="rm-modal-foot">
+      <span class="rm-modal-count" id="rmModalCount">—</span>
+      <button class="btn btn-outline" onclick="closeReminderModal()">Cancel</button>
+      <button class="btn btn-blue" id="rmModalSendBtn" onclick="sendReminderToSelected()">📧 Send Reminders</button>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ TERMINATION OVERLAY ═══ -->
 <div id="terminationOverlay">
