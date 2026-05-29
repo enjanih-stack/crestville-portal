@@ -482,7 +482,19 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .prop-sub-page { display: none; }
 .prop-sub-page.on { display: block; }
 
-/* IMPORT PANEL */
+/* BULK SELECTION */
+.bulk-bar{display:none;align-items:center;gap:10px;padding:9px 14px;background:var(--ink);border-radius:8px;margin-bottom:12px;flex-wrap:wrap}
+.bulk-bar.on{display:flex}
+.bulk-bar-count{color:var(--gold);font-weight:700;font-size:.82rem;flex:1}
+.bulk-chk{width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0}
+.th-chk{width:36px!important;padding:9px 8px!important}
+.td-chk{width:36px;padding:10px 8px!important;vertical-align:middle}
+.data-table tr.row-selected td{background:rgba(201,150,12,.07)!important}
+.btn-bulk-del{background:rgba(140,31,31,.12);border:1px solid rgba(140,31,31,.35);color:var(--red);padding:6px 16px;border-radius:6px;font-size:.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s}
+.btn-bulk-del:hover{background:rgba(140,31,31,.22)}
+.btn-bulk-del:disabled{opacity:.4;cursor:not-allowed}
+.btn-bulk-action{background:rgba(201,150,12,.12);border:1px solid rgba(201,150,12,.3);color:#7a5c00;padding:6px 14px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-bulk-action:hover{background:rgba(201,150,12,.22)}
 .import-panel { background: linear-gradient(135deg, #0f0e0c, #1a1814); border-radius: 10px; padding: 24px; margin-bottom: 20px; border: 1px solid #2a2620; }
 .import-panel h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
 .import-panel p { font-size: .8rem; color: #9a8a6a; margin-bottom: 16px; line-height: 1.6; }
@@ -1927,9 +1939,18 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
               <option value="overdue">Overdue</option>
             </select>
           </div>
+          <!-- Bulk action bar -->
+          <div class="bulk-bar" id="rmBulkBar">
+            <input type="checkbox" class="bulk-chk" id="rmSelectAll" title="Select all" onchange="rmToggleSelectAll(this.checked)"/>
+            <span class="bulk-bar-count" id="rmBulkCount">0 selected</span>
+            <button class="btn-bulk-action" onclick="rmBulkExport()">⬇ Export Selected</button>
+            <button class="btn-bulk-del" id="rmBulkDelBtn" onclick="rmBulkDelete()">🗑 Delete Selected</button>
+            <button class="btn-bulk-action" onclick="rmClearSelection()">✕ Clear</button>
+          </div>
+
             <div class="sec-body overflow-table" style="padding:0">
               <table class="data-table" id="rmTable">
-                <thead><tr><th>Unit / Location</th><th>Tenant</th><th>Rent (₦)</th><th>Start</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+                <thead><tr><th class="th-chk"><input type="checkbox" class="bulk-chk" title="Select all" onchange="rmToggleSelectAll(this.checked)"/></th><th>Unit / Location</th><th>Tenant</th><th>Rent (₦)</th><th>Start</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody id="rmBody"></tbody>
               </table>
             </div>
@@ -1942,10 +1963,16 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
         <div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()" title="Go back">&#8592;</button><button class="pnb-btn" onclick="historyFwd()" title="Go forward">&#8594;</button><div class="pnb-crumb" id="navCrumb"></div></div>
         <div class="page-header"><div><h1>Tenants</h1><div class="ph-sub">All registered portal users</div></div></div>
         <div class="page-body">
+          <div class="bulk-bar" id="tenantsBulkBar">
+            <input type="checkbox" class="bulk-chk" title="Select all" onchange="tenantsToggleSelectAll(this.checked)"/>
+            <span class="bulk-bar-count" id="tenantsBulkCount">0 selected</span>
+            <button class="btn-bulk-del" onclick="tenantsBulkDelete()">🗑 Remove Selected</button>
+            <button class="btn-bulk-action" onclick="tenantsClearSelection()">✕ Clear</button>
+          </div>
           <div class="sec-card">
             <div class="sec-body overflow-table" style="padding:0">
               <table class="data-table">
-                <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Linked Unit</th><th>Registered</th></tr></thead>
+                <thead><tr><th class="th-chk"><input type="checkbox" class="bulk-chk" title="Select all" onchange="tenantsToggleSelectAll(this.checked)"/></th><th>Name</th><th>Email</th><th>Role</th><th>Linked Unit</th><th>Registered</th></tr></thead>
                 <tbody id="tenantsBody"></tbody>
               </table>
             </div>
@@ -3270,6 +3297,7 @@ function showPage(pgId, btn) {
   if(pgId === 'pgProperties') renderProperties();
   if(pgId === 'pgRentManager') { renderRentManager(); if(isAdmin) renderLockedTenantsList(); }
   if(pgId === 'pgNotices') { loadNotices(); renderExpiryBanner(); renderTenancyStatusNotice(); }
+  if(pgId === 'pgTenants') { loadTenantsTable(); }
   // Save state on every page navigation
   if (typeof saveSessionState === 'function') saveSessionState();
 }
@@ -3428,6 +3456,7 @@ function fmtTableDate(d) {
 function renderRentManager() {
   const tbody = document.getElementById('rmBody');
   if(!tbody) return;
+  _rmSelected.clear(); // clear any stale selection on re-render
   const search = (document.getElementById('rmSearch')?.value||'').toLowerCase();
   const filter = document.getElementById('rmFilter')?.value||'';
   const today = new Date(); today.setHours(0,0,0,0);
@@ -3482,7 +3511,8 @@ function renderRentManager() {
       : '<span style="color:var(--dim);font-size:.8rem">--</span>';
 
     const isLocked = _isLockedOut(_normaliseRecord(e));
-    return `<tr style="${rowBg}${isLocked?'opacity:.6;':''}">
+    return `<tr style="${rowBg}${isLocked?'opacity:.6;':''}" data-idx="${idx}" class="rm-row">
+      <td class="td-chk"><input type="checkbox" class="bulk-chk rm-chkbox" value="${idx}" onchange="rmRowChecked(this)"/></td>
       <td style="max-width:180px"><div style="font-weight:600;font-size:.82rem">${label}${isLocked?'<span class="days-pill dp-red" style="margin-left:6px;animation:none">🔒 Locked</span>':''}</div>
         <div style="font-size:.7rem;color:var(--dim)">${e.tenantEmail||''}</div></td>
       <td>
@@ -5704,7 +5734,76 @@ function removeDoc(unitId, category, idx) {
 }
 
 /* Load tenant docs from Firestore on init */
-async function loadAllTenantDocs() {
+async function loadTenantsTable() {
+  const tbody = document.getElementById('tenantsBody');
+  if(!tbody) return;
+  _refreshRentLogs();
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--dim)">Loading...</td></tr>';
+
+  // Build from rentLogs (primary source) merged with Firebase users if available
+  let userMap = {}; // email -> {name, role, registered}
+  try {
+    if(window._db) {
+      const snap = await window._db.collection('users').get();
+      snap.docs.forEach(d => { const data = d.data(); if(data.email) userMap[data.email.toLowerCase()] = data; });
+    }
+  } catch(e) {}
+
+  // Build rows from rentLogs (tenants with email)
+  const tenants = rentLogs.filter(r => r.tenantEmail && r.tenant && r.vacancy !== 'vacant');
+  if(!tenants.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--dim)">No tenants with email addresses found.</td></tr>';
+    return;
+  }
+
+  const fmt = d => { try{ return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); }catch(e){return d||'--';} };
+
+  tbody.innerHTML = tenants.map((r, i) => {
+    const email = (r.tenantEmail||'').toLowerCase();
+    const ud = userMap[email] || {};
+    const unit = getPropertyLabel(r.unitId||r.unit) || r.unit || '--';
+    const linked = unit !== '--';
+    return `<tr class="tenants-row" data-email="${email}">
+      <td class="td-chk"><input type="checkbox" class="bulk-chk tenants-chkbox" value="${email}" onchange="tenantsRowChecked(this)"/></td>
+      <td>
+        <div style="font-weight:600;font-size:.83rem">${r.tenant||r.contractName||'--'}</div>
+        ${r.contractName && r.contractName !== r.tenant ? '<div style="font-size:.68rem;color:var(--gold)">Contract: '+r.contractName+'</div>' : ''}
+        ${r.tenantPhone ? '<div style="font-size:.7rem;color:var(--dim)">'+r.tenantPhone+'</div>' : ''}
+      </td>
+      <td style="font-size:.81rem">${r.tenantEmail||'--'}</td>
+      <td><span style="font-size:.72rem;padding:2px 9px;border-radius:20px;font-weight:700;background:rgba(26,92,46,.1);color:var(--green);border:1px solid rgba(26,92,46,.2)">${ud.role||'Tenant'}</span></td>
+      <td>
+        <div style="font-size:.81rem;font-weight:${linked?600:400};color:${linked?'var(--ink)':'var(--dim)'}">${unit}</div>
+        ${r.expiry ? '<div style="font-size:.69rem;color:var(--dim)">Expires: '+fmt(r.expiry)+'</div>' : ''}
+      </td>
+      <td style="font-size:.78rem;color:var(--dim)">${ud.createdAt ? fmt(ud.createdAt) : r.importedAt ? fmt(r.importedAt) : '--'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function loadTenantsTableSync() {
+  // Non-async version using only rentLogs (instant, no Firestore)
+  const tbody = document.getElementById('tenantsBody');
+  if(!tbody) return;
+  _refreshRentLogs();
+  const tenants = rentLogs.filter(r => r.tenantEmail && r.tenant && r.vacancy !== 'vacant');
+  if(!tenants.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--dim)">No tenants found.</td></tr>';
+    return;
+  }
+  const fmt = d => { try{ return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); }catch(e){return d||'--';} };
+  tbody.innerHTML = tenants.map(r => {
+    const unit = getPropertyLabel(r.unitId||r.unit) || r.unit || '--';
+    return `<tr class="tenants-row" data-email="${(r.tenantEmail||'').toLowerCase()}">
+      <td class="td-chk"><input type="checkbox" class="bulk-chk tenants-chkbox" value="${(r.tenantEmail||'').toLowerCase()}" onchange="tenantsRowChecked(this)"/></td>
+      <td><div style="font-weight:600;font-size:.83rem">${r.tenant||'--'}</div><div style="font-size:.7rem;color:var(--dim)">${r.tenantPhone||''}</div></td>
+      <td style="font-size:.81rem">${r.tenantEmail||'--'}</td>
+      <td><span style="font-size:.72rem;padding:2px 8px;border-radius:20px;font-weight:700;background:rgba(26,92,46,.1);color:var(--green)">Tenant</span></td>
+      <td style="font-size:.81rem">${unit}</td>
+      <td style="font-size:.78rem;color:var(--dim)">${r.importedAt ? fmt(r.importedAt) : '--'}</td>
+    </tr>`;
+  }).join('');
+}
   try {
     const snap = await window._db.collection('tenantDocs').get();
     snap.docs.forEach(d => { _tenantDocs[d.id] = d.data(); });
@@ -6410,6 +6509,162 @@ function rmPasteDoImport() {
     ]).then(function(){ log('☁ Synced to Firestore','ok'); })
       .catch(function(e){ log('⚠ Firestore sync skipped -- '+e.message,'warn'); });
   }
+}
+
+/* ============================================================
+   BULK SELECTION AND DELETION
+   Works on: Rent Manager (rmBody) and Tenants (tenantsBody)
+   ------------------------------------------------------------ */
+
+/* ---- RENT MANAGER BULK ---- */
+let _rmSelected = new Set();
+
+function rmRowChecked(cb) {
+  const idx = parseInt(cb.value);
+  if(cb.checked) _rmSelected.add(idx);
+  else _rmSelected.delete(idx);
+  cb.closest('tr').classList.toggle('row-selected', cb.checked);
+  _rmUpdateBulkBar();
+}
+
+function rmToggleSelectAll(checked) {
+  _rmSelected.clear();
+  document.querySelectorAll('.rm-chkbox').forEach(cb => {
+    cb.checked = checked;
+    cb.closest('tr').classList.toggle('row-selected', checked);
+    if(checked) _rmSelected.add(parseInt(cb.value));
+  });
+  document.querySelectorAll('#rmTable thead input[type=checkbox]').forEach(hcb => hcb.checked = checked);
+  if(document.getElementById('rmSelectAll')) document.getElementById('rmSelectAll').checked = checked;
+  _rmUpdateBulkBar();
+}
+
+function _rmUpdateBulkBar() {
+  const bar = document.getElementById('rmBulkBar');
+  const count = document.getElementById('rmBulkCount');
+  const n = _rmSelected.size;
+  if(bar) bar.classList.toggle('on', n > 0);
+  if(count) count.textContent = n + ' record' + (n !== 1 ? 's' : '') + ' selected';
+  const allCbs = document.querySelectorAll('.rm-chkbox');
+  const allChecked = allCbs.length > 0 && allCbs.length === n;
+  document.querySelectorAll('#rmTable thead input[type=checkbox]').forEach(hcb => {
+    hcb.checked = allChecked; hcb.indeterminate = n > 0 && !allChecked;
+  });
+  if(document.getElementById('rmSelectAll')) {
+    document.getElementById('rmSelectAll').checked = allChecked;
+    document.getElementById('rmSelectAll').indeterminate = n > 0 && !allChecked;
+  }
+}
+
+function rmClearSelection() {
+  _rmSelected.clear();
+  document.querySelectorAll('.rm-chkbox').forEach(cb => { cb.checked = false; cb.closest('tr').classList.remove('row-selected'); });
+  document.querySelectorAll('#rmTable thead input[type=checkbox]').forEach(hcb => { hcb.checked = false; hcb.indeterminate = false; });
+  if(document.getElementById('rmSelectAll')) { document.getElementById('rmSelectAll').checked = false; document.getElementById('rmSelectAll').indeterminate = false; }
+  const bar = document.getElementById('rmBulkBar');
+  if(bar) bar.classList.remove('on');
+}
+
+function rmBulkDelete() {
+  const n = _rmSelected.size;
+  if(!n) return;
+  const names = [..._rmSelected].map(i => rentLogs[i] ? (rentLogs[i].tenant||rentLogs[i].unit||'Record') : '').filter(Boolean);
+  const preview = names.slice(0,5).join(', ') + (names.length > 5 ? ' and ' + (names.length-5) + ' more' : '');
+  if(!confirm('Delete ' + n + ' record' + (n!==1?'s':'') + '?\n\n' + preview + '\n\nThis cannot be undone.')) return;
+
+  const sorted = [..._rmSelected].sort((a,b) => b-a);
+  sorted.forEach(idx => { if(idx >= 0 && idx < rentLogs.length) rentLogs.splice(idx,1); });
+  saveLocal();
+  _canonicaliseUnitIds();
+  _rmSelected.clear();
+  renderRentManager();
+  renderProperties();
+  renderAll();
+
+  notify('success', n + ' Record' + (n!==1?'s':'') + ' Deleted', preview, [
+    'Rent Manager updated', 'Sync to push changes to cloud'
+  ]);
+
+  if(window._db) {
+    const batch = window._db.batch(); let bc = 0;
+    rentLogs.forEach(r => { if(r.id && bc < 499) { batch.set(window._db.collection('rentRecords').doc(r.id), r); bc++; }});
+    batch.commit().catch(function(e){ console.warn('Bulk delete Firestore:', e.message); });
+  }
+}
+
+function rmBulkExport() {
+  const selected = [..._rmSelected].map(i => rentLogs[i]).filter(Boolean);
+  if(!selected.length) return;
+  const keys = ['unitId','unit','location','city','tenant','tenantEmail','tenantPhone','amount','newRent','start','expiry','lastPayment','vacancy','notes'];
+  const rows = [keys.join(','), ...selected.map(r => keys.map(k => '"' + ((r[k]||'').toString().replace(/"/g,'""')) + '"').join(','))];
+  const blob = new Blob([rows.join('\n')], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'CRS_Selected_' + new Date().toISOString().slice(0,10) + '.csv'; a.click();
+  URL.revokeObjectURL(a.href);
+  notify('success', 'Export Complete', selected.length + ' records downloaded as CSV.');
+}
+
+/* ---- TENANTS PAGE BULK ---- */
+let _tenantsSelected = new Set();
+
+function tenantsRowChecked(cb) {
+  if(cb.checked) _tenantsSelected.add(cb.value);
+  else _tenantsSelected.delete(cb.value);
+  cb.closest('tr').classList.toggle('row-selected', cb.checked);
+  _tenantsUpdateBulkBar();
+}
+
+function tenantsToggleSelectAll(checked) {
+  _tenantsSelected.clear();
+  document.querySelectorAll('.tenants-chkbox').forEach(cb => {
+    cb.checked = checked;
+    cb.closest('tr').classList.toggle('row-selected', checked);
+    if(checked) _tenantsSelected.add(cb.value);
+  });
+  document.querySelectorAll('#pgTenants thead input[type=checkbox]').forEach(hcb => hcb.checked = checked);
+  _tenantsUpdateBulkBar();
+}
+
+function _tenantsUpdateBulkBar() {
+  const bar = document.getElementById('tenantsBulkBar');
+  const count = document.getElementById('tenantsBulkCount');
+  const n = _tenantsSelected.size;
+  if(bar) bar.classList.toggle('on', n > 0);
+  if(count) count.textContent = n + ' tenant' + (n!==1?'s':'') + ' selected';
+  const allCbs = document.querySelectorAll('.tenants-chkbox');
+  const allChecked = allCbs.length > 0 && allCbs.length === n;
+  document.querySelectorAll('#pgTenants thead input[type=checkbox]').forEach(hcb => {
+    hcb.checked = allChecked; hcb.indeterminate = n > 0 && !allChecked;
+  });
+}
+
+function tenantsClearSelection() {
+  _tenantsSelected.clear();
+  document.querySelectorAll('.tenants-chkbox').forEach(cb => { cb.checked = false; cb.closest('tr').classList.remove('row-selected'); });
+  document.querySelectorAll('#pgTenants thead input[type=checkbox]').forEach(hcb => { hcb.checked = false; hcb.indeterminate = false; });
+  const bar = document.getElementById('tenantsBulkBar'); if(bar) bar.classList.remove('on');
+}
+
+function tenantsBulkDelete() {
+  const n = _tenantsSelected.size;
+  if(!n) return;
+  if(!confirm('Remove ' + n + ' tenant record' + (n!==1?'s':'') + ' from Rent Manager?\n\nFirebase Auth accounts are NOT deleted.\n\nThis cannot be undone.')) return;
+
+  const emailArr = [..._tenantsSelected].map(e => e.toLowerCase());
+  const before = rentLogs.length;
+  rentLogs = rentLogs.filter(r => !emailArr.includes((r.tenantEmail||'').toLowerCase()));
+  const removed = before - rentLogs.length;
+  saveLocal();
+  _canonicaliseUnitIds();
+  _tenantsSelected.clear();
+  loadTenantsTable();
+  renderRentManager();
+  renderProperties();
+
+  notify('success', removed + ' Tenant Record' + (removed!==1?'s':'') + ' Removed',
+    'Tenancy records cleared. Firebase accounts unchanged.',
+    ['Rent Manager updated', 'Sync to push changes to cloud']
+  );
 }
 
 function renderGlobalAmenityList() {
