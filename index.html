@@ -5984,16 +5984,6 @@ function loadTenantsTableSync() {
     </tr>`;
   }).join('');
 }
-  try {
-    const snap = await window._db.collection('tenantDocs').get();
-    snap.docs.forEach(d => { _tenantDocs[d.id] = d.data(); });
-    // Update doc counts
-    Object.keys(_tenantDocs).forEach(uid => {
-      _docCounts[uid] = Object.values(_tenantDocs[uid]).flat().length;
-    });
-    renderProperties();
-  } catch(e) { console.log('Load tenant docs:', e); }
-}
 
 /* -- DRAG & DROP on CSV drop zone -- */
 (function setupDragDrop() {
@@ -7212,13 +7202,12 @@ function renameGlobalAmenity(i) {
   editGlobalAmenity(i);
 }
 
-// Patch showPropTab to render amenity list when tab is shown
-const _origShowPropTab = typeof showPropTab === 'function' ? showPropTab : null;
-function showPropTab(id, btn) {
+// Patch showPropTab to also render amenity list when tab is shown
+window.showPropTab = function showPropTab(id, btn) {
   document.querySelectorAll('.prop-sub-page').forEach(p => p.classList.remove('on'));
   document.getElementById(id).classList.add('on');
   if (id === 'tabAmenities') renderGlobalAmenityList();
-}
+};
 
 // Merge property extras into PROPERTIES array before each render
 // Called by the real renderProperties which already exists above
@@ -8347,14 +8336,14 @@ function showAmendmentModal(wfId) {
 
 /* -- HOOK INTO BOOT -- */
 var _origLoadAdminWorkflows = typeof loadAdminWorkflows === 'function' ? loadAdminWorkflows : null;
-async function loadAdminWorkflows() {
+window.loadAdminWorkflows = async function loadAdminWorkflows() {
   if (_origLoadAdminWorkflows) await _origLoadAdminWorkflows();
   loadAllStatusCards();
-}
+};
 
 /* -- EXTEND adminAdvanceWorkflow to handle amendment -- */
 var _origAdminAdvance = typeof adminAdvanceWorkflow === 'function' ? adminAdvanceWorkflow : null;
-async function adminAdvanceWorkflow(wfId, action, notes) {
+window.adminAdvanceWorkflow = async function adminAdvanceWorkflow(wfId, action, notes) {
   if (action === 'amendment') {
     try {
       var doc = await window._db.collection('workflows').doc(wfId).get();
