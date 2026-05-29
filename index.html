@@ -5913,6 +5913,17 @@ function removeDoc(unitId, category, idx) {
 }
 
 /* Load tenant docs from Firestore on init */
+async function loadAllTenantDocs() {
+  try {
+    const snap = await window._db.collection('tenantDocs').get();
+    snap.docs.forEach(d => { _tenantDocs[d.id] = d.data(); });
+    Object.keys(_tenantDocs).forEach(uid => {
+      _docCounts[uid] = Object.values(_tenantDocs[uid]).flat().length;
+    });
+    renderProperties();
+  } catch(e) { console.log('Load tenant docs:', e); }
+}
+
 async function loadTenantsTable() {
   const tbody = document.getElementById('tenantsBody');
   if(!tbody) return;
