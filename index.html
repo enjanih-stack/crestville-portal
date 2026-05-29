@@ -2197,7 +2197,12 @@ body.sidebar-collapsed .content-area {
               <option value="">All Status</option>
               <option value="active">Active</option>
               <option value="overdue">Overdue</option>
+              <option value="expiring">Expiring (≤60d)</option>
             </select>
+            <button id="rmGroupBtn" onclick="rmToggleGroup()" title="Toggle property grouping"
+              style="padding:7px 14px;border:1px solid var(--rule);border-radius:6px;background:var(--card);cursor:pointer;font-size:.76rem;font-family:'DM Sans',sans-serif;font-weight:600;color:var(--dim);white-space:nowrap;transition:all .15s">
+              🏢 Group by Property
+            </button>
           </div>
           <!-- Bulk action bar -->
           <div class="bulk-bar" id="rmBulkBar">
@@ -2782,7 +2787,7 @@ function _canonicaliseUnitIds() {
   // Deduplicate -- for each canonical unitId keep the most recently updated record
   const unitMap = new Map();
   rentLogs.forEach(r => {
-    const key = (r.unitId || r.unit || '').toLowerCase().trim();
+    const key = ((r.unitId||r.unit||'')+'||'+(r.location||r.city||'')).toLowerCase().trim();
     if(!key) return;
     const ex = unitMap.get(key);
     if(!ex || (r.updatedAt||'') >= (ex.updatedAt||'')) unitMap.set(key, r);
@@ -3335,6 +3340,7 @@ async function _bootApp(user, userData, adminMode) {
 
 /* -- Resolve a raw unit label/id from CSV to canonical PROPERTIES id -- */
 function _resolveUnitId(rawUnit, rawLocation) {
+  rawUnit = (rawUnit||'').replace(/,\s*$/,'').trim(); // strip trailing commas
   if(!rawUnit && !rawLocation) return '';
   // 1. Direct PROPERTIES id match
   const direct = PROPERTIES.find(p => p.id === rawUnit);
@@ -3362,7 +3368,7 @@ function _resolveUnitId(rawUnit, rawLocation) {
 function _buildIncomingRecord(r, unitId, idx) {
   const prop = PROPERTIES.find(p => p.id === unitId);
   return {
-    id:           _impNorm(unitId)+'_imp_'+Date.now()+'_'+idx,
+    id:           _impNorm(unitId.replace(/,\s*$/,''))+'_imp_'+Date.now()+'_'+idx,
     unitId:       unitId,
     unit:         prop ? prop.label : (r.unit || unitId),
     location:     r.location || (prop ? prop.location : ''),
@@ -3456,7 +3462,7 @@ async function _pullFromFirestore(silent) {
   // Deduplicate by unitId keeping latest
   const unitMap = new Map();
   rentLogs.forEach(r => {
-    const key = (r.unitId||r.unit||'').toLowerCase().trim();
+    const key = ((r.unitId||r.unit||'')+'||'+(r.location||r.city||'')).toLowerCase().trim();
     if(!key) return;
     const ex = unitMap.get(key);
     if(!ex || (r.updatedAt||'') >= (ex.updatedAt||'')) unitMap.set(key, r);
@@ -3785,6 +3791,20 @@ function fmtTableDate(d) {
   } catch(e) { return d; }
 }
 
+let _rmGrouped = false;
+
+function rmToggleGroup() {
+  _rmGrouped = !_rmGrouped;
+  const btn = document.getElementById('rmGroupBtn');
+  if (btn) {
+    btn.style.background   = _rmGrouped ? 'rgba(201,150,12,.15)' : 'var(--card)';
+    btn.style.color        = _rmGrouped ? 'var(--gold)' : 'var(--dim)';
+    btn.style.borderColor  = _rmGrouped ? 'rgba(201,150,12,.4)' : 'var(--rule)';
+    btn.textContent        = _rmGrouped ? '🏢 Grouped View ✓' : '🏢 Group by Property';
+  }
+  renderRentManager();
+}
+
 function renderRentManager() {
   const tbody = document.getElementById('rmBody');
   if(!tbody) return;
@@ -3810,10 +3830,52 @@ function renderRentManager() {
   });
 
   if(!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--dim);padding:20px">No records found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--dim);padding:20px">No records found</td></tr>';
     return;
   }
-  tbody.innerHTML = filtered.map((e,i) => {
+
+  // ── GROUPED VIEW ──
+  if (_rmGrouped) {
+    // Group by location (city/area)
+    const groups = new Map();
+    filtered.forEach(e => {
+      const n = _normaliseRecord(e);
+      const prop = PROPERTIES.find(p => p.id === (n.unitId||n.unit));
+      // Group key = location string
+      const locRaw = prop ? prop.location : (e.location || e.city || 'Other');
+      // Extract city/area for group header
+      const locParts = locRaw.split(',');
+      const groupKey = locParts[locParts.length - 1].trim() || locRaw.trim();
+      const fullLoc = locRaw.trim();
+      if (!groups.has(fullLoc)) groups.set(fullLoc, { label: groupKey, full: fullLoc, rows: [] });
+      groups.get(fullLoc).rows.push(e);
+    });
+
+    let html = '';
+    groups.forEach(({ label, full, rows }) => {
+      const activeCount = rows.filter(e => {
+        const exp = e.expiry ? new Date(e.expiry) : null;
+        const today2 = new Date(); today2.setHours(0,0,0,0);
+        return exp && exp >= today2;
+      }).length;
+      // Group header row
+      html += `<tr>
+        <td colspan="8" style="background:linear-gradient(90deg,var(--ink),#1a1612);padding:10px 16px;border-left:4px solid var(--gold)">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:700;color:var(--gold)">📍 ${full}</span>
+            <span style="font-size:.7rem;background:rgba(201,150,12,.15);color:var(--gold);padding:2px 8px;border-radius:20px;border:1px solid rgba(201,150,12,.3)">${rows.length} unit${rows.length!==1?'s':''} · ${activeCount} active</span>
+          </div>
+        </td></tr>`;
+      rows.forEach(e => { html += _rmBuildRow(e); });
+    });
+    tbody.innerHTML = html;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(e => _rmBuildRow(e)).join('');
+}
+
+function _rmBuildRow(e) {
     const n = _normaliseRecord(e);
     // Always show the canonical PROPERTIES label if we can match it
     const prop = PROPERTIES.find(p => p.id === (n.unitId||n.unit));
@@ -3870,7 +3932,6 @@ function renderRentManager() {
         <button class="btn btn-sm btn-red" onclick="deleteRentRecord(${idx})" title="Delete">🗑</button>
       </td>
     </tr>`;
-  }).join('');
 }
 
 /* --- ADD / EDIT RENT RECORD -------------------------- */
@@ -5523,7 +5584,7 @@ async function smartDoImport() {
   // -- DEDUPLICATE: keep the most recently updated record per unitId --
   const seen = new Map();
   rentLogs.forEach(r => {
-    const key = (r.unitId||r.unit||'').toLowerCase().trim();
+    const key = ((r.unitId||r.unit||'')+'||'+(r.location||r.city||'')).toLowerCase().trim();
     if(!key) return;
     const existing = seen.get(key);
     if(!existing || (r.updatedAt||'') >= (existing.updatedAt||'')) seen.set(key, r);
@@ -5781,7 +5842,7 @@ async function rmSmartDoImport() {
   // -- DEDUPLICATE: keep the most recently updated record per unitId --
   const seen=new Map();
   rentLogs.forEach(r=>{
-    const key=(r.unitId||r.unit||'').toLowerCase().trim();
+    const key=((r.unitId||r.unit||'')+'||'+(r.location||r.city||'')).toLowerCase().trim();
     if(!key)return;
     const ex=seen.get(key);
     if(!ex||(r.updatedAt||'')>=(ex.updatedAt||''))seen.set(key,r);
