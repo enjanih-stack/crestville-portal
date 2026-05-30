@@ -6934,11 +6934,8 @@ function savePropEdit() {
     {id:'peTenancyExpiry', label:'Expiry Date', msg:'Expiry date must be a valid date',
       test: val => !val || !isNaN(new Date(val))},
     {id:'peNewRentDate', label:'New Rent Effective Date',
-      msg:'Set an effective date when a new rent amount is entered',
-      test: (val) => {
-        const nrEl = document.getElementById('peNewRent');
-        return !(nrEl && nrEl.value.trim() && !val);
-      }
+      msg:'Tip: Add an effective date for the new rent amount (optional)',
+      test: () => true  // Never block save — effective date is optional
     },
   ]);
   if(!v.valid) {
@@ -9319,7 +9316,7 @@ var _origBootApp = typeof _bootApp === 'function' ? _bootApp : null;
             <input type="number" id="peNewRent" placeholder="e.g. 850000"/>
           </div>
           <div class="fg"><label>New Rent Effective Date
-            <span style="font-size:.65rem;color:var(--dim);font-weight:400;margin-left:4px">— when new rent takes effect</span></label>
+            <span style="font-size:.65rem;color:var(--gold);font-weight:400;margin-left:4px">— optional</span></label>
             <input type="date" id="peNewRentDate"/>
           </div>
         </div>
