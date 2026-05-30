@@ -1126,10 +1126,10 @@ body.sidebar-collapsed .content-area {
 .preset-chip:hover{border-color:var(--gold);color:var(--gold);background:#fffdf5}
 .prop-img-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 .prop-img-slot{border:2px dashed var(--rule);border-radius:8px;aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:all .2s;background:var(--bg)}
-.prop-img-slot:hover{border-color:var(--gold)}
-.prop-img-slot input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.prop-img-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:6px}
-.prop-img-slot .img-overlay{position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
+.prop-img-slot:hover{border-color:var(--gold);background:var(--cream)}
+.prop-img-slot input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:10}
+.prop-img-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:6px;z-index:1}
+.prop-img-slot .img-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;z-index:2}
 .prop-img-slot:hover .img-overlay{opacity:1}
 .prop-img-placeholder{font-size:1.8rem;margin-bottom:5px;color:var(--dim)}
 .img-label{font-size:.72rem;color:var(--dim);margin-top:6px}
