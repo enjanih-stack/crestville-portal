@@ -2025,6 +2025,7 @@ body.sidebar-collapsed .content-area {
                 <option value="active">Active only</option>
                 <option value="expired">Expired only</option>
                 <option value="pinned">Pinned only</option>
+                <option value="paused">Paused only</option>
               </select>
             </div>
           </div>
@@ -4672,6 +4673,8 @@ async function loadNotices() {
   const visible = allNotices.filter(n => {
     // Expiry check
     if(n.expiry && new Date(n.expiry) < today) return false;
+    // Paused — hidden from all tenants
+    if(n.paused) return false;
     // Target check — if targets specified, only show to those tenants
     if(!isAdmin && n.targets && n.targets.length > 0) {
       if(!currentEmail) return false;
@@ -7785,6 +7788,27 @@ function nmDeleteNotice(id) {
   notify('success', 'Notice Deleted', n.title);
 }
 
+function nmPauseNotice(id) {
+  const notices = _nmGetNotices();
+  const idx = notices.findIndex(n => n.id === id);
+  if (idx < 0) return;
+  notices[idx].paused = !notices[idx].paused;
+  notices[idx].updatedAt = new Date().toISOString();
+  _nmSaveNotices(notices);
+  if (window._db) {
+    window._db.collection('notices').doc(id)
+      .update({ paused: notices[idx].paused, updatedAt: notices[idx].updatedAt })
+      .catch(function(e){ console.warn('nmPauseNotice Firestore:', e.message); });
+  }
+  nmRenderList();
+  loadNotices();
+  notify('success',
+    notices[idx].paused ? '⏸ Notice Paused' : '▶ Notice Resumed',
+    notices[idx].title,
+    [notices[idx].paused ? 'Hidden from tenants until resumed' : 'Now visible to tenants']
+  );
+}
+
 function nmRenderList() {
   const container = document.getElementById('nmList');
   const meta = document.getElementById('nmListMeta');
@@ -7806,12 +7830,16 @@ function nmRenderList() {
   });
 
   const isExpired = n => n.expiry && new Date(n.expiry) < today;
+  const isPaused  = n => !!n.paused;
   let shown = allNotices;
-  if(filter === 'active')  shown = allNotices.filter(n => !isExpired(n));
+  if(filter === 'active')  shown = allNotices.filter(n => !isExpired(n) && !isPaused(n));
   if(filter === 'expired') shown = allNotices.filter(n => isExpired(n));
   if(filter === 'pinned')  shown = allNotices.filter(n => n.pinned);
+  if(filter === 'paused')  shown = allNotices.filter(n => isPaused(n));
 
-  if(meta) meta.textContent = shown.length + ' notice' + (shown.length!==1?'s':'') + ' · ' + allNotices.filter(n=>!isExpired(n)).length + ' active';
+  const activeCount = allNotices.filter(n => !isExpired(n) && !isPaused(n)).length;
+  const pausedCount = allNotices.filter(n => isPaused(n)).length;
+  if(meta) meta.textContent = shown.length + ' notice' + (shown.length!==1?'s':'') + ' · ' + activeCount + ' active' + (pausedCount ? ' · ' + pausedCount + ' paused' : '');
 
   if(!shown.length) {
     container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem;margin-bottom:10px">📋</div><div>No notices match this filter.</div></div>';
@@ -7824,34 +7852,62 @@ function nmRenderList() {
 
   container.innerHTML = shown.map(n => {
     const expired = isExpired(n);
+    const paused  = isPaused(n);
     const t = T[n.type] || T.info;
     const targetsCount = (n.targets||[]).length;
     const daysUntilExpiry = n.expiry ? Math.round((new Date(n.expiry) - today)/864e5) : null;
     const expiryWarning = daysUntilExpiry !== null && daysUntilExpiry >= 0 && daysUntilExpiry <= 7
-      ? `<span style="font-size:.68rem;color:var(--red);font-weight:700">⏰ Expires in ${daysUntilExpiry}d</span>` : '';
+      ? '<span style="font-size:.68rem;color:var(--red);font-weight:700">⏰ Expires in ' + daysUntilExpiry + 'd</span>' : '';
 
-    return `<div class="nm-card${expired?' nm-expired':''}">
-      <div class="nm-card-head">
-        ${n.pinned ? '<span style="font-size:.75rem">📌</span>' : ''}
-        <span class="nc-badge ${t.cls}">${t.label}</span>
-        <span style="font-size:.84rem;font-weight:600;flex:1;min-width:0">${n.title}</span>
-        ${expired ? '<span class="nm-expired-pill">Expired</span>' : ''}
-        ${targetsCount ? `<span class="nm-targets-pill">👥 ${targetsCount} specific</span>` : '<span class="nm-targets-pill">🌐 All tenants</span>'}
-        ${expiryWarning}
-      </div>
-      <div class="nm-card-body">${n.body||''}</div>
-      <div class="nm-card-foot">
-        <div class="nm-meta">
-          Published: ${n.date ? fmtDate(n.date) : '--'}
-          ${n.expiry ? ' &nbsp;·&nbsp; Expires: ' + fmtDate(n.expiry) : ' &nbsp;·&nbsp; No expiry'}
-          ${n.updatedAt ? ' &nbsp;·&nbsp; Updated: ' + fmtDate(n.updatedAt) : ''}
-          ${isStatic(n.id) ? ' &nbsp;·&nbsp; <span style="color:var(--gold)">Built-in</span>' : ''}
-        </div>
-        <button class="btn btn-sm btn-outline" onclick="nmOpenForm('${n.id}')">✏️ Edit</button>
-        ${!isStatic(n.id) ? `<button class="btn btn-sm" style="background:rgba(140,31,31,.08);border:1px solid rgba(140,31,31,.25);color:var(--red);padding:5px 12px;border-radius:6px;font-size:.74rem;cursor:pointer" onclick="nmDeleteNotice('${n.id}')">🗑 Delete</button>` : ''}
-      </div>
-    </div>`;
+    // Status badge
+    let statusBadge = '';
+    if (paused)  statusBadge = '<span style="font-size:.67rem;font-weight:700;padding:2px 9px;border-radius:20px;background:rgba(100,100,100,.1);color:#666;border:1px solid #ddd">⏸ Paused</span>';
+    if (expired) statusBadge = '<span class="nm-expired-pill">Expired</span>';
+
+    // Action tabs
+    const editBtn   = '<button onclick="nmOpenForm(\'' + n.id + '\')" title="Edit notice" style="' + nmTabStyle('edit') + '">✏️ Edit</button>';
+    const pauseBtn  = !isStatic(n.id)
+      ? '<button onclick="nmPauseNotice(\'' + n.id + '\')" title="' + (paused ? 'Resume notice' : 'Pause notice') + '" style="' + nmTabStyle(paused ? 'play' : 'pause') + '">'
+        + (paused ? '▶ Resume' : '⏸ Pause') + '</button>'
+      : '';
+    const deleteBtn = !isStatic(n.id)
+      ? '<button onclick="nmDeleteNotice(\'' + n.id + '\')" title="Delete notice" style="' + nmTabStyle('delete') + '">🗑 Delete</button>'
+      : '';
+
+    return '<div class="nm-card' + (expired?' nm-expired':'') + (paused?' nm-paused':'') + '" style="' + (paused?'opacity:.65;':'') + '">'
+      + '<div class="nm-card-head">'
+        + (n.pinned ? '<span style="font-size:.75rem">📌</span>' : '')
+        + '<span class="nc-badge ' + t.cls + '">' + t.label + '</span>'
+        + '<span style="font-size:.84rem;font-weight:600;flex:1;min-width:0">' + n.title + '</span>'
+        + statusBadge
+        + (targetsCount ? '<span class="nm-targets-pill">👥 ' + targetsCount + ' specific</span>' : '<span class="nm-targets-pill">🌐 All tenants</span>')
+        + expiryWarning
+      + '</div>'
+      + '<div class="nm-card-body">' + (n.body||'') + '</div>'
+      + '<div class="nm-card-foot" style="padding:0;border-top:1px solid var(--rule)">'
+        // Meta row
+        + '<div style="padding:8px 16px;flex:1;font-size:.7rem;color:var(--dim)">'
+          + 'Published: ' + (n.date ? fmtDate(n.date) : '--')
+          + (n.expiry ? ' · Expires: ' + fmtDate(n.expiry) : ' · No expiry')
+          + (n.updatedAt ? ' · Updated: ' + fmtDate(n.updatedAt) : '')
+          + (isStatic(n.id) ? ' · <span style="color:var(--gold)">Built-in</span>' : '')
+        + '</div>'
+        // Tab action bar
+        + '<div style="display:flex;border-top:1px solid var(--rule);overflow:hidden;border-radius:0 0 10px 10px">'
+          + editBtn + pauseBtn + deleteBtn
+        + '</div>'
+      + '</div>'
+    + '</div>';
   }).join('');
+}
+
+function nmTabStyle(type) {
+  const base = 'flex:1;padding:9px 6px;font-size:.74rem;font-weight:600;border:none;cursor:pointer;font-family:\'DM Sans\',sans-serif;border-right:1px solid var(--rule);transition:background .15s;';
+  if (type === 'edit')   return base + 'background:var(--cream);color:var(--ink);';
+  if (type === 'pause')  return base + 'background:#fef9e7;color:#7a5c00;';
+  if (type === 'play')   return base + 'background:#f0fdf4;color:#15803d;';
+  if (type === 'delete') return base + 'background:#fff0f0;color:var(--red);border-right:none;';
+  return base;
 }
 
 function renderGlobalAmenityList() {
