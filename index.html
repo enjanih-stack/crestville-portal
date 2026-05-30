@@ -3431,6 +3431,10 @@ async function _bootApp(user, userData, adminMode) {
   _refreshRentLogs();
   renderAll();
   renderRentManager();
+  // If currently on dashboard, explicitly update metrics and chart
+  if (document.getElementById('pgDashboard')?.classList.contains('on')) {
+    setTimeout(() => { updateMetrics(); renderChart(); renderExpiringTable(); }, 200);
+  }
 
   if (!adminMode) {
     // Link tenant to their record using freshest data
@@ -3787,6 +3791,7 @@ function showPage(pgId, btn) {
   if(btn) btn.classList.add('on');
   // Auto-close sidebar on mobile after navigation
   if (window.innerWidth <= 768) closeSidebar();
+  if(pgId === 'pgDashboard')    { _refreshRentLogs(); updateMetrics(); renderChart(); renderExpiringTable(); }
   if(pgId === 'pgVacant') renderVacant();
   if(pgId === 'pgProperties') renderProperties();
   if(pgId === 'pgRentManager') { renderRentManager(); if(isAdmin) renderLockedTenantsList(); }
@@ -3921,77 +3926,165 @@ function getPropertyLabel(id) {
 
 /* --- METRICS ----------------------------------------- */
 function updateMetrics() {
+  _refreshRentLogs(); // always load latest data first
+
   const today = new Date(); today.setHours(0,0,0,0);
-  let active=0, overdue=0, arrears=0, revenue=0;
+  let active = 0, overdue = 0, expiring = 0, arrears = 0, revenue = 0, tenantCount = 0;
+
   rentLogs.forEach(e => {
-    const exp = e.expiry ? new Date(e.expiry) : null;
-    if(exp) exp.setHours(0,0,0,0);
-    revenue += parseFloat(e.amount||0);
-    if(exp && exp < today) { overdue++; arrears += parseFloat(e.amount||0); }
-    else active++;
+    // Skip truly vacant units (no tenant)
+    if (e.vacancy === 'vacant' || (!e.tenant && !e.tenantEmail)) return;
+
+    const amt = parseFloat((e.newRent || e.amount || '0').toString().replace(/[^0-9.]/g,'')) || 0;
+    revenue += amt;
+    tenantCount++;
+
+    const exp = e.expiry ? new Date(normaliseDate(e.expiry)) : null;
+    if (exp) exp.setHours(0,0,0,0);
+    const daysLeft = exp ? Math.round((exp - today) / 864e5) : null;
+
+    if (daysLeft === null) { active++; return; }
+    if (daysLeft < 0) {
+      overdue++;
+      arrears += amt;
+    } else if (daysLeft <= 60) {
+      expiring++;
+      active++;
+    } else {
+      active++;
+    }
   });
-  // Vacant = properties not in rentLogs (occupied)
-  const occupiedIds = rentLogs.filter(e => e.vacancy !== 'vacant').map(e => e.unitId || e.unit);
-  const vacantCount = PROPERTIES.filter(p => !occupiedIds.includes(p.id) && !occupiedIds.some(o => (o||'').includes(p.label))).length;
 
-  const s = v => (typeof v === 'number' && v >= 1000) ? '₦' + v.toLocaleString() : v;
-  const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
-  set('mTotalUnits', rentLogs.length);
-  set('mActive', active);
-  set('mOverdue', overdue);
-  set('mVacant', vacantCount);
-  set('mRevenue', '₦' + revenue.toLocaleString());
-  set('mArrears', '₦' + arrears.toLocaleString());
+  // Vacant = properties in PROPERTIES that have no active occupant
+  const activeIds = new Set(
+    rentLogs
+      .filter(e => e.vacancy !== 'vacant' && (e.tenant || e.tenantEmail))
+      .map(e => e.unitId || e.unit || '')
+  );
+  const vacantCount = getVacantUnits ? getVacantUnits().length : PROPERTIES.filter(p => !activeIds.has(p.id)).length;
 
+  const fmt  = n => '₦' + Math.round(n).toLocaleString('en-NG');
+  const set  = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  const setStyle = (id, style) => { const el = document.getElementById(id); if (el) Object.assign(el.style, style); };
+
+  set('mTotalUnits', PROPERTIES.length || rentLogs.length);
+  set('mActive',     active);
+  set('mOverdue',    overdue);
+  set('mVacant',     vacantCount);
+  set('mRevenue',    fmt(revenue));
+  set('mArrears',    overdue > 0 ? fmt(arrears) : '₦0');
+
+  // Add expiring sub-text to active card
+  const activeEl = document.getElementById('mActive');
+  if (activeEl && expiring > 0) {
+    const parent = activeEl.closest('.metric-card');
+    if (parent) {
+      let sub = parent.querySelector('.mc-sub');
+      if (sub) sub.textContent = expiring + ' expiring within 60 days';
+    }
+  }
+
+  // Color overdue card red if > 0
+  if (overdue > 0) {
+    const el = document.getElementById('mOverdue')?.closest('.metric-card');
+    if (el) el.style.borderColor = 'var(--red)';
+  }
+
+  // Update badges
   const ob = document.getElementById('overdueBadge');
-  if(ob) { ob.textContent = overdue; ob.style.display = overdue > 0 ? '' : 'none'; }
+  if (ob) { ob.textContent = overdue; ob.style.display = overdue > 0 ? '' : 'none'; }
   const vb = document.getElementById('vacantBadge');
-  if(vb) vb.textContent = vacantCount;
+  if (vb) { vb.textContent = vacantCount; vb.style.display = vacantCount > 0 ? '' : 'none'; }
 }
 
 /* --- CHART ------------------------------------------- */
 function renderChart() {
   const ctx = document.getElementById('revenueChart');
-  if(!ctx) return;
+  if (!ctx) return;
+  _refreshRentLogs();
+
   const filter = (document.getElementById('chartFilter')?.value||'').toLowerCase();
   const locs = {};
+
   rentLogs.forEach(e => {
-    const loc = (getPropertyLabel(e.unitId||e.unit)||'').split('--').pop().trim().split(',').pop().trim();
-    if(!filter || loc.toLowerCase().includes(filter)) {
-      locs[loc] = (locs[loc]||0) + parseFloat(e.amount||0);
-    }
+    if (e.vacancy === 'vacant' || (!e.tenant && !e.tenantEmail)) return;
+    const prop = getPropertyById(e.unitId || e.unit);
+    const cityRaw = prop ? (prop.city || prop.location || '') : (e.city || e.location || '');
+    const city = cityRaw.split(',')[0].trim() || 'Other';
+    if (filter && !city.toLowerCase().includes(filter) && !(e.location||'').toLowerCase().includes(filter)) return;
+    const amt = parseFloat((e.newRent || e.amount || '0').toString().replace(/[^0-9.]/g,'')) || 0;
+    locs[city] = (locs[city] || 0) + amt;
   });
-  if(chartInstance) chartInstance.destroy();
+
+  // Sort by value descending
+  const sorted = Object.entries(locs).sort((a,b) => b[1]-a[1]);
+  const labels = sorted.map(x => x[0]);
+  const values = sorted.map(x => x[1]);
+
+  if (chartInstance) { try { chartInstance.destroy(); } catch(e){} }
   chartInstance = new Chart(ctx, {
-    type:'bar',
-    data: { labels: Object.keys(locs), datasets:[{ label:'Revenue (₦)', data:Object.values(locs), backgroundColor:'rgba(201,150,12,.7)', borderColor:'#c9960c', borderWidth:1 }] },
-    options: { maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ y:{ ticks:{ callback: v => '₦'+Number(v).toLocaleString() } } } }
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Annual Revenue (₦)',
+        data: values,
+        backgroundColor: labels.map((_, i) => ['rgba(201,150,12,.75)','rgba(26,92,46,.65)','rgba(15,30,60,.6)'][i % 3]),
+        borderColor: labels.map((_, i) => ['#c9960c','#1a5c2e','#0f1e3c'][i % 3]),
+        borderWidth: 2,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => '₦' + Number(ctx.parsed.y).toLocaleString() } }
+      },
+      scales: {
+        y: { ticks: { callback: v => '₦' + Number(v).toLocaleString() }, grid: { color: 'rgba(0,0,0,.04)' } },
+        x: { grid: { display: false } }
+      }
+    }
   });
 }
 
 /* --- EXPIRING TABLE ---------------------------------- */
 function renderExpiringTable() {
   const tb = document.getElementById('expiringTable');
-  if(!tb) return;
+  if (!tb) return;
+  _refreshRentLogs();
   const today = new Date(); today.setHours(0,0,0,0);
-  const soon = new Date(today); soon.setDate(soon.getDate()+30);
+  const horizon = new Date(today); horizon.setDate(horizon.getDate() + 90);
+
+  // Include overdue (negative days) + expiring within 90d
   const items = rentLogs.filter(e => {
-    if(!e.expiry) return false;
-    const d = new Date(e.expiry); d.setHours(0,0,0,0);
-    return d >= today && d <= soon;
-  }).sort((a,b) => new Date(a.expiry)-new Date(b.expiry));
-  if(!items.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--dim);padding:20px">No tenancies expiring within 30 days</td></tr>'; return; }
+    if (!e.expiry || e.vacancy === 'vacant') return false;
+    const d = new Date(normaliseDate(e.expiry)); d.setHours(0,0,0,0);
+    return d <= horizon; // includes overdue
+  }).sort((a,b) => new Date(normaliseDate(a.expiry)) - new Date(normaliseDate(b.expiry)));
+
+  if (!items.length) {
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--dim);padding:20px">No tenancies expiring within 90 days</td></tr>';
+    return;
+  }
+
+  const fmt = d => { try { return new Date(normaliseDate(d)).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); } catch(e){ return d; }};
+
   tb.innerHTML = items.map(e => {
-    const exp = new Date(e.expiry); exp.setHours(0,0,0,0);
-    const days = Math.round((exp-today)/(1000*60*60*24));
-    const cls = days <= 7 ? 'dp-danger' : days <= 14 ? 'dp-warn' : 'dp-ok';
-    return `<tr>
-      <td><strong>${e.tenant}</strong></td>
-      <td>${getPropertyLabel(e.unitId||e.unit)}</td>
-      <td>${e.expiry}</td>
-      <td><span class="days-pill ${cls}">${days} days</span></td>
-      <td><button class="btn btn-sm btn-outline" onclick="generateReceipt('${e.id||''}')">🧾 Receipt</button></td>
-    </tr>`;
+    const exp = new Date(normaliseDate(e.expiry)); exp.setHours(0,0,0,0);
+    const days = Math.round((exp - today) / 864e5);
+    const isOverdue = days < 0;
+    const cls   = isOverdue ? 'dp-danger' : days <= 14 ? 'dp-warn' : 'dp-ok';
+    const label = isOverdue ? Math.abs(days) + 'd overdue' : days + 'd left';
+    const unit  = e.unit || e.unitId || '';
+    return '<tr>'
+      + '<td><strong>' + (e.tenant || '--') + '</strong><div style="font-size:.7rem;color:var(--dim)">' + (e.tenantEmail || '') + '</div></td>'
+      + '<td style="font-size:.8rem">' + unit + '</td>'
+      + '<td style="font-size:.8rem">' + fmt(e.expiry) + '</td>'
+      + '<td><span class="days-pill ' + cls + '">' + label + '</span></td>'
+      + '<td><button class="btn btn-sm btn-outline" onclick="showPage(\'pgRentManager\');setTimeout(()=>openRentModal(' + rentLogs.indexOf(e) + '),300)">✏️ Edit</button></td>'
+      + '</tr>';
   }).join('');
 }
 
