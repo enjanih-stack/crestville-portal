@@ -1576,6 +1576,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
             <button class="btn btn-blue" onclick="sendAllRenewalReminders()" title="Send renewal reminders to all tenants within 60 days of expiry">📧 Send Reminders</button>
             <button class="btn btn-outline" onclick="syncToCloud()">☁️ Sync</button>
             <button class="btn btn-blue btn-sm" onclick="pullFromCloud()">⬇ Pull</button>
+            <button class="btn btn-outline" onclick="adminSyncTenantsToFirestore()" title="Push all tenant records to Firestore so tenants can see their portal" style="background:rgba(201,150,12,.08);border-color:rgba(201,150,12,.3);color:#7a5c00;font-size:.78rem">🔗 Link Tenants</button>
             <button class="btn btn-outline" onclick="exportAllCSV()" style="background:rgba(26,92,46,.08);border-color:rgba(26,92,46,.3);color:var(--green);font-size:.8rem">⬆ Export CSV</button>
           </div>
         </div>
@@ -2308,6 +2309,16 @@ async function _bootApp(user, userData, adminMode) {
   // Pull cloud data in background — does NOT block the UI
   pullFromCloud(true).catch(e => console.warn('pullFromCloud:', e));
 
+  // ── On ADMIN login: push seed data to Firestore so tenants can pull their records ──
+  if (adminMode && window._db && window._seedData && window._seedData.length > 0) {
+    _pushSeedToFirestore();
+  }
+
+  // ── On TENANT login: try pulling their record from Firestore directly ──
+  if (!adminMode) {
+    setTimeout(function() { loadMyProperty(userData); }, 500);
+  }
+
   if (!adminMode) {
     loadMyProperty(userData);
     setTimeout(renderTenantDashboard, 1200);
@@ -2876,19 +2887,40 @@ function goToKYT() {
 async function loadMyProperty(userData) {
   const body = document.getElementById('myPropertyBody');
   if(!body || !currentUser) return;
-  const myEmail = (currentUser.email||'').toLowerCase();
+  const myEmail = (currentUser.email||'').toLowerCase().trim();
 
-  // Try rentLogs first, then seed data (handles case where localStorage is empty)
-  let rawRec = rentLogs.find(function(e){ return (e.tenantEmail||'').toLowerCase() === myEmail; });
+  // 1. Search rentLogs (localStorage)
+  let rawRec = rentLogs.find(function(e){ return (e.tenantEmail||'').toLowerCase().trim() === myEmail; });
+
+  // 2. Search seed data
   if (!rawRec && window._seedData) {
-    rawRec = window._seedData.find(function(e){ return (e.tenantEmail||'').toLowerCase() === myEmail; });
-    if (rawRec) {
-      // Found in seed — push to rentLogs so it persists
-      rentLogs.push(rawRec);
-      try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {}
+    rawRec = window._seedData.find(function(e){ return (e.tenantEmail||'').toLowerCase().trim() === myEmail; });
+  }
+
+  // 3. Try Firestore rentRecords directly (most authoritative)
+  if (!rawRec && window._db) {
+    try {
+      const snap = await window._db.collection('rentRecords').where('tenantEmail','==', myEmail).limit(1).get();
+      if (!snap.empty) rawRec = snap.docs[0].data();
+    } catch(e) {
+      try {
+        // Fallback: get all and filter (if index not set up)
+        const all = await window._db.collection('rentRecords').get();
+        all.docs.forEach(function(d){
+          const data = d.data();
+          if (!rawRec && (data.tenantEmail||'').toLowerCase().trim() === myEmail) rawRec = data;
+        });
+      } catch(e2) { console.log('Firestore fallback:', e2); }
     }
   }
-  const myRecord = rawRec ? (typeof _normaliseRecord === 'function' ? _normaliseRecord(rawRec) : rawRec) : null;
+
+  // 4. If found anywhere, ensure it's in rentLogs and localStorage
+  if (rawRec && !rentLogs.find(function(e){ return e.id === rawRec.id || (e.unitId||'') === (rawRec.unitId||''); })) {
+    rentLogs.push(rawRec);
+    try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {}
+  }
+
+  const myRecord = rawRec ? (typeof _normaliseRecord==='function' ? _normaliseRecord(rawRec) : rawRec) : null;
   window._myRecord = myRecord || null;
 
   if(!myRecord) {
@@ -6163,6 +6195,88 @@ function mrAdminReject(id){
   if(window._db) window._db.collection('modRequests').doc(id).update({status:'rejected',adminNote,resolvedAt:new Date().toISOString()}).catch(function(){});
   mrAdminRender(); mrUpdateAdminBadge();
   notify('success','Request Rejected','Tenant will see the rejection note.');
+}
+
+/* Admin: Push ALL rentLogs records to Firestore so tenants can access their portals */
+async function adminSyncTenantsToFirestore() {
+  if (!window._db) { notify('error','Firestore Not Ready','Connect to the internet and try again.'); return; }
+
+  const toSync = rentLogs.filter(function(r){ return r.tenantEmail && r.unitId; });
+  if (!toSync.length) { notify('warning','No Records','No records with email addresses found.'); return; }
+
+  notify('info', 'Syncing...', 'Pushing ' + toSync.length + ' tenant records to cloud.');
+
+  try {
+    const batch = window._db.batch();
+    let count = 0;
+    toSync.forEach(function(r) {
+      if (!r.id || count >= 499) return;
+      batch.set(window._db.collection('rentRecords').doc(r.id), r, { merge: true });
+      count++;
+    });
+
+    // Also sync any seed records not in rentLogs
+    if (window._seedData) {
+      const syncedIds = new Set(toSync.map(function(r){ return r.id; }));
+      window._seedData.forEach(function(r) {
+        if (r.tenantEmail && r.id && !syncedIds.has(r.id) && count < 499) {
+          batch.set(window._db.collection('rentRecords').doc(r.id), r, { merge: true });
+          count++;
+        }
+      });
+    }
+
+    await batch.commit();
+    notify('success', '✅ Tenants Linked!',
+      count + ' records synced to Firestore.',
+      [
+        'Tenants can now see their property portal',
+        'They must log in with their registered email',
+        'Emails must match exactly what is in the records',
+      ]
+    );
+  } catch(e) {
+    notify('error', 'Sync Failed', e.message);
+    console.error('adminSyncTenantsToFirestore:', e);
+  }
+}
+
+/* Push seed data to Firestore so all tenants can access their records */
+async function _pushSeedToFirestore() {
+  if (!window._db || !window._seedData) return;
+  // Only push records that have a tenant email (so tenants can be linked)
+  const toSync = window._seedData.filter(function(r){ return r.tenantEmail; });
+  if (!toSync.length) return;
+
+  try {
+    // Check if Firestore already has data
+    const snap = await window._db.collection('rentRecords').limit(1).get();
+    const hasData = !snap.empty;
+
+    const batch = window._db.batch();
+    let count = 0;
+    toSync.forEach(function(r) {
+      if (!r.id || count >= 499) return;
+      // Only write if it doesn't already exist (preserve admin edits)
+      const ref = window._db.collection('rentRecords').doc(r.id);
+      if (!hasData) {
+        // Fresh Firestore — write everything
+        batch.set(ref, r);
+        count++;
+      } else {
+        // Firestore has data — only merge (don't overwrite)
+        batch.set(ref, r, { merge: true });
+        count++;
+      }
+    });
+
+    if (count > 0) {
+      await batch.commit();
+      console.log('_pushSeedToFirestore: synced', count, 'records');
+    }
+  } catch(e) {
+    console.warn('_pushSeedToFirestore failed:', e.message);
+  }
 }
 
 var _origBootApp = typeof _bootApp === 'function' ? _bootApp : null;
