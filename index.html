@@ -4281,8 +4281,9 @@ function renderVacant() {
     const prev = rentLogs.find(e => e.unitId === p.id);
 
     // Price
-    const rent = ex.rent || (prev ? (prev.newRent || prev.amount) : '') || '';
-    const rentStr = rent ? '₦' + Number(rent).toLocaleString() + '/yr' : 'Contact for pricing';
+    const _nr = prev ? (String(prev.newRent||'').trim()||String(prev.amount||'').trim()) : '';
+    const rent = String(ex.rent||'').trim() || _nr || '';
+    const rentStr = rent ? '₦' + Number(rent).toLocaleString() + '/yr' : 'Contact the company for rent &amp; total package';
 
     // Availability
     const availFrom = ex.availableFrom || p.availableFrom || '';
@@ -4327,7 +4328,9 @@ function renderVacant() {
       </div>
       <div class="uc-bottom" style="border-top:1px solid var(--rule);margin-top:12px;padding-top:10px">
         <div>
-          <div class="uc-rent" style="font-size:1.1rem;color:var(--gold)">${rentStr}</div>
+          ${rent
+            ? '<div class="uc-rent" style="font-size:1.1rem;color:var(--gold)">₦' + Number(rent).toLocaleString() + '/yr</div>'
+            : '<div style="font-size:.76rem;color:var(--dim);font-style:italic;line-height:1.4">📞 Contact the company<br>for rent &amp; total package</div>'}
           <div style="font-size:.7rem;color:var(--dim)">📍 ${p.city}</div>
         </div>
         <button class="btn btn-gold btn-sm" onclick="showInterest('${p.id}')">Enquire →</button>
@@ -4721,8 +4724,9 @@ function renderNoticesVacant() {
   grid.innerHTML = vacants.map(p => {
     const ex   = extras[p.id] || {};
     const prev = rentLogs.find(e => e.unitId === p.id);
-    const rent = ex.rent || (prev ? (prev.newRent || prev.amount) : '') || '';
-    const rentStr = rent ? '₦' + Number(rent).toLocaleString() + '/yr' : 'Enquire for price';
+    const _nr = prev ? (String(prev.newRent||'').trim()||String(prev.amount||'').trim()) : '';
+    const rent = String(ex.rent||'').trim() || _nr || '';
+    const rentStr = rent ? '₦' + Number(rent).toLocaleString() + '/yr' : 'Contact the company for rent &amp; total package';
 
     const availFrom  = ex.availableFrom || p.availableFrom || '';
     const availDt    = availFrom ? new Date(availFrom) : null;
@@ -4749,7 +4753,9 @@ function renderNoticesVacant() {
         <div style="font-size:.72rem;color:var(--dim);margin-bottom:8px">📍 ${p.location}</div>
         ${amenHtml ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">' + amenHtml + '</div>' : ''}
         <div style="display:flex;align-items:center;justify-content:space-between">
-          <strong style="color:var(--gold);font-size:.9rem">${rentStr}</strong>
+          ${rent
+            ? '<strong style="color:var(--gold);font-size:1.05rem">₦' + Number(rent).toLocaleString() + '/yr</strong>'
+            : '<span style="font-size:.76rem;color:var(--dim);font-style:italic">📞 Contact us for rent &amp; total package</span>'}
           <button class="btn btn-sm btn-gold" onclick="event.stopPropagation();showInterest('${p.id}')" style="font-size:.7rem;padding:4px 12px">Enquire →</button>
         </div>
       </div>
