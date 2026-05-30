@@ -358,6 +358,16 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .topbar-name { font-family: 'Cormorant Garamond', serif; font-size: .92rem; font-weight: 700; color: #fff; }
 .hamburger { background: none; border: none; cursor: pointer; padding: 6px; color: #fff; font-size: 1.4rem; }
 
+/* ── NOTICES MANAGER ── */
+.nm-card{background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.nm-card-head{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--cream);border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.nm-expired{opacity:.55;border-left:4px solid var(--red)!important}
+.nm-paused{opacity:.65}
+.nb-info{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
+.nb-urgent{background:#fff0f0;color:var(--red);border:1px solid rgba(140,31,31,.3);padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
+.nb-gold{background:#fef9e7;color:#7a5c00;border:1px solid rgba(201,150,12,.3);padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
+.nb-green{background:#f0fdf4;color:var(--green);border:1px solid rgba(26,92,46,.2);padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
+.nb-purple{background:#f5f0ff;color:#5b21b6;border:1px solid #c4b5fd;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
 /* ── TENANT PARTICULARS TABS ── */
 .tp-tabs{display:flex;border-bottom:2px solid var(--rule);margin-bottom:20px;gap:0;flex-wrap:wrap}
 .tp-tab{padding:10px 18px;font-size:.8rem;font-weight:600;color:var(--dim);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap}
@@ -1282,14 +1292,21 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 
       <!-- ADMIN ONLY -->
       <div class="nav-section admin-only">Admin</div>
-      <button class="nav-item admin-only" onclick="showPage('pgRentManager',this)">
+      <button class="nav-item admin-only" id="navNoticesAdmin" onclick="showPage('pgNoticesAdmin',this)">
+        <span class="ni-icon">📝</span> Manage Notices
+      </button>
+      <button class="nav-item admin-only" id="navModRequests" onclick="showPage('pgModRequests',this)">
+        <span class="ni-icon">✏️</span> Mod. Requests
+        <span class="nav-badge red" id="modReqBadge" style="display:none">0</span>
+      </button>
+      <button class="nav-item admin-only" id="navRent" onclick="showPage('pgRentManager',this)">
         <span class="ni-icon">🏢</span> Rent Manager
         <span class="nav-badge red" id="overdueBadge">0</span>
       </button>
-      <button class="nav-item admin-only" onclick="showPage('pgTenants',this)">
+      <button class="nav-item admin-only" id="navTenants" onclick="showPage('pgTenants',this)">
         <span class="ni-icon">👥</span> Tenants
       </button>
-      <button class="nav-item admin-only" onclick="showPage('pgProperties',this)">
+      <button class="nav-item admin-only" id="navProps" onclick="showPage('pgProperties',this)">
         <span class="ni-icon">🗂️</span> Properties
       </button>
     </nav>
@@ -1477,6 +1494,75 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
             <div style="font-size:2rem;margin-bottom:10px">📋</div>
             <div>No notices at this time</div>
           </div>
+        </div>
+      </div>
+
+      <!-- ── MANAGE NOTICES (admin) ── -->
+      <div class="pg admin-only" id="pgNoticesAdmin">
+        <div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()">&#8592;</button><button class="pnb-btn" onclick="historyFwd()">&#8594;</button><div class="pnb-crumb"></div></div>
+        <div class="page-header">
+          <div><h1>Manage Notices</h1><div class="ph-sub">Create, edit and target notices to all or specific tenants</div></div>
+          <button class="btn btn-gold" onclick="nmOpenForm()">+ New Notice</button>
+        </div>
+        <div class="page-body">
+          <div id="nmFormCard" style="display:none;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:22px;margin-bottom:22px">
+            <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;margin-bottom:16px" id="nmFormTitle">New Notice</h3>
+            <input type="hidden" id="nmEditId" value=""/>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+              <div><label style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:5px">Notice Type</label>
+                <select id="nmType" onchange="nmPreviewBadge()" style="width:100%;padding:9px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-family:'DM Sans',sans-serif;font-size:.84rem;background:var(--card);outline:none">
+                  <option value="info">📢 Information</option><option value="urgent">🚨 Urgent</option>
+                  <option value="gold">💰 Payment / Fees</option><option value="green">📋 Estate Rules</option>
+                  <option value="purple">🔔 General Announcement</option>
+                </select></div>
+              <div><label style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:5px">Pin to Top</label>
+                <select id="nmPinned" style="width:100%;padding:9px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-family:'DM Sans',sans-serif;font-size:.84rem;background:var(--card);outline:none">
+                  <option value="">No — normal order</option><option value="1">Yes — pin to top</option>
+                </select></div>
+            </div>
+            <div style="margin-bottom:14px"><label style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:5px">Notice Title *</label>
+              <input type="text" id="nmTitle" placeholder="e.g. Rent Payment Reminder — May 2026" style="width:100%;padding:9px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-family:'DM Sans',sans-serif;font-size:.84rem;background:var(--card);outline:none;box-sizing:border-box"/></div>
+            <div style="margin-bottom:14px"><label style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:5px">Body / Message *</label>
+              <textarea id="nmBody" placeholder="Type your notice message here..." style="width:100%;min-height:90px;padding:9px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-family:'DM Sans',sans-serif;font-size:.84rem;background:var(--card);outline:none;resize:vertical;box-sizing:border-box"></textarea></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+              <div><label style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:5px">Notice Date</label>
+                <input type="date" id="nmDate" style="width:100%;padding:9px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-family:'DM Sans',sans-serif;font-size:.84rem;background:var(--card);outline:none;box-sizing:border-box"/></div>
+              <div><label style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:5px">Expiry Date <span style="font-weight:400;color:var(--dim)">(notice disappears after)</span></label>
+                <input type="date" id="nmExpiry" style="width:100%;padding:9px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-family:'DM Sans',sans-serif;font-size:.84rem;background:var(--card);outline:none;box-sizing:border-box"/></div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;padding-top:4px">
+              <button class="btn btn-gold" onclick="nmSaveNotice()">💾 Save Notice</button>
+              <button class="btn btn-outline" onclick="nmCloseForm()">Cancel</button>
+              <div id="nmPreviewBadge" style="margin-left:auto;display:flex;align-items:center;gap:6px"></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+            <div style="font-size:.78rem;color:var(--dim)" id="nmListMeta"></div>
+            <select id="nmFilter" onchange="nmRenderList()" style="font-size:.76rem;padding:5px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--card)">
+              <option value="">All notices</option><option value="active">Active only</option>
+              <option value="expired">Expired only</option><option value="pinned">Pinned only</option><option value="paused">Paused only</option>
+            </select>
+          </div>
+          <div id="nmList"><div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem;margin-bottom:10px">📋</div><div>No notices yet. Click <strong>+ New Notice</strong>.</div></div></div>
+        </div>
+      </div>
+
+      <!-- ── MOD. REQUESTS (admin) ── -->
+      <div class="pg admin-only" id="pgModRequests">
+        <div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()">&#8592;</button><button class="pnb-btn" onclick="historyFwd()">&#8594;</button><div class="pnb-crumb"></div></div>
+        <div class="page-header">
+          <div><h1>Modification Requests</h1><div class="ph-sub">Tenant-submitted data correction requests</div></div>
+          <div style="display:flex;gap:8px">
+            <select id="mrAdminFilter" onchange="mrAdminRender()" style="padding:7px 12px;border:1px solid var(--rule);border-radius:6px;font-size:.78rem;background:var(--card)">
+              <option value="">All requests</option><option value="pending">Pending only</option>
+              <option value="approved">Approved</option><option value="rejected">Rejected</option>
+            </select>
+            <button class="btn btn-outline" onclick="mrAdminRender()">🔄 Refresh</button>
+          </div>
+        </div>
+        <div class="page-body">
+          <div id="mrAdminCount" style="font-size:.78rem;color:var(--dim);margin-bottom:14px"></div>
+          <div id="mrAdminList"><div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2.5rem;margin-bottom:10px">📋</div><div>No modification requests yet.</div></div></div>
         </div>
       </div>
 
@@ -2374,9 +2460,13 @@ function showPage(pgId, btn) {
   document.getElementById(pgId).classList.add('on');
   if(btn) btn.classList.add('on');
   closeSidebar();
-  if(pgId === 'pgVacant') renderVacant();
-  if(pgId === 'pgProperties') renderProperties();
-  if(pgId === 'pgRentManager') renderRentManager();
+  if(pgId === 'pgVacant')        renderVacant();
+  if(pgId === 'pgProperties')    renderProperties();
+  if(pgId === 'pgRentManager')   renderRentManager();
+  if(pgId === 'pgNoticesAdmin')  { if(typeof nmRenderList==='function') nmRenderList(); }
+  if(pgId === 'pgModRequests')   { if(typeof mrAdminRender==='function') mrAdminRender(); }
+  if(pgId === 'pgTenants')       { if(typeof loadTenantsTable==='function') loadTenantsTable(); }
+  if(pgId === 'pgDashboard')     { if(typeof updateMetrics==='function') { updateMetrics(); if(typeof renderChart==='function') renderChart(); } }
   // Save state on every page navigation
   if (typeof saveSessionState === 'function') saveSessionState();
 }
@@ -4545,6 +4635,8 @@ function _navTo(pgId) {
     pgRentManager: 'navRent',
     pgTenants:     'navTenants',
     pgProperties:  'navProps',
+    pgNoticesAdmin:'navNoticesAdmin',
+    pgModRequests: 'navModRequests',
   };
   var navId = navMap[pgId];
   if (navId) {
@@ -5771,6 +5863,247 @@ function idleSignOut() {
 }
 
 /* ── HOOK INTO _bootApp — start timer + restore state ── */
+/* ============================================================
+   NOTICES MANAGER (Admin)
+   ============================================================ */
+const NM_LS_KEY = 'crs_notices_v1';
+const NM_TYPES = {
+  info:  {label:'📢 Information', cls:'nb-info'},
+  urgent:{label:'🚨 Urgent',       cls:'nb-urgent'},
+  gold:  {label:'💰 Payment',      cls:'nb-gold'},
+  green: {label:'📋 Estate Rules', cls:'nb-green'},
+  purple:{label:'🔔 Announcement', cls:'nb-purple'},
+};
+function _nmGetNotices(){ try{ return JSON.parse(localStorage.getItem(NM_LS_KEY)||'[]'); }catch(e){ return []; } }
+function _nmSaveNotices(a){ localStorage.setItem(NM_LS_KEY, JSON.stringify(a)); }
+
+function nmOpenForm(editId) {
+  var form = document.getElementById('nmFormCard');
+  if(!form) return;
+  document.getElementById('nmFormTitle').textContent = editId ? 'Edit Notice' : 'New Notice';
+  document.getElementById('nmEditId').value = editId||'';
+  if(editId) {
+    var n = _nmGetNotices().find(function(x){ return x.id===editId; });
+    if(n){
+      document.getElementById('nmType').value    = n.type||'info';
+      document.getElementById('nmPinned').value  = n.pinned?'1':'';
+      document.getElementById('nmTitle').value   = n.title||'';
+      document.getElementById('nmBody').value    = n.body||'';
+      document.getElementById('nmDate').value    = n.date||'';
+      document.getElementById('nmExpiry').value  = n.expiry||'';
+    }
+  } else {
+    document.getElementById('nmType').value='info';
+    document.getElementById('nmPinned').value='';
+    document.getElementById('nmTitle').value='';
+    document.getElementById('nmBody').value='';
+    document.getElementById('nmDate').value=new Date().toISOString().slice(0,10);
+    document.getElementById('nmExpiry').value='';
+  }
+  nmPreviewBadge();
+  form.style.display='block';
+  form.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function nmCloseForm(){ var f=document.getElementById('nmFormCard'); if(f) f.style.display='none'; }
+function nmPreviewBadge(){
+  var type=document.getElementById('nmType')?.value||'info';
+  var el=document.getElementById('nmPreviewBadge'); if(!el) return;
+  var t=NM_TYPES[type]||NM_TYPES.info;
+  el.innerHTML='<span style="font-size:.68rem;color:var(--dim)">Preview:</span><span class="nc-badge '+t.cls+'" style="font-size:.7rem">'+t.label+'</span>';
+}
+function nmSaveNotice(){
+  var title=document.getElementById('nmTitle').value.trim();
+  var body=document.getElementById('nmBody').value.trim();
+  if(!title){ notify('error','Missing Title','Notice title is required.'); return; }
+  if(!body){ notify('error','Missing Body','Notice body cannot be empty.'); return; }
+  var editId=document.getElementById('nmEditId').value;
+  var type=document.getElementById('nmType').value;
+  var notice={
+    id: editId||'n_'+Date.now(), type, badgeClass:(NM_TYPES[type]||NM_TYPES.info).cls,
+    title, body,
+    date: document.getElementById('nmDate').value||new Date().toISOString().slice(0,10),
+    expiry: document.getElementById('nmExpiry').value||'',
+    pinned: document.getElementById('nmPinned').value==='1',
+    paused: false,
+    targets: [],
+    updatedAt: new Date().toISOString(),
+  };
+  var notices=_nmGetNotices();
+  var idx=notices.findIndex(function(x){ return x.id===notice.id; });
+  if(idx>=0) notices[idx]=notice; else notices.unshift(notice);
+  _nmSaveNotices(notices);
+  if(window._db) window._db.collection('notices').doc(notice.id).set(notice).catch(function(e){ console.warn(e); });
+  nmCloseForm(); nmRenderList();
+  notify('success', editId?'Notice Updated':'Notice Published', title);
+}
+function nmDeleteNotice(id){
+  var notices=_nmGetNotices();
+  var n=notices.find(function(x){ return x.id===id; });
+  if(!n||!confirm('Delete notice: "'+n.title+'"?')) return;
+  _nmSaveNotices(notices.filter(function(x){ return x.id!==id; }));
+  if(window._db) window._db.collection('notices').doc(id).delete().catch(function(){});
+  nmRenderList(); notify('success','Notice Deleted',n.title);
+}
+function nmPauseNotice(id){
+  var notices=_nmGetNotices();
+  var idx=notices.findIndex(function(x){ return x.id===id; });
+  if(idx<0) return;
+  notices[idx].paused=!notices[idx].paused;
+  notices[idx].updatedAt=new Date().toISOString();
+  _nmSaveNotices(notices);
+  if(window._db) window._db.collection('notices').doc(id).update({paused:notices[idx].paused}).catch(function(){});
+  nmRenderList();
+  notify('success', notices[idx].paused?'⏸ Notice Paused':'▶ Notice Resumed', notices[idx].title);
+}
+function nmRenderList(){
+  var container=document.getElementById('nmList');
+  var meta=document.getElementById('nmListMeta');
+  if(!container) return;
+  var today=new Date(); today.setHours(0,0,0,0);
+  var filter=document.getElementById('nmFilter')?.value||'';
+  var notices=_nmGetNotices().sort(function(a,b){
+    if(a.pinned&&!b.pinned) return -1; if(!a.pinned&&b.pinned) return 1;
+    return new Date(b.date||0)-new Date(a.date||0);
+  });
+  var isExp=function(n){ return n.expiry&&new Date(n.expiry)<today; };
+  var shown=notices;
+  if(filter==='active')  shown=notices.filter(function(n){ return !isExp(n)&&!n.paused; });
+  if(filter==='expired') shown=notices.filter(isExp);
+  if(filter==='pinned')  shown=notices.filter(function(n){ return n.pinned; });
+  if(filter==='paused')  shown=notices.filter(function(n){ return n.paused; });
+  var pending=notices.filter(function(n){ return !isExp(n)&&!n.paused; }).length;
+  if(meta) meta.textContent=shown.length+' notice(s) · '+pending+' active';
+  if(!shown.length){ container.innerHTML='<div style="text-align:center;padding:40px;color:var(--dim)">No notices match this filter.</div>'; return; }
+  var fmtDate=function(d){ try{ return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); }catch(e){ return d; } };
+  var nmTabStyle=function(type){
+    var base='flex:1;padding:9px 6px;font-size:.74rem;font-weight:600;border:none;cursor:pointer;font-family:\'DM Sans\',sans-serif;border-right:1px solid var(--rule);transition:background .15s;';
+    if(type==='edit')   return base+'background:var(--cream);color:var(--ink);';
+    if(type==='pause')  return base+'background:#fef9e7;color:#7a5c00;';
+    if(type==='play')   return base+'background:#f0fdf4;color:#15803d;';
+    if(type==='delete') return base+'background:#fff0f0;color:var(--red);border-right:none;';
+    return base;
+  };
+  container.innerHTML=shown.map(function(n){
+    var expired=isExp(n); var paused=!!n.paused;
+    var t=NM_TYPES[n.type]||NM_TYPES.info;
+    var tc=n.targets&&n.targets.length;
+    return '<div class="nm-card'+(expired?' nm-expired':'')+(paused?' nm-paused':'')+'" style="'+(paused?'opacity:.65;':'')+'background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:14px">'
+      +'<div class="nm-card-head" style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--cream);border-bottom:1px solid var(--rule);flex-wrap:wrap">'
+        +(n.pinned?'<span>📌</span>':'')
+        +'<span class="nc-badge '+t.cls+'">'+t.label+'</span>'
+        +'<span style="font-size:.84rem;font-weight:600;flex:1">'+n.title+'</span>'
+        +(paused?'<span style="font-size:.67rem;font-weight:700;padding:2px 9px;border-radius:20px;background:rgba(100,100,100,.1);color:#666;border:1px solid #ddd">⏸ Paused</span>':'')
+        +(expired?'<span style="font-size:.67rem;font-weight:700;padding:2px 9px;border-radius:20px;background:rgba(140,31,31,.1);color:var(--red)">Expired</span>':'')
+        +(tc?'<span style="font-size:.68rem;padding:2px 8px;border-radius:20px;background:rgba(201,150,12,.1);color:#7a5c00">👥 '+n.targets.length+' specific</span>':'<span style="font-size:.68rem;padding:2px 8px;border-radius:20px;background:rgba(201,150,12,.1);color:#7a5c00">🌐 All tenants</span>')
+      +'</div>'
+      +'<div style="padding:14px 16px;font-size:.82rem;color:#4a4440;line-height:1.7">'+( n.body||'')+'</div>'
+      +'<div style="padding:0;border-top:1px solid var(--rule)">'
+        +'<div style="padding:8px 16px;font-size:.7rem;color:var(--dim)">Published: '+(n.date?fmtDate(n.date):'--')+(n.expiry?' · Expires: '+fmtDate(n.expiry):' · No expiry')+'</div>'
+        +'<div style="display:flex;border-top:1px solid var(--rule)">'
+          +'<button onclick="nmOpenForm(\''+n.id+'\')" style="'+nmTabStyle('edit')+'">✏️ Edit</button>'
+          +'<button onclick="nmPauseNotice(\''+n.id+'\')" style="'+nmTabStyle(paused?'play':'pause')+'">'+(paused?'▶ Resume':'⏸ Pause')+'</button>'
+          +'<button onclick="nmDeleteNotice(\''+n.id+'\')" style="'+nmTabStyle('delete')+'">🗑 Delete</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+/* ============================================================
+   MODIFICATION REQUESTS (Admin + Tenant)
+   ============================================================ */
+const MR_LS_KEY='crs_mod_requests';
+function _mrGet(){ try{ return JSON.parse(localStorage.getItem(MR_LS_KEY)||'[]'); }catch(e){ return []; } }
+function _mrSave(a){ localStorage.setItem(MR_LS_KEY, JSON.stringify(a)); }
+
+function mrUpdateAdminBadge(){
+  var pending=_mrGet().filter(function(r){ return r.status==='pending'; }).length;
+  var badge=document.getElementById('modReqBadge');
+  if(badge){ badge.textContent=pending; badge.style.display=pending>0?'':'none'; }
+}
+
+async function mrAdminRender(){
+  var container=document.getElementById('mrAdminList');
+  var count=document.getElementById('mrAdminCount');
+  if(!container) return;
+  container.innerHTML='<div style="padding:20px;text-align:center;color:var(--dim)">Loading...</div>';
+  var requests=_mrGet();
+  try{
+    if(window._db){
+      var snap=await window._db.collection('modRequests').get();
+      var lsIds=new Set(requests.map(function(r){ return r.id; }));
+      snap.docs.forEach(function(d){ var data=d.data(); if(!lsIds.has(data.id)) requests.push(data); });
+    }
+  }catch(e){}
+  requests.sort(function(a,b){ return new Date(b.submittedAt||0)-new Date(a.submittedAt||0); });
+  var filter=document.getElementById('mrAdminFilter')?.value||'';
+  var shown=filter?requests.filter(function(r){ return r.status===filter; }):requests;
+  var pending=requests.filter(function(r){ return r.status==='pending'; }).length;
+  if(count) count.textContent=shown.length+' request(s) · '+pending+' pending';
+  if(!shown.length){ container.innerHTML='<div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem">📋</div><div>No requests found.</div></div>'; return; }
+  var fmtDate=function(d){ try{ return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); }catch(e){ return d||''; } };
+  var stCls={pending:'background:#fef9e7;color:#7a5c00',approved:'background:#f0fdf4;color:#15803d',rejected:'background:#fff0f0;color:var(--red)'};
+  container.innerHTML=shown.map(function(r){
+    var isPending=r.status==='pending';
+    var fields=Object.entries(r.changes||{}).map(function(entry){
+      var k=entry[0],newVal=entry[1];
+      var label=(r.labels&&r.labels[k])||k;
+      var rec=rentLogs.find(function(e){ return e.id===r.recordId||(e.tenantEmail||'').toLowerCase()===r.tenantEmail; });
+      var cur=rec?(rec[k]||''):'';
+      return '<div style="display:grid;grid-template-columns:130px 1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--rule);font-size:.8rem">'
+        +'<span style="font-weight:700;color:var(--dim);text-transform:uppercase;font-size:.68rem">'+label+'</span>'
+        +'<span style="color:var(--dim);text-decoration:line-through">'+(cur||'—')+'</span>'
+        +'<span style="color:var(--green);font-weight:600">→ '+newVal+'</span>'
+        +'</div>';
+    }).join('');
+    return '<div style="background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:12px">'
+      +'<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--cream);border-bottom:1px solid var(--rule);flex-wrap:wrap">'
+        +'<span style="font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid currentcolor;'+stCls[r.status||'pending']+'">'+( r.status||'pending')+'</span>'
+        +'<span style="font-weight:700;font-size:.84rem">'+(r.tenantName||r.tenantEmail)+'</span>'
+        +'<span style="font-size:.74rem;color:var(--dim)">· '+(r.unit||r.unitId||'')+'</span>'
+        +'<span style="font-size:.72rem;color:var(--dim);margin-left:auto">'+fmtDate(r.submittedAt)+'</span>'
+      +'</div>'
+      +'<div style="padding:12px 16px">'
+        +'<div style="display:grid;grid-template-columns:130px 1fr 1fr;gap:8px;padding:4px 0 6px;border-bottom:2px solid var(--rule);font-size:.68rem;font-weight:700;color:var(--dim);text-transform:uppercase"><span>Field</span><span>Current</span><span>Requested</span></div>'
+        +fields
+        +(r.reason?'<div style="margin-top:10px;font-size:.78rem;color:var(--dim)">📝 '+r.reason+'</div>':'')
+        +(r.adminNote?'<div style="margin-top:6px;font-size:.78rem;color:#15803d">✅ Admin: '+r.adminNote+'</div>':'')
+      +'</div>'
+      +(isPending?'<div style="display:flex;border-top:1px solid var(--rule)">'
+        +'<button onclick="mrAdminApprove(\''+r.id+'\')" style="flex:1;padding:10px;background:#f0fdf4;color:#15803d;border:none;font-size:.78rem;font-weight:700;cursor:pointer;border-right:1px solid var(--rule)">✅ Approve &amp; Apply</button>'
+        +'<button onclick="mrAdminReject(\''+r.id+'\')" style="flex:1;padding:10px;background:#fff0f0;color:var(--red);border:none;font-size:.78rem;font-weight:700;cursor:pointer">❌ Reject</button>'
+        +'</div>':'')
+    +'</div>';
+  }).join('');
+}
+
+async function mrAdminApprove(id){
+  var requests=_mrGet(); var idx=requests.findIndex(function(r){ return r.id===id; });
+  var req=requests[idx]; if(!req) return;
+  var adminNote=prompt('Optional admin note (leave blank to skip):')||'';
+  var recIdx=rentLogs.findIndex(function(e){ return e.id===req.recordId||(e.tenantEmail||'').toLowerCase()===req.tenantEmail; });
+  if(recIdx>=0){
+    Object.entries(req.changes||{}).forEach(function(entry){ rentLogs[recIdx][entry[0]]=entry[1]; });
+    rentLogs[recIdx].updatedAt=new Date().toISOString();
+    try{ localStorage.setItem('rentData_CRS_v3',JSON.stringify(rentLogs)); }catch(e){}
+    if(typeof renderRentManager==='function') renderRentManager();
+    notify('success','Changes Applied',Object.values(req.labels||{}).join(', '));
+    if(window._db&&rentLogs[recIdx].id) window._db.collection('rentRecords').doc(rentLogs[recIdx].id).set(rentLogs[recIdx],{merge:true}).catch(function(){});
+  }
+  if(idx>=0){ requests[idx].status='approved'; requests[idx].adminNote=adminNote; requests[idx].resolvedAt=new Date().toISOString(); _mrSave(requests); }
+  if(window._db) window._db.collection('modRequests').doc(id).update({status:'approved',adminNote,resolvedAt:new Date().toISOString()}).catch(function(){});
+  mrAdminRender(); mrUpdateAdminBadge();
+}
+
+function mrAdminReject(id){
+  var adminNote=prompt('Reason for rejection:')||'Request rejected by admin.';
+  var requests=_mrGet(); var idx=requests.findIndex(function(r){ return r.id===id; });
+  if(idx>=0){ requests[idx].status='rejected'; requests[idx].adminNote=adminNote; requests[idx].resolvedAt=new Date().toISOString(); _mrSave(requests); }
+  if(window._db) window._db.collection('modRequests').doc(id).update({status:'rejected',adminNote,resolvedAt:new Date().toISOString()}).catch(function(){});
+  mrAdminRender(); mrUpdateAdminBadge();
+  notify('success','Request Rejected','Tenant will see the rejection note.');
+}
+
 var _origBootApp = typeof _bootApp === 'function' ? _bootApp : null;
 
 </script>
