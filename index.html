@@ -2683,10 +2683,35 @@ function _refreshRentLogs() {
     });
   });
 
+  // ── MIGRATE old short-code unitIds (OJ-1A → 2BDR Flat 1A) ──
+  // Build a reverse lookup: old short code → new full-name id from seed
+  const _oldToNew = {
+    'OJ-1A':'2BDR Flat 1A','OJ-2A':'2BDR Flat 2A','OJ-3A':'2BDR Flat 3A',
+    'OJ-4A':'2BDR Flat 4A','OJ-1B':'2BDR Flat 1B','OJ-3B':'2BDR Flat 3B',
+    'OJ-2B':'3BDR Flat 2B','OJ-4B':'3BDR Flat 4B',
+    'OJ-SC':'1Rm Self Contain 2C','OJ-SH':'Shop & Office Space',
+    'IB-RP':'Room & Palour self contain','IB-2B':'2BDR Flat_B',
+    'IB-S1':'Shop 1_C2','IB-S2':'Shop 2_C2',
+    'IM-S1':'Shop 1_C3','IM-S2':'Shop 2_C3','IM-S3':'Shop 3_C2','IM-S4':'Shop 4_C2',
+    'IF-2B':'2BDR Flat_B','IF-SC':'1 Rm self conatin_B',
+    'EN-2B':'2Bdr Flat_EN','EN-S1':'Shop 1_EN','EN-S2':'Shop 2_EN','EN-S3':'Shop 3_EN',
+  };
+  let _migrated = false;
+  rentLogs.forEach(r => {
+    if (r.unitId && _oldToNew[r.unitId]) {
+      const newId = _oldToNew[r.unitId];
+      const prop = PROPERTIES.find(p => p.id === newId);
+      r.unitId = newId;
+      if (prop) { r.unit = prop.label; r.location = r.location || prop.location; r.city = r.city || prop.city; }
+      _migrated = true;
+    }
+  });
+  if (_migrated) {
+    try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {}
+  }
+
   return rentLogs;
 }
-
-/* saveLocal is defined in the unified data layer above */
 
 /* Normalise a rentLogs record field name -- handles both old field names
    (tenant, tenantEmail, tenantPhone, tenantNIN, start, expiry, unitId)
@@ -2789,28 +2814,54 @@ function _getRecordByPropId(propId) {
   if (!propId) return null;
   _refreshRentLogs();
 
-  // 1. Direct unitId match (primary — PROPERTIES.id === rentLogs.unitId)
-  let found = rentLogs.find(e => (e.unitId || e.unit || '') === propId);
+  // 1. Direct unitId match (fastest — PROPERTIES.id === rentLogs.unitId)
+  let found = rentLogs.find(e => (e.unitId || '') === propId || (e.unit || '') === propId);
   if (found) return found;
 
-  // 2. Case-insensitive match
+  // 2. Case-insensitive / trimmed match
   const pidLow = propId.toLowerCase().trim();
-  found = rentLogs.find(e => (e.unitId || e.unit || '').toLowerCase().trim() === pidLow);
+  found = rentLogs.find(e =>
+    (e.unitId || '').toLowerCase().trim() === pidLow ||
+    (e.unit   || '').toLowerCase().trim() === pidLow
+  );
   if (found) return found;
 
-  // 3. Normalised match (strip special chars)
+  // 3. Check if propId matches a PROPERTIES label (old short code like OJ-1A → "2BDR Flat 1A")
+  const prop = PROPERTIES.find(p => p.id === propId);
+  if (prop) {
+    const labelLow = prop.label.toLowerCase().trim();
+    found = rentLogs.find(e =>
+      (e.unitId || '').toLowerCase().trim() === labelLow ||
+      (e.unit   || '').toLowerCase().trim() === labelLow
+    );
+    if (found) return found;
+    // Also try normalised
+    const labelNorm = _norm(prop.label);
+    found = rentLogs.find(e =>
+      _norm(e.unitId || '') === labelNorm ||
+      _norm(e.unit   || '') === labelNorm
+    );
+    if (found) return found;
+  }
+
+  // 4. Normalised match
   const pidNorm = _norm(propId);
-  found = rentLogs.find(e => {
-    const n = _normaliseRecord(e);
-    if (_norm(n.unitId) === pidNorm) return true;
-    if (_norm(n.unit)   === pidNorm) return true;
-    // 4. Partial containment (for short IDs)
-    if (pidNorm.length > 4 && (
-      _norm(n.unitId).includes(pidNorm) || pidNorm.includes(_norm(n.unitId))
-    )) return true;
-    return false;
-  });
-  return found || null;
+  found = rentLogs.find(e =>
+    _norm(e.unitId || '') === pidNorm ||
+    _norm(e.unit   || '') === pidNorm
+  );
+  if (found) return found;
+
+  // 5. Partial containment (last resort — for short IDs like OJ-1A matching 2BDR Flat 1A)
+  if (pidNorm.length > 3) {
+    found = rentLogs.find(e => {
+      const uNorm = _norm(e.unitId || e.unit || '');
+      return uNorm.includes(pidNorm) || pidNorm.includes(uNorm);
+    });
+    if (found) return found;
+  }
+
+  return null;
 }
 
 /* After any import, rewrite all unitId values to match PROPERTIES ids.
@@ -5270,10 +5321,20 @@ function renderProperties() {
   const city   = document.getElementById('propCityFilter')?.value||'';
   const status = document.getElementById('propStatusFilter')?.value||'';
 
-  // Build combined list: PROPERTIES entries + any rentLogs entries not in PROPERTIES
+  // Build the canonical property list purely from PROPERTIES (which is now seeded from rentLogs)
+  // extraFromLogs only adds genuinely new records not covered by any PROPERTIES entry
   const propIds = new Set(PROPERTIES.map(p => p.id));
+  
+  // Track which rentLogs records are already claimed by a PROPERTIES entry
+  const claimedRecIds = new Set();
+  PROPERTIES.forEach(p => {
+    const rec = _getRecordByPropId(p.id);
+    if (rec && rec.id) claimedRecIds.add(rec.id);
+  });
+
+  // Only add extras for rentLogs records NOT claimed by any PROPERTIES entry
   const extraFromLogs = rentLogs
-    .filter(r => r.unitId && !propIds.has(r.unitId) && r.vacancy !== 'vacant')
+    .filter(r => r.unitId && !propIds.has(r.unitId) && !claimedRecIds.has(r.id) && r.vacancy !== 'vacant')
     .map(r => ({
       id: r.unitId,
       label: r.unit || r.unitId,
@@ -5288,14 +5349,23 @@ function renderProperties() {
 
   const allProps = [...PROPERTIES, ...extraFromLogs];
 
+  // Deduplicate allProps by unitLabel+location to avoid double-rendering
+  const seenLabels = new Set();
+  const dedupedProps = allProps.filter(p => {
+    const key = (p.label||p.id).toLowerCase().trim() + '|' + (p.location||'').toLowerCase().trim().slice(0,30);
+    if (seenLabels.has(key)) return false;
+    seenLabels.add(key);
+    return true;
+  });
+
   const occupiedIds = new Set(
-    allProps.filter(p => {
+    dedupedProps.filter(p => {
       const r = _getRecordByPropId(p.id);
       return r && _normaliseRecord(r).vacancy !== 'vacant';
     }).map(p => p.id)
   );
 
-  let props = allProps.filter(p => {
+  let props = dedupedProps.filter(p => {
     const rec = _normaliseRecord(_getRecordByPropId(p.id));
     const searchStr = (p.label+p.location+p.type+(rec?rec.tenant+' '+(rec.tenantEmail||''):'')).toLowerCase();
     const matchSearch = !search || searchStr.includes(search);
