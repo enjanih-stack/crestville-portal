@@ -597,7 +597,45 @@ body.sidebar-collapsed .content-area {
 .prop-sub-page { display: none; }
 .prop-sub-page.on { display: block; }
 
-/* NOTICE MANAGER */
+/* ── TENANT REMINDERS ── */
+.rem-card{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;transition:box-shadow .15s}
+.rem-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.07)}
+.rem-icon{font-size:1.4rem;flex-shrink:0}
+.rem-body{flex:1;min-width:0}
+.rem-title{font-size:.84rem;font-weight:700;color:var(--ink)}
+.rem-meta{font-size:.72rem;color:var(--dim);margin-top:2px}
+.rem-toggle{position:relative;width:42px;height:24px;flex-shrink:0}
+.rem-toggle input{opacity:0;width:0;height:0;position:absolute}
+.rem-toggle-track{position:absolute;inset:0;border-radius:24px;background:#ccc;transition:.25s;cursor:pointer}
+.rem-toggle input:checked + .rem-toggle-track{background:var(--gold)}
+.rem-toggle-track::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.25s}
+.rem-toggle input:checked + .rem-toggle-track::before{transform:translateX(18px)}
+.tp-tabs{display:flex;border-bottom:2px solid var(--rule);margin-bottom:20px;gap:0}
+.tp-tab{padding:10px 18px;font-size:.8rem;font-weight:600;color:var(--dim);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap}
+.tp-tab.on{color:var(--ink);border-bottom-color:var(--gold)}
+.tp-tab:hover{color:var(--ink)}
+.tp-panel{display:none}.tp-panel.on{display:block}
+.tp-row{display:grid;grid-template-columns:160px 1fr;gap:8px 16px;align-items:start;padding:10px 0;border-bottom:1px solid var(--rule)}
+.tp-row:last-child{border-bottom:none}
+.tp-label{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);padding-top:3px}
+.tp-value{font-size:.86rem;color:var(--ink);font-weight:500;word-break:break-word}
+.tp-value.empty{color:var(--dim);font-style:italic;font-weight:400}
+.tp-section{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;margin-bottom:14px}
+.tp-section-title{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:700;color:var(--ink);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+/* Modification request form */
+.mr-field-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--rule)}
+.mr-field-row:last-child{border-bottom:none}
+.mr-field-check{width:16px;height:16px;accent-color:var(--gold);cursor:pointer;flex-shrink:0}
+.mr-field-label{font-size:.82rem;font-weight:600;flex:1}
+.mr-field-current{font-size:.76rem;color:var(--dim);flex:1}
+/* Admin approval panel */
+.mr-card{background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.mr-card-head{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--cream);border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.mr-card-body{padding:12px 16px;font-size:.82rem}
+.mr-card-foot{display:flex;border-top:1px solid var(--rule)}
+.mr-status-pending{background:#fef9e7;color:#7a5c00;font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid rgba(201,150,12,.3)}
+.mr-status-approved{background:#f0fdf4;color:#15803d;font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid #bbf7d0}
+.mr-status-rejected{background:#fff0f0;color:var(--red);font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid rgba(140,31,31,.25)}
 .nm-card{background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:14px;transition:box-shadow .15s}
 .nm-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
 .nm-card-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--rule);background:var(--cream);flex-wrap:wrap}
@@ -1707,6 +1745,10 @@ body.sidebar-collapsed .content-area {
 
       <!-- ADMIN ONLY -->
       <div class="nav-section admin-only">Admin</div>
+      <button class="nav-item admin-only" onclick="showPage('pgModRequests',this)" id="navModRequests">
+        <span class="nav-icon">📝</span><span class="nav-label">Mod. Requests</span>
+        <span class="nav-badge red" id="modReqBadge" style="display:none">0</span>
+      </button>
       <button class="nav-item admin-only" onclick="showPage('pgNoticesAdmin',this)" id="navNoticesAdmin">
         <span class="nav-icon">📝</span><span class="nav-label">Manage Notices</span>
       </button>
@@ -1936,6 +1978,32 @@ body.sidebar-collapsed .content-area {
             </div>
           </div>
 
+        </div>
+      </div>
+
+      <!-- ── MODIFICATION REQUESTS (admin) ── -->
+      <div class="pg admin-only" id="pgModRequests">
+        <div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()">&#8592;</button><button class="pnb-btn" onclick="historyFwd()">&#8594;</button><div class="pnb-crumb"></div></div>
+        <div class="page-header">
+          <div><h1>Modification Requests</h1><div class="ph-sub">Tenant-submitted data correction requests</div></div>
+          <div style="display:flex;gap:8px">
+            <select id="mrAdminFilter" onchange="mrAdminRender()" style="padding:7px 12px;border:1px solid var(--rule);border-radius:6px;font-size:.78rem;background:var(--card)">
+              <option value="">All requests</option>
+              <option value="pending">Pending only</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <button class="btn btn-outline" onclick="mrAdminRender()">🔄 Refresh</button>
+          </div>
+        </div>
+        <div class="page-body">
+          <div id="mrAdminCount" style="font-size:.78rem;color:var(--dim);margin-bottom:14px"></div>
+          <div id="mrAdminList">
+            <div style="text-align:center;padding:40px;color:var(--dim)">
+              <div style="font-size:2.5rem;margin-bottom:10px">📋</div>
+              <div>No modification requests yet.</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -3798,6 +3866,7 @@ function showPage(pgId, btn) {
   if(pgId === 'pgNotices') { loadNotices(); renderExpiryBanner(); renderTenancyStatusNotice(); }
   if(pgId === 'pgTenants') { loadTenantsTable(); }
   if(pgId === 'pgNoticesAdmin') { nmRenderList(); }
+  if(pgId === 'pgModRequests')  { mrAdminRender(); }
   // Save state on every page navigation
   if (typeof saveSessionState === 'function') saveSessionState();
 }
@@ -4531,9 +4600,19 @@ async function loadMyProperty(userData) {
   }
 
   const propObj = PROPERTIES.find(p => p.id === (myRecord.unitId||myRecord.unit));
-  const locStr  = myRecord.location || propObj?.location || '';
+  const locStr  = myRecord.location || (propObj && propObj.location) || '';
 
   body.innerHTML = alertStrip + `
+    <!-- TABS -->
+    <div class="tp-tabs" id="myPropTabs">
+      <div class="tp-tab on" onclick="tpSwitch('tpOverview')">🏠 Overview</div>
+      <div class="tp-tab" onclick="tpSwitch('tpParticulars')">📋 My Particulars</div>
+      <div class="tp-tab" onclick="tpSwitch('tpCorrection')" id="tpCorrectionTab">✏️ Request Correction</div>
+      <div class="tp-tab" onclick="tpSwitch('tpReminders')">🔔 Reminders</div>
+    </div>
+
+    <!-- PANEL 1: Overview (existing content) -->
+    <div class="tp-panel on" id="tpOverview">
     <div class="t-hero">
       <div class="t-hero-eyebrow">Your Property</div>
       <div class="t-hero-unit">${getPropertyLabel(myRecord.unitId||myRecord.unit)}</div>
@@ -4631,16 +4710,128 @@ async function loadMyProperty(userData) {
     ${myRecord.notes?`<div class="sec-card"><div class="sec-head"><h2>📌 Notes from Landlord</h2></div><div class="sec-body" style="font-size:.84rem;color:var(--dim);line-height:1.75">${myRecord.notes}</div></div>`:''}
 
     <div class="sec-card">
-      <div class="sec-head"><h2>📖 Renewal & Vacating Guide</h2></div>
+      <div class="sec-head"><h2>📖 Renewal &amp; Vacating Guide</h2></div>
       <div class="sec-body" style="font-size:.82rem;color:var(--dim);line-height:1.9">
-        <div style="margin-bottom:10px"><strong style="color:var(--ink)">60 days before expiry:</strong> You will receive an automatic reminder. Begin renewal discussions with the landlord.</div>
-        <div style="margin-bottom:10px"><strong style="color:var(--ink)">30 days before expiry:</strong> Submit your formal renewal request. Landlord confirms new rent and tenure dates.</div>
-        <div style="margin-bottom:10px"><strong style="color:var(--ink)">On renewal:</strong> A new digital tenancy agreement is issued and signed by all parties. Pay the agreed rent to confirm.</div>
-        <div style="margin-bottom:10px"><strong style="color:var(--ink)">Clause X -- Obligation to Vacate:</strong> If not renewing, you must vacate on or before the expiry date and surrender vacant possession to the landlord.</div>
-        <div><strong style="color:var(--ink)">Contact:</strong> crestechnologies@outlook.com · Victoria Estate #20, Ojodu, Ogun State</div>
+        <div style="margin-bottom:10px"><strong style="color:var(--ink)">60 days before expiry:</strong> You will receive an automatic reminder.</div>
+        <div style="margin-bottom:10px"><strong style="color:var(--ink)">30 days before expiry:</strong> Submit your formal renewal request.</div>
+        <div style="margin-bottom:10px"><strong style="color:var(--ink)">On renewal:</strong> A new digital tenancy agreement is issued.</div>
+        <div style="margin-bottom:10px"><strong style="color:var(--ink)">Clause X — Vacate:</strong> Vacate on or before expiry date.</div>
+        <div><strong style="color:var(--ink)">Contact:</strong> crestechnologies@outlook.com</div>
       </div>
-    </div>`;
+    </div>
+    </div>
+    <div class="tp-panel" id="tpParticulars"></div>
+    <div class="tp-panel" id="tpCorrection"></div>
+    <div class="tp-panel" id="tpReminders"></div>`;/* END panels */
 
+  /* Build Particulars + Correction panels */
+  const mrFields = [
+    {key:'tenant',       label:'Full Name',      current: myRecord.tenant||''},
+    {key:'contractName', label:'Contract Name',  current: myRecord.contractName||''},
+    {key:'tenantEmail',  label:'Email Address',  current: myRecord.tenantEmail||''},
+    {key:'tenantPhone',  label:'Phone Number',   current: myRecord.tenantPhone||''},
+    {key:'tenantNIN',    label:'NIN',            current: myRecord.tenantNIN||''},
+    {key:'start',        label:'Start Date',     current: myRecord.start||''},
+    {key:'expiry',       label:'Expiry Date',    current: myRecord.expiry||''},
+    {key:'lastPayment',  label:'Last Payment',   current: myRecord.lastPayment||''},
+  ];
+
+  const particularsPanel = document.getElementById('tpParticulars');
+  if (particularsPanel) {
+    particularsPanel.innerHTML = `
+      <div class="tp-section">
+        <div class="tp-section-title">👤 Personal Details</div>
+        <div class="tp-row"><div class="tp-label">Full Name</div><div class="tp-value ${myRecord.tenant?'':'empty'}">${myRecord.tenant||'Not recorded'}</div></div>
+        <div class="tp-row"><div class="tp-label">Contract Name</div><div class="tp-value ${myRecord.contractName?'':'empty'}">${myRecord.contractName||'Not recorded'}</div></div>
+        <div class="tp-row"><div class="tp-label">Email</div><div class="tp-value ${myRecord.tenantEmail?'':'empty'}">${myRecord.tenantEmail||'Not recorded'}</div></div>
+        <div class="tp-row"><div class="tp-label">Phone</div><div class="tp-value ${myRecord.tenantPhone?'':'empty'}">${myRecord.tenantPhone||'Not recorded'}</div></div>
+        <div class="tp-row"><div class="tp-label">NIN</div><div class="tp-value ${myRecord.tenantNIN?'':'empty'}">${myRecord.tenantNIN?'••••••'+myRecord.tenantNIN.slice(-4):'Not recorded'}</div></div>
+      </div>
+      <div class="tp-section">
+        <div class="tp-section-title">🏠 Property &amp; Tenancy</div>
+        <div class="tp-row"><div class="tp-label">Unit</div><div class="tp-value">${myRecord.unit||myRecord.unitId||'--'}</div></div>
+        <div class="tp-row"><div class="tp-label">Location</div><div class="tp-value">${locStr||'--'}</div></div>
+        <div class="tp-row"><div class="tp-label">Start</div><div class="tp-value">${fmt(myRecord.start)}</div></div>
+        <div class="tp-row"><div class="tp-label">Expiry</div><div class="tp-value">${fmt(myRecord.expiry)}</div></div>
+        <div class="tp-row"><div class="tp-label">Annual Rent</div><div class="tp-value">₦${Number(myRecord.amount||0).toLocaleString()}</div></div>
+        <div class="tp-row"><div class="tp-label">New Rent</div><div class="tp-value ${myRecord.newRent?'':'empty'}">${myRecord.newRent?'₦'+Number(myRecord.newRent).toLocaleString():'Not set'}</div></div>
+        <div class="tp-row"><div class="tp-label">Last Payment</div><div class="tp-value ${myRecord.lastPayment?'':'empty'}">${fmt(myRecord.lastPayment)||'Not recorded'}</div></div>
+        <div class="tp-row"><div class="tp-label">Status</div><div class="tp-value">${myRecord.vacancy||'Occupied'}</div></div>
+      </div>
+      <div style="padding:14px;background:rgba(201,150,12,.07);border:1px solid rgba(201,150,12,.25);border-radius:8px;font-size:.8rem;color:#7a5c00;line-height:1.7">
+        ⚠️ Any details incorrect? Click the <strong>Request Correction</strong> tab to notify admin.
+      </div>`;
+  }
+
+  const corrPanel = document.getElementById('tpCorrection');
+  if (corrPanel) {
+    corrPanel.innerHTML = `
+      <div class="tp-section">
+        <div class="tp-section-title">✏️ Request a Data Correction</div>
+        <p style="font-size:.8rem;color:var(--dim);margin-bottom:16px;line-height:1.7">Tick the field(s) you want corrected, enter the correct value, and submit. Admin will review and approve.</p>
+        <div id="mrFieldList">${mrFields.map(f => `
+          <div class="mr-field-row">
+            <input type="checkbox" class="mr-field-check" id="mrChk_${f.key}" value="${f.key}" onchange="mrToggleField('${f.key}')" />
+            <label for="mrChk_${f.key}" class="mr-field-label">${f.label}</label>
+            <div class="mr-field-current">Current: <em>${f.current||'not set'}</em></div>
+            <input type="text" id="mrNew_${f.key}" placeholder="Correct value..." style="display:none;flex:1;padding:6px 10px;border:1px solid var(--gold);border-radius:5px;font-size:.8rem;font-family:'DM Sans',sans-serif;background:var(--card);outline:none" />
+          </div>`).join('')}</div>
+        <div class="nf-group" style="margin-top:14px">
+          <label>Reason / Note <span style="font-weight:400;color:var(--dim)">(optional)</span></label>
+          <textarea id="mrReason" placeholder="e.g. My phone number changed..." style="min-height:70px;width:100%;padding:9px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-family:'DM Sans',sans-serif;font-size:.84rem;background:var(--card);outline:none;resize:vertical;box-sizing:border-box"></textarea>
+        </div>
+        <div id="mrSubmitStatus" style="display:none;margin-bottom:10px"></div>
+        <button class="btn btn-gold" onclick="mrSubmitRequest()">📤 Submit Correction Request</button>
+      </div>
+      <div class="tp-section">
+        <div class="tp-section-title">🕐 My Previous Requests</div>
+        <div id="mrMyList" style="font-size:.8rem;color:var(--dim)">Loading...</div>
+      </div>`;
+  }
+
+  /* PANEL 4: Reminders */
+  const remPanel = document.getElementById('tpReminders');
+  if (remPanel) {
+    const remDays = [90,60,30,14,7,1];
+    remPanel.innerHTML = `
+      <div class="tp-section">
+        <div class="tp-section-title">🔔 Email Reminders</div>
+        <p style="font-size:.8rem;color:var(--dim);margin-bottom:16px;line-height:1.7">
+          Automatic reminder emails sent to <strong>${myRecord.tenantEmail||currentUser.email}</strong>
+          before your expiry date of <strong>${fmt(myRecord.expiry)||'not set'}</strong>.
+          Toggle each reminder on or off.
+        </p>
+        ${remDays.map(days => `
+          <div class="rem-card" id="remCard_${days}">
+            <div class="rem-icon">${days<=7?'🚨':days<=14?'⚠️':days<=30?'📅':'🔔'}</div>
+            <div class="rem-body">
+              <div class="rem-title">${days} Day${days>1?'s':''} Before Expiry</div>
+              <div class="rem-meta" id="remMeta_${days}">—</div>
+            </div>
+            <label class="rem-toggle" title="Toggle this reminder">
+              <input type="checkbox" id="remChk_${days}" onchange="remToggle(${days},this.checked)"/>
+              <div class="rem-toggle-track"></div>
+            </label>
+          </div>`).join('')}
+        <div style="margin-top:16px;padding:14px;background:rgba(201,150,12,.07);border:1px solid rgba(201,150,12,.25);border-radius:8px;font-size:.78rem;color:#7a5c00;line-height:1.7">
+          📧 Emails go to your registered address. Wrong email?
+          Use the <strong>Request Correction</strong> tab to update it.
+        </div>
+        <button class="btn btn-gold" onclick="remSendTestEmail()" style="margin-top:14px;font-size:.78rem">
+          📤 Send Me a Test Reminder Now
+        </button>
+      </div>
+      <div class="tp-section">
+        <div class="tp-section-title">📨 Sent Reminder History</div>
+        <div id="remHistoryList" style="font-size:.8rem;color:var(--dim)">Loading...</div>
+      </div>`;
+  }
+
+  setTimeout(function() {
+    mrLoadMyRequests(myRecord.tenantEmail);
+    remRenderState(myRecord);
+    remLoadHistory(myRecord.tenantEmail);
+  }, 300);
   loadNotices();
 }
 
@@ -7506,9 +7697,461 @@ function rmPasteDoImport() {
 }
 
 /* ============================================================
-   BULK SELECTION AND DELETION
-   Works on: Rent Manager (rmBody) and Tenants (tenantsBody)
-   ------------------------------------------------------------ */
+   TENANT PARTICULARS — TAB SWITCHING
+   ============================================================ */
+function tpSwitch(panelId) {
+  const tabIds = ['tpOverview','tpParticulars','tpCorrection','tpReminders'];
+  document.querySelectorAll('.tp-tab').forEach((t, i) => t.classList.toggle('on', tabIds[i] === panelId));
+  document.querySelectorAll('.tp-panel').forEach(p => p.classList.toggle('on', p.id === panelId));
+}
+
+/* ============================================================
+   MODIFICATION REQUEST SYSTEM
+   Storage: Firestore 'modRequests' + localStorage 'crs_mod_requests'
+   ============================================================ */
+const MR_LS_KEY = 'crs_mod_requests';
+
+function _mrGet()  { try { return JSON.parse(localStorage.getItem(MR_LS_KEY)||'[]'); } catch(e){ return []; } }
+function _mrSave(a){ localStorage.setItem(MR_LS_KEY, JSON.stringify(a)); }
+
+function mrToggleField(key) {
+  const chk = document.getElementById('mrChk_' + key);
+  const inp = document.getElementById('mrNew_' + key);
+  if (!inp) return;
+  inp.style.display = chk && chk.checked ? 'block' : 'none';
+  if (chk && chk.checked) inp.focus();
+}
+
+async function mrSubmitRequest() {
+  const rec = window._myRecord;
+  if (!rec) { notify('error','Not Linked','No tenancy record linked to your account.'); return; }
+
+  // Collect checked fields with new values
+  const changes = {};
+  const labels  = {};
+  const fieldDefs = [
+    {key:'tenant','label':'Full Name'}, {key:'contractName','label':'Contract Name'},
+    {key:'tenantEmail','label':'Email'}, {key:'tenantPhone','label':'Phone'},
+    {key:'tenantNIN','label':'NIN'}, {key:'start','label':'Start Date'},
+    {key:'expiry','label':'Expiry Date'}, {key:'lastPayment','label':'Last Payment'},
+  ];
+  fieldDefs.forEach(f => {
+    const chk = document.getElementById('mrChk_' + f.key);
+    const inp = document.getElementById('mrNew_' + f.key);
+    if (chk && chk.checked && inp && inp.value.trim()) {
+      changes[f.key]  = inp.value.trim();
+      labels[f.key]   = f.label;
+    }
+  });
+
+  if (!Object.keys(changes).length) {
+    notify('warning','Nothing Selected','Tick at least one field and enter the correct value.'); return;
+  }
+
+  const reason = document.getElementById('mrReason')?.value.trim() || '';
+  const request = {
+    id:          'mr_' + Date.now(),
+    tenantEmail: (currentUser.email||'').toLowerCase(),
+    tenantName:  rec.tenant || currentUser.displayName || currentUser.email,
+    unitId:      rec.unitId || rec.unit,
+    unit:        rec.unit   || rec.unitId,
+    recordId:    rec.id || '',
+    changes,
+    labels,
+    reason,
+    status:      'pending',
+    submittedAt: new Date().toISOString(),
+  };
+
+  // Save locally
+  const all = _mrGet();
+  all.unshift(request);
+  _mrSave(all);
+
+  // Save to Firestore
+  if (window._db) {
+    window._db.collection('modRequests').doc(request.id).set(request).catch(function(e){
+      console.warn('mrSubmitRequest Firestore:', e.message);
+    });
+  }
+
+  // Update UI
+  const status = document.getElementById('mrSubmitStatus');
+  if (status) {
+    status.style.cssText = 'padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;color:#15803d;font-size:.8rem;font-weight:600;display:block';
+    status.textContent = '✅ Request submitted! Admin will review and notify you.';
+  }
+  // Clear form
+  document.querySelectorAll('.mr-field-check').forEach(c => { c.checked = false; });
+  document.querySelectorAll('[id^="mrNew_"]').forEach(i => { i.style.display = 'none'; i.value = ''; });
+  const reason_el = document.getElementById('mrReason');
+  if (reason_el) reason_el.value = '';
+
+  mrLoadMyRequests(currentUser.email);
+  notify('success','Request Submitted',
+    Object.values(labels).join(', ') + ' — correction requested',
+    ['Admin will review within 24–48 hours', 'You will be notified on approval']
+  );
+
+  // Badge update for admin
+  mrUpdateAdminBadge();
+}
+
+async function mrLoadMyRequests(email) {
+  const el = document.getElementById('mrMyList');
+  if (!el) return;
+  const lowerEmail = (email||'').toLowerCase();
+
+  let requests = _mrGet().filter(r => r.tenantEmail === lowerEmail);
+
+  // Also pull from Firestore
+  try {
+    if (window._db) {
+      const snap = await window._db.collection('modRequests')
+        .where('tenantEmail','==', lowerEmail).get();
+      const fsIds = new Set(requests.map(r => r.id));
+      snap.docs.forEach(d => { const data = d.data(); if (!fsIds.has(data.id)) requests.push(data); });
+      requests.sort((a,b) => new Date(b.submittedAt||0) - new Date(a.submittedAt||0));
+    }
+  } catch(e) {}
+
+  if (!requests.length) { el.textContent = 'No previous requests.'; return; }
+
+  const fmtDt = d => { try{ return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); }catch(e){return d;} };
+  const statusCls = { pending:'mr-status-pending', approved:'mr-status-approved', rejected:'mr-status-rejected' };
+  const statusIcon = { pending:'⏳', approved:'✅', rejected:'❌' };
+
+  el.innerHTML = requests.map(r => {
+    const fields = Object.entries(r.labels||r.changes||{}).map(([k,v]) =>
+      '<span style="font-size:.72rem;background:var(--bg);padding:2px 7px;border-radius:4px;margin-right:4px">'+(r.labels?r.labels[k]||k:k)+'</span>'
+    ).join('');
+    const statusClass = statusCls[r.status] || 'mr-status-pending';
+    const icon = statusIcon[r.status] || '⏳';
+    return '<div style="padding:10px 0;border-bottom:1px solid var(--rule)">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+        + '<span class="' + statusClass + '">' + icon + ' ' + (r.status||'pending').charAt(0).toUpperCase()+(r.status||'pending').slice(1) + '</span>'
+        + '<span style="font-size:.72rem;color:var(--dim)">' + fmtDt(r.submittedAt) + '</span>'
+      + '</div>'
+      + '<div style="font-size:.76rem;margin-bottom:4px">Fields: ' + fields + '</div>'
+      + (r.reason ? '<div style="font-size:.73rem;color:var(--dim)">Note: ' + r.reason + '</div>' : '')
+      + (r.adminNote ? '<div style="font-size:.73rem;color:#15803d;margin-top:4px">Admin: ' + r.adminNote + '</div>' : '')
+    + '</div>';
+  }).join('');
+}
+
+/* ── ADMIN: Render modification requests ── */
+async function mrAdminRender() {
+  const container = document.getElementById('mrAdminList');
+  const count = document.getElementById('mrAdminCount');
+  if (!container) return;
+
+  container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--dim)">Loading...</div>';
+
+  let requests = _mrGet();
+
+  // Merge Firestore
+  try {
+    if (window._db) {
+      const snap = await window._db.collection('modRequests').get();
+      const lsIds = new Set(requests.map(r => r.id));
+      snap.docs.forEach(d => { const data = d.data(); if (!lsIds.has(data.id)) requests.push(data); });
+    }
+  } catch(e) {}
+
+  requests.sort((a,b) => new Date(b.submittedAt||0) - new Date(a.submittedAt||0));
+
+  const filter = document.getElementById('mrAdminFilter')?.value || '';
+  const shown  = filter ? requests.filter(r => r.status === filter) : requests;
+  const pending = requests.filter(r => r.status === 'pending').length;
+
+  if (count) count.textContent = shown.length + ' request(s) · ' + pending + ' pending';
+
+  if (!shown.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem">📋</div><div style="margin-top:10px">No requests found.</div></div>';
+    return;
+  }
+
+  const fmtDt = d => { try{ return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); }catch(e){return d;} };
+  const statusCls = { pending:'mr-status-pending', approved:'mr-status-approved', rejected:'mr-status-rejected' };
+
+  container.innerHTML = shown.map(r => {
+    const isPending = r.status === 'pending';
+    const fieldRows = Object.entries(r.changes||{}).map(([k, newVal]) => {
+      const label = (r.labels && r.labels[k]) || k;
+      // Find current value from rentLogs
+      const rec = rentLogs.find(e => e.id === r.recordId || (e.tenantEmail||'').toLowerCase() === r.tenantEmail);
+      const curVal = rec ? (rec[k]||'') : '';
+      return '<div style="display:grid;grid-template-columns:130px 1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--rule);font-size:.8rem;align-items:center">'
+        + '<span style="font-weight:700;color:var(--dim);text-transform:uppercase;font-size:.68rem">' + label + '</span>'
+        + '<span style="color:var(--dim);text-decoration:line-through">' + (curVal||'—') + '</span>'
+        + '<span style="color:var(--green);font-weight:600">→ ' + newVal + '</span>'
+        + '</div>';
+    }).join('');
+
+    return '<div class="mr-card">'
+      + '<div class="mr-card-head">'
+        + '<span class="' + (statusCls[r.status]||'mr-status-pending') + '">' + (r.status||'pending') + '</span>'
+        + '<span style="font-weight:700;font-size:.84rem">' + (r.tenantName||r.tenantEmail) + '</span>'
+        + '<span style="font-size:.74rem;color:var(--dim)">· ' + (r.unit||r.unitId||'Unknown unit') + '</span>'
+        + '<span style="font-size:.72rem;color:var(--dim);margin-left:auto">' + fmtDt(r.submittedAt) + '</span>'
+      + '</div>'
+      + '<div class="mr-card-body">'
+        + '<div style="display:grid;grid-template-columns:130px 1fr 1fr;gap:8px;padding:4px 0 6px;border-bottom:2px solid var(--rule);font-size:.68rem;font-weight:700;color:var(--dim);text-transform:uppercase">'
+          + '<span>Field</span><span>Current Value</span><span>Requested Change</span>'
+        + '</div>'
+        + fieldRows
+        + (r.reason ? '<div style="margin-top:10px;font-size:.78rem;color:var(--dim)">📝 Note: ' + r.reason + '</div>' : '')
+        + (r.adminNote ? '<div style="margin-top:6px;font-size:.78rem;color:#15803d">✅ Admin note: ' + r.adminNote + '</div>' : '')
+      + '</div>'
+      + (isPending ? '<div class="mr-card-foot">'
+          + '<button onclick="mrAdminApprove(\'' + r.id + '\')" style="flex:1;padding:10px;background:#f0fdf4;color:#15803d;border:none;font-size:.78rem;font-weight:700;cursor:pointer;border-right:1px solid var(--rule)">✅ Approve &amp; Apply</button>'
+          + '<button onclick="mrAdminReject(\'' + r.id + '\')" style="flex:1;padding:10px;background:#fff0f0;color:var(--red);border:none;font-size:.78rem;font-weight:700;cursor:pointer">❌ Reject</button>'
+        + '</div>' : '')
+    + '</div>';
+  }).join('');
+}
+
+function mrUpdateAdminBadge() {
+  const pending = _mrGet().filter(r => r.status === 'pending').length;
+  const badge = document.getElementById('modReqBadge');
+  if (badge) { badge.textContent = pending; badge.style.display = pending > 0 ? '' : 'none'; }
+}
+
+async function mrAdminApprove(id) {
+  const requests = _mrGet();
+  const idx = requests.findIndex(r => r.id === id);
+  if (idx < 0 && !window._db) return;
+
+  let req = requests[idx];
+  if (!req && window._db) {
+    const snap = await window._db.collection('modRequests').doc(id).get();
+    if (snap.exists) req = snap.data();
+  }
+  if (!req) return;
+
+  const adminNote = prompt('Optional admin note to tenant (leave blank to skip):') || '';
+
+  // Apply changes to rentLogs
+  const recIdx = rentLogs.findIndex(e =>
+    e.id === req.recordId ||
+    (e.tenantEmail||'').toLowerCase() === req.tenantEmail
+  );
+
+  if (recIdx >= 0) {
+    Object.entries(req.changes||{}).forEach(([key, val]) => {
+      rentLogs[recIdx][key] = val;
+    });
+    rentLogs[recIdx].updatedAt = new Date().toISOString();
+    saveLocal();
+    renderAll(); renderRentManager(); renderProperties();
+    notify('success', 'Changes Applied', 'Tenant record updated: ' + Object.values(req.labels||{}).join(', '));
+  } else {
+    notify('warning', 'Record Not Found', 'Could not find tenant record — changes NOT applied to Rent Manager. Update manually.');
+  }
+
+  // Update request status
+  if (idx >= 0) { requests[idx].status = 'approved'; requests[idx].adminNote = adminNote; requests[idx].resolvedAt = new Date().toISOString(); _mrSave(requests); }
+  if (window._db) {
+    window._db.collection('modRequests').doc(id).update({ status:'approved', adminNote, resolvedAt: new Date().toISOString() }).catch(function(e){});
+    // Also update Firestore rentRecords
+    if (recIdx >= 0 && rentLogs[recIdx].id) {
+      window._db.collection('rentRecords').doc(rentLogs[recIdx].id).set(rentLogs[recIdx], {merge:true}).catch(function(e){});
+    }
+  }
+  mrAdminRender();
+  mrUpdateAdminBadge();
+}
+
+function mrAdminReject(id) {
+  const adminNote = prompt('Reason for rejection (will be shown to tenant):') || 'Request rejected by admin.';
+  const requests = _mrGet();
+  const idx = requests.findIndex(r => r.id === id);
+  if (idx >= 0) { requests[idx].status = 'rejected'; requests[idx].adminNote = adminNote; requests[idx].resolvedAt = new Date().toISOString(); _mrSave(requests); }
+  if (window._db) {
+    window._db.collection('modRequests').doc(id).update({ status:'rejected', adminNote, resolvedAt: new Date().toISOString() }).catch(function(e){});
+  }
+  mrAdminRender();
+  mrUpdateAdminBadge();
+  notify('success', 'Request Rejected', 'Tenant will see the rejection note.');
+}
+/* ============================================================
+   TENANT REMINDER SYSTEM
+   Storage: localStorage 'crs_reminders_{email}' + Firestore 'reminders'
+   Sends via Firestore 'mail' collection (Firebase Extension)
+   ============================================================ */
+
+const REM_OPTIONS = [90, 60, 30, 14, 7, 1]; // days before expiry
+
+function _remKey(email) { return 'crs_reminders_' + (email||'').toLowerCase().replace(/[@.]/g,'_'); }
+
+function _remGetPrefs(email) {
+  try { return JSON.parse(localStorage.getItem(_remKey(email)) || '{}'); } catch(e) { return {}; }
+}
+function _remSavePrefs(email, prefs) {
+  localStorage.setItem(_remKey(email), JSON.stringify(prefs));
+  if (window._db && email) {
+    window._db.collection('reminders').doc(email.toLowerCase()).set({ prefs, email, updatedAt: new Date().toISOString() }, {merge:true})
+      .catch(function(e){ console.warn('remSavePrefs Firestore:', e.message); });
+  }
+}
+
+function remRenderState(rec) {
+  if (!rec || !rec.tenantEmail) return;
+  const prefs = _remGetPrefs(rec.tenantEmail);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const expiry = rec.expiry ? new Date(normaliseDate(rec.expiry)) : null;
+  const fmt = d => d ? new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}) : '--';
+
+  REM_OPTIONS.forEach(function(days) {
+    const chk  = document.getElementById('remChk_' + days);
+    const meta = document.getElementById('remMeta_' + days);
+    if (!chk) return;
+
+    const enabled = !!prefs[days];
+    chk.checked = enabled;
+
+    // When the reminder would fire
+    let fireDate = null;
+    if (expiry) {
+      fireDate = new Date(expiry);
+      fireDate.setDate(fireDate.getDate() - days);
+    }
+    const daysUntilFire = fireDate ? Math.round((fireDate - today) / 864e5) : null;
+    const lastSent = prefs[days + '_sent'] || null;
+
+    let metaText = '';
+    if (!expiry) {
+      metaText = 'No expiry date set';
+    } else if (daysUntilFire !== null && daysUntilFire < 0) {
+      metaText = 'This reminder has passed (expiry was ' + fmt(expiry) + ')';
+    } else if (lastSent) {
+      metaText = 'Last sent: ' + fmt(lastSent);
+    } else if (fireDate && enabled) {
+      metaText = 'Will send on ' + fmt(fireDate) + (daysUntilFire === 0 ? ' (today!)' : ' (' + daysUntilFire + ' days from now)');
+    } else if (fireDate) {
+      metaText = 'Would send on ' + fmt(fireDate) + ' — currently OFF';
+    }
+    if (meta) meta.textContent = metaText;
+
+    // Style card
+    const card = document.getElementById('remCard_' + days);
+    if (card) {
+      card.style.opacity = enabled ? '1' : '0.6';
+      card.style.borderColor = enabled ? 'rgba(201,150,12,.4)' : 'var(--rule)';
+    }
+  });
+}
+
+async function remToggle(days, enabled) {
+  const rec = window._myRecord;
+  if (!rec || !rec.tenantEmail) { notify('warning','Not Linked','No tenancy record linked.'); return; }
+
+  const prefs = _remGetPrefs(rec.tenantEmail);
+  prefs[days] = enabled;
+  _remSavePrefs(rec.tenantEmail, prefs);
+  remRenderState(rec);
+
+  // If enabling and expiry is set, confirm the fire date to the user
+  if (enabled && rec.expiry) {
+    const expiry = new Date(normaliseDate(rec.expiry));
+    const fireDate = new Date(expiry);
+    fireDate.setDate(fireDate.getDate() - days);
+    const fmtD = d => d.toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});
+    notify('success',
+      '🔔 Reminder Set — ' + days + ' Days Before',
+      'Email will be sent on ' + fmtD(fireDate) + ' to ' + rec.tenantEmail,
+      ['Expiry date: ' + fmtD(expiry), 'Toggle off anytime to cancel']
+    );
+  } else if (!enabled) {
+    notify('success', 'Reminder Turned Off', days + '-day reminder disabled.');
+  }
+}
+
+async function remSendTestEmail() {
+  const rec = window._myRecord;
+  if (!rec) { notify('error','Not Linked','No tenancy record found.'); return; }
+
+  const email   = rec.tenantEmail || (currentUser && currentUser.email) || '';
+  if (!email)   { notify('error','No Email','No email address on record.'); return; }
+
+  const unit    = rec.unit || rec.unitId || '--';
+  const expiry  = rec.expiry ? new Date(normaliseDate(rec.expiry)).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : 'Not set';
+  const rent    = rec.amount ? '₦' + Number(rec.amount).toLocaleString() : 'Not set';
+  const daysLeft = rec.expiry ? Math.round((new Date(normaliseDate(rec.expiry)) - new Date()) / 864e5) : null;
+
+  const html = `
+  <div style="font-family:'DM Sans',Arial,sans-serif;max-width:560px;margin:0 auto;background:#faf8f4;border:1px solid #e8dfc8;border-radius:12px;overflow:hidden">
+    <div style="background:#0f0e0c;padding:24px 28px;text-align:center">
+      <div style="font-family:Georgia,serif;font-size:1.3rem;font-weight:700;color:#c9960c;letter-spacing:.04em">CRESTVILLE PROPERTIES</div>
+      <div style="color:#a09070;font-size:.75rem;letter-spacing:.12em;margin-top:4px">TENANCY REMINDER</div>
+    </div>
+    <div style="padding:28px;color:#0f0e0c">
+      <p style="margin:0 0 16px;font-size:1rem">Dear <strong>${rec.tenant || 'Tenant'}</strong>,</p>
+      <p style="margin:0 0 16px;font-size:.9rem;line-height:1.7">This is a <strong>test reminder</strong> from Crestville Properties. Your actual reminders will be sent automatically at your selected intervals before expiry.</p>
+      <div style="background:#fff;border:1px solid #e8dfc8;border-radius:8px;padding:16px 20px;margin:20px 0">
+        <table style="width:100%;font-size:.85rem;border-collapse:collapse">
+          <tr><td style="padding:6px 0;color:#7a6a5a;font-weight:700;width:140px">Unit</td><td style="padding:6px 0">${unit}</td></tr>
+          <tr><td style="padding:6px 0;color:#7a6a5a;font-weight:700">Annual Rent</td><td style="padding:6px 0">${rent}</td></tr>
+          <tr><td style="padding:6px 0;color:#7a6a5a;font-weight:700">Expiry Date</td><td style="padding:6px 0;color:${daysLeft!==null&&daysLeft<30?'#c9960c':'#15803d'};font-weight:700">${expiry}</td></tr>
+          ${daysLeft !== null ? '<tr><td style="padding:6px 0;color:#7a6a5a;font-weight:700">Days Left</td><td style="padding:6px 0;font-weight:700;color:'+(daysLeft<14?'#8c1f1f':daysLeft<30?'#c9960c':'#15803d')+'">' + daysLeft + ' days</td></tr>' : ''}
+        </table>
+      </div>
+      <p style="margin:0 0 14px;font-size:.88rem;line-height:1.7">To renew your tenancy, please log in to the Crestville portal and submit a renewal request, or contact us directly.</p>
+      <div style="text-align:center;margin:20px 0">
+        <a href="https://enjanih-stack.github.io/crestville-portal/" style="background:#c9960c;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:700;font-size:.9rem">Open Portal →</a>
+      </div>
+      <p style="margin:20px 0 0;font-size:.78rem;color:#9a8a7a;border-top:1px solid #e8dfc8;padding-top:14px">
+        Crestechnologies IS Ltd · RC 1643396<br>
+        Victorious Estate, Ojodu, Ogun State · crestechnologies@outlook.com
+      </p>
+    </div>
+  </div>`;
+
+  try {
+    await window.sendCRSEmail(email, '[Crestville] Test Reminder — ' + unit, html);
+    notify('success', '📧 Test Email Sent!',
+      'Reminder email delivered to ' + email,
+      ['Check your inbox (and spam folder)', 'Real reminders send automatically']
+    );
+    // Log in history
+    remLogSent(rec.tenantEmail, 'test', new Date().toISOString());
+    remLoadHistory(rec.tenantEmail);
+  } catch(e) {
+    notify('error', 'Email Failed', 'Could not send test email: ' + e.message);
+  }
+}
+
+function remLogSent(email, type, sentAt) {
+  if (!window._db || !email) return;
+  window._db.collection('reminders').doc(email.toLowerCase()).set({
+    history: firebase.firestore.FieldValue.arrayUnion({ type, sentAt })
+  }, {merge:true}).catch(function(e){ console.warn('remLogSent:', e.message); });
+}
+
+async function remLoadHistory(email) {
+  const el = document.getElementById('remHistoryList');
+  if (!el || !email) return;
+
+  try {
+    if (!window._db) { el.textContent = 'No history yet.'; return; }
+    const snap = await window._db.collection('reminders').doc(email.toLowerCase()).get();
+    if (!snap.exists) { el.textContent = 'No reminders sent yet.'; return; }
+    const data = snap.data();
+    const hist = (data.history || []).sort(function(a,b){ return new Date(b.sentAt||0) - new Date(a.sentAt||0); });
+    if (!hist.length) { el.textContent = 'No reminders sent yet.'; return; }
+    const fmt = d => { try { return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(e){return d;} };
+    el.innerHTML = hist.slice(0,10).map(function(h) {
+      return '<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--rule)">'
+        + '<span style="font-size:1rem">' + (h.type==='test'?'🧪': h.type==='90'?'🔔':h.type==='60'?'🔔':h.type==='30'?'📅':h.type==='14'||h.type==='7'?'⚠️':'🚨') + '</span>'
+        + '<span style="flex:1;font-size:.78rem">' + (h.type==='test'?'Test reminder':'<strong>'+h.type+' day</strong> reminder') + '</span>'
+        + '<span style="font-size:.72rem;color:var(--dim)">' + fmt(h.sentAt) + '</span>'
+      + '</div>';
+    }).join('');
+  } catch(e) {
+    el.textContent = 'Could not load history.';
+  }
+}
+
 
 /* ---- RENT MANAGER BULK ---- */
 let _rmSelected = new Set();
