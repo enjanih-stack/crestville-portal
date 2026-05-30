@@ -1920,6 +1920,22 @@ body.sidebar-collapsed .content-area {
               <div>No notices at this time</div>
             </div>
           </div>
+
+          <!-- Vacant Units Section — always visible on Notices page -->
+          <div id="noticesVacantSection" style="margin-top:28px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+              <div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:700;color:var(--ink)">🏠 Available Units</div>
+                <div style="font-size:.75rem;color:var(--dim)">Units currently vacant and open to new tenants</div>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="showPage('pgVacant',document.getElementById('navVacant'))" style="font-size:.76rem">View All →</button>
+            </div>
+            <div id="noticesVacantGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px"></div>
+            <div id="noticesVacantEmpty" style="display:none;text-align:center;padding:24px;color:var(--dim);background:var(--cream);border-radius:8px;font-size:.84rem">
+              🎉 All units are currently occupied. Check back later for availability.
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -4241,33 +4257,79 @@ function getVacantUnits() {
 
 function renderVacant() {
   const search = (document.getElementById('vacantSearch')?.value||'').toLowerCase();
-  const city = document.getElementById('vacantCity')?.value||'';
-  const type = document.getElementById('vacantType')?.value||'';
+  const city   = document.getElementById('vacantCity')?.value||'';
+  const type   = document.getElementById('vacantType')?.value||'';
+  _refreshRentLogs();
+  const extras = getPropExtras();
+
   let units = getVacantUnits();
-  if(search) units = units.filter(p => (p.label+p.location+p.city+p.type).toLowerCase().includes(search));
-  if(city) units = units.filter(p => p.city === city);
-  if(type) units = units.filter(p => p.type === type);
-  const grid = document.getElementById('vacantGrid');
+  if (search) units = units.filter(p => (p.label+p.location+p.city+p.type).toLowerCase().includes(search));
+  if (city)   units = units.filter(p => p.city === city);
+  if (type)   units = units.filter(p => p.type === type);
+
+  const grid  = document.getElementById('vacantGrid');
   const empty = document.getElementById('vacantEmpty');
-  if(!units.length) { grid.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
+  if (!units.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
   const icons = {'2 Bedroom Flat':'🏠','3 Bedroom Flat':'🏡','Self Contained':'🏘','Room & Parlour':'🛋️','Commercial':'🏪'};
+  const fmtDate = d => { try { return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); } catch(e){ return d; }};
+  const today = new Date(); today.setHours(0,0,0,0);
+
   grid.innerHTML = units.map(p => {
-    // Find rent from logs if previously occupied
+    const ex   = extras[p.id] || {};
     const prev = rentLogs.find(e => e.unitId === p.id);
-    const rentHint = prev ? '₦'+Number(prev.amount).toLocaleString()+'/yr (prev.)' : 'Enquire for rent';
-    return `<div class="unit-card">
-      <div class="uc-top">
+
+    // Price
+    const rent = ex.rent || (prev ? (prev.newRent || prev.amount) : '') || '';
+    const rentStr = rent ? '₦' + Number(rent).toLocaleString() + '/yr' : 'Contact for pricing';
+
+    // Availability
+    const availFrom = ex.availableFrom || p.availableFrom || '';
+    const availDt   = availFrom ? new Date(availFrom) : null;
+    const isAvailNow = !availDt || availDt <= today;
+    const availLabel = isAvailNow
+      ? '<span style="color:#15803d;font-weight:700">✅ Available Now</span>'
+      : '<span style="color:#b45309;font-weight:700">📅 Available from ' + fmtDate(availFrom) + '</span>';
+
+    // Amenities
+    const amenities = ex.amenities || p.amenities || [];
+    const amenHtml = amenities.length
+      ? '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">' +
+          amenities.slice(0,6).map(a =>
+            '<span style="font-size:.68rem;padding:2px 8px;border-radius:20px;background:rgba(201,150,12,.1);color:#7a5c00;border:1px solid rgba(201,150,12,.25)">' +
+            (a.name || a) + '</span>'
+          ).join('') +
+          (amenities.length > 6 ? '<span style="font-size:.68rem;color:var(--dim)">+' + (amenities.length-6) + ' more</span>' : '') +
+        '</div>'
+      : '<div style="font-size:.73rem;color:var(--dim);margin-top:4px">Contact us for amenity details</div>';
+
+    // Photos
+    const img0 = ex.img0 || '';
+    const imgHtml = img0
+      ? '<div style="width:100%;height:140px;overflow:hidden;border-radius:8px;margin-bottom:12px"><img src="'+img0+'" style="width:100%;height:100%;object-fit:cover" alt="'+p.label+'"/></div>'
+      : '<div style="width:100%;height:90px;background:linear-gradient(135deg,var(--cream),var(--bg));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:2.5rem;margin-bottom:12px">'+icons[p.type]+'</div>';
+
+    return `<div class="unit-card" style="border-top:3px solid var(--gold);position:relative">
+      ${imgHtml}
+      <div class="uc-top" style="padding-top:0">
         <div class="uc-type-row">
-          <span class="uc-icon">${icons[p.type]||'🏠'}</span>
-          <span class="badge badge-vacant">Vacant</span>
+          <span style="font-size:.72rem;font-weight:700;letter-spacing:.05em;color:var(--gold);text-transform:uppercase">${p.type}</span>
+          <span class="badge badge-vacant" style="margin-left:auto">VACANT</span>
         </div>
-        <div class="uc-title">${p.label}</div>
-        <div class="uc-loc">📍 ${p.location}</div>
-        <div style="margin-top:8px"><span class="badge" style="background:#f0f0f0;color:var(--dim)">${p.type}</span></div>
+        <div class="uc-title" style="margin-top:4px">${p.label}</div>
+        <div class="uc-loc" style="margin-top:2px">📍 ${p.location}</div>
+
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--rule)">
+          <div style="font-size:.78rem;margin-bottom:5px">${availLabel}</div>
+          ${amenHtml}
+        </div>
       </div>
-      <div class="uc-bottom">
-        <div class="uc-rent">${rentHint}</div>
+      <div class="uc-bottom" style="border-top:1px solid var(--rule);margin-top:12px;padding-top:10px">
+        <div>
+          <div class="uc-rent" style="font-size:1.1rem;color:var(--gold)">${rentStr}</div>
+          <div style="font-size:.7rem;color:var(--dim)">📍 ${p.city}</div>
+        </div>
         <button class="btn btn-gold btn-sm" onclick="showInterest('${p.id}')">Enquire →</button>
       </div>
     </div>`;
@@ -4633,6 +4695,66 @@ async function loadNotices() {
 
   renderExpiryBanner();
   renderTenancyStatusNotice();
+  renderNoticesVacant(); // show vacant units on notices page
+}
+
+/* Render vacant units mini-cards on the Notices page */
+function renderNoticesVacant() {
+  const grid  = document.getElementById('noticesVacantGrid');
+  const empty = document.getElementById('noticesVacantEmpty');
+  if (!grid) return;
+
+  _refreshRentLogs();
+  const extras  = getPropExtras();
+  const vacants = getVacantUnits();
+  const today   = new Date(); today.setHours(0,0,0,0);
+  const fmtDate = d => { try { return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); } catch(e){ return d; }};
+  const icons   = {'2 Bedroom Flat':'🏠','3 Bedroom Flat':'🏡','Self Contained':'🏘','Room & Parlour':'🛋️','Commercial':'🏪'};
+
+  if (!vacants.length) {
+    grid.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  grid.innerHTML = vacants.map(p => {
+    const ex   = extras[p.id] || {};
+    const prev = rentLogs.find(e => e.unitId === p.id);
+    const rent = ex.rent || (prev ? (prev.newRent || prev.amount) : '') || '';
+    const rentStr = rent ? '₦' + Number(rent).toLocaleString() + '/yr' : 'Enquire for price';
+
+    const availFrom  = ex.availableFrom || p.availableFrom || '';
+    const availDt    = availFrom ? new Date(availFrom) : null;
+    const isNow      = !availDt || availDt <= today;
+    const availLabel = isNow
+      ? '<span style="color:#15803d;font-weight:700;font-size:.72rem">✅ Available Now</span>'
+      : '<span style="color:#b45309;font-weight:700;font-size:.72rem">📅 From ' + fmtDate(availFrom) + '</span>';
+
+    const amenities = (ex.amenities || p.amenities || []).slice(0, 4);
+    const amenHtml  = amenities.length
+      ? amenities.map(a => '<span style="font-size:.64rem;padding:1px 7px;border-radius:20px;background:rgba(201,150,12,.1);color:#7a5c00;border:1px solid rgba(201,150,12,.2)">' + (a.name||a) + '</span>').join(' ')
+      : '';
+
+    const img0 = ex.img0 || '';
+
+    return `<div class="nm-card" style="border-top:3px solid var(--gold);overflow:hidden;cursor:pointer" onclick="showPage('pgVacant',document.getElementById('navVacant'))">
+      ${img0 ? '<img src="'+img0+'" style="width:100%;height:100px;object-fit:cover;display:block"/>' : '<div style="height:60px;background:linear-gradient(135deg,var(--cream),var(--bg));display:flex;align-items:center;justify-content:center;font-size:2rem">'+icons[p.type]+'</div>'}
+      <div style="padding:12px 14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:.68rem;font-weight:700;color:var(--gold);text-transform:uppercase">${p.type}</span>
+          ${availLabel}
+        </div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:700;color:var(--ink);margin-bottom:2px">${p.label}</div>
+        <div style="font-size:.72rem;color:var(--dim);margin-bottom:8px">📍 ${p.location}</div>
+        ${amenHtml ? '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">' + amenHtml + '</div>' : ''}
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <strong style="color:var(--gold);font-size:.9rem">${rentStr}</strong>
+          <button class="btn btn-sm btn-gold" onclick="event.stopPropagation();showInterest('${p.id}')" style="font-size:.7rem;padding:4px 12px">Enquire →</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 /* -- ROLLING EXPIRY BANNER -- */
