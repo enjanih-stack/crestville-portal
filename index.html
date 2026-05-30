@@ -6786,6 +6786,11 @@ function openPropEdit(propId) {
 function closePropEdit() {
   document.getElementById('propEditModal').classList.remove('on');
   _editingPropId = null;
+  // Reset save button and status bar for next open
+  const saveBtn = document.querySelector('.pe-save-btn');
+  if (saveBtn) { saveBtn.innerHTML = '💾 Save Property'; saveBtn.style.background = ''; saveBtn.style.border = ''; saveBtn.disabled = false; }
+  const statusBar = document.getElementById('peSaveStatus');
+  if (statusBar) { statusBar.style.display = 'none'; statusBar.innerHTML = ''; }
 }
 
 /* -- VACANCY -- */
@@ -7023,7 +7028,21 @@ function savePropEdit() {
   // -- 4. Save to localStorage --
   saveLocal();
 
-  // -- 5. Re-sync _myRecord if this is the logged-in tenant's unit --
+  // -- 5. Show immediate in-modal success feedback --
+  const saveBtn = document.querySelector('.pe-save-btn');
+  if (saveBtn) {
+    saveBtn.innerHTML = '✅ Saved!';
+    saveBtn.style.background = '#15803d';
+    saveBtn.style.border = '1px solid #15803d';
+    saveBtn.disabled = true;
+  }
+  const statusBar = document.getElementById('peSaveStatus');
+  if (statusBar) {
+    statusBar.style.cssText = 'padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;color:#15803d;font-size:.82rem;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px';
+    statusBar.innerHTML = '✅ <strong>' + newLabel + '</strong> saved to device &nbsp;·&nbsp; <span style="color:#16a34a">Syncing to cloud...</span>';
+  }
+
+  // -- 6. Re-sync _myRecord if this is the logged-in tenant's unit --
   if (!isAdmin && currentUser && window._myRecord) {
     const myEmail = (currentUser.email||'').toLowerCase();
     if ((updatedRecord.tenantEmail||'').toLowerCase() === myEmail ||
@@ -7032,49 +7051,64 @@ function savePropEdit() {
     }
   }
 
-  // -- 6. Sync to Firestore -- plain .then(), never blocks UI --
+  // -- 7. Sync to Firestore -- plain .then(), never blocks UI --
   if(window._db) {
     const _syncRec = rentLogs[recIdx];
     Promise.race([
       window._db.collection('rentRecords').doc(_syncRec.id).set(_syncRec, {merge:true}),
       new Promise(function(_,r){ setTimeout(function(){ r(new Error('timeout')); }, 6000); })
     ]).then(function(){
+      if (statusBar && statusBar.parentNode) {
+        statusBar.innerHTML = '✅ <strong>' + newLabel + '</strong> saved &amp; synced to cloud ☁️';
+      }
       console.log('savePropEdit Firestore ok:', _syncRec.id);
     }).catch(function(err){
+      if (statusBar && statusBar.parentNode) {
+        statusBar.style.background = '#fef9e7';
+        statusBar.style.borderColor = '#fde68a';
+        statusBar.style.color = '#92400e';
+        statusBar.innerHTML = '✅ Saved locally &nbsp;·&nbsp; ⚠️ Cloud sync pending (check connection)';
+      }
       console.warn('savePropEdit Firestore:', err.message);
     });
   }
 
-  // -- 7. Refresh all views --
-  closePropEdit();
-  renderProperties();
-  renderRentManager();
-  renderAll();
-  if (!isAdmin && window._myRecord) {
-    loadMyProperty({});
-    setTimeout(renderTenantDashboard, 300);
-  }
+  // -- 8. Refresh all views then close after a short delay so user sees the success state --
+  setTimeout(function() {
+    closePropEdit();
+    renderProperties();
+    renderRentManager();
+    renderAll();
+    if (!isAdmin && window._myRecord) {
+      loadMyProperty({});
+      setTimeout(renderTenantDashboard, 300);
+    }
+  }, 1200); // 1.2s so user sees the green ✅ tick
 
-  // -- 8. Rich success notification --
-  const changes = [];
-  if (newRentNew)  changes.push(`New rent: ₦${Number(newRentNew).toLocaleString()}${newRentDate?' (eff. '+newRentDate+')':''}`);
+  // -- 9. Rich toast after modal closes --
+  setTimeout(function() {
+    const changes = [];
+    if (newRentNew)  changes.push('New rent: ₦' + Number(newRentNew).toLocaleString() + (newRentDate ? ' (eff. ' + newRentDate + ')' : ''));
+    if (newExpiry)   changes.push('Expiry: ' + newExpiry);
+    if (newEmail)    changes.push('Email: ' + newEmail);
+    if (newStart)    changes.push('Start: ' + newStart);
+    if (_editVacancy === 'vacant') changes.push('Unit marked as vacant');
+    notify('success',
+      newLabel + ' — Saved ✅',
+      'Property and tenant details updated.',
+      [
+        'Current rent: ₦' + Number(newRentAmt||0).toLocaleString(),
+        ...changes,
+        newTenant ? 'Tenant: ' + newTenant : null,
+        '📋 Rent Manager, Properties and Tenants updated',
+      ].filter(Boolean)
+    );
+  }, 1400);
+}
   if (newExpiry)   changes.push(`Expiry: ${newExpiry}`);
   if (newEmail)    changes.push(`Email: ${newEmail}`);
   if (newStart)    changes.push(`Start: ${newStart}`);
   if (_editVacancy === 'vacant') changes.push('Unit marked as vacant');
-
-  // Validate before finishing (non-blocking -- already done above if new flow)
-  notify('success',
-    `${newLabel} -- Saved`,
-    `Property and tenant details updated successfully.`,
-    [
-      `Current rent: ₦${Number(newRentAmt||0).toLocaleString()}`,
-      ...changes,
-      newTenant ? `Tenant: ${newTenant}` : null,
-      '📋 Rent Manager and all pages updated',
-    ].filter(Boolean)
-  );
-}
 
 /* ------------------------------------------------------------
    RENT MANAGER -- PASTE ROW IMPORT MODE
@@ -9391,9 +9425,10 @@ var _origBootApp = typeof _bootApp === 'function' ? _bootApp : null;
       </div>
 
       <!-- FOOTER BUTTONS -->
-      <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--rule)">
+      <div id="peSaveStatus" style="display:none"></div>
+      <div class="pe-footer" style="display:flex;gap:10px;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--rule)">
         <button class="btn btn-outline" onclick="closePropEdit()">Cancel</button>
-        <button class="btn btn-gold" onclick="savePropEdit()">💾 Save Property</button>
+        <button class="btn btn-gold pe-save-btn" onclick="savePropEdit()">💾 Save Property</button>
       </div>
 
     </div>
