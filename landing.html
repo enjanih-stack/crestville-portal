@@ -874,6 +874,7 @@ async function _afterAuth(user, errElId) {
     }
   } catch(e) {}
   const dest = 'https://enjanih-stack.github.io/crestville-portal/index.html';
+  sessionStorage.setItem('crs_from_landing', '1');
   showToast(isAdmin ? '✓ Admin access granted! Redirecting…' : '✓ Signed in! Redirecting…', 2000);
   setTimeout(() => window.location.href = dest, 1800);
 }

@@ -1358,7 +1358,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       <button class="refresh-btn" onclick="refreshPortal()">
         <span>↺</span> Refresh Portal
       </button>
-      <a class="home-btn" href="https://enjanih-stack.github.io/crestville-portal/landing.html" style="width:100%;margin-bottom:6px">
+      <a class="home-btn" href="https://enjanih-stack.github.io/crestville-portal/landing.html" target="_blank" rel="noopener" style="width:100%;margin-bottom:6px">
         <span>🏠</span> Home Page
       </a>
       <button class="logout-btn" onclick="doLogout()">
@@ -2328,7 +2328,9 @@ async function doLogout() {
     _logSession(currentUser.email, isAdmin?'admin':'tenant', 'logout');
     logActivity(currentUser.email, isAdmin?'admin':'tenant', 'login', 'Signed out', '');
   }
+  sessionStorage.removeItem('crs_from_landing');
   await firebase.auth().signOut();
+  window.location.replace(BASE_URL + '/landing.html');
 }
 function friendlyAuthError(code) {
   const m = {
@@ -2476,7 +2478,7 @@ async function continueWithRole() {
   if (_selectedRole === 'new_tenant') {
     // Close selector and redirect to landing page new tenant flow
     document.getElementById('roleSelectorOverlay').classList.remove('on');
-    window.location.href = BASE_URL + '/landing.html#new';
+    window.location.replace(BASE_URL + '/landing.html#new');
     return;
   }
 
@@ -2562,7 +2564,8 @@ function signOutAndReturn() {
   localStorage.removeItem(SESSION_STATE_KEY);  // clear saved state on manual sign out
   document.getElementById('roleSelectorOverlay').classList.remove('on');
   firebase.auth().signOut().then(() => {
-    window.location.href = BASE_URL + '/landing.html';
+    sessionStorage.removeItem('crs_from_landing');
+    window.location.replace(BASE_URL + '/landing.html');
   });
 }
 
@@ -2730,15 +2733,20 @@ function initAuth() {
       }
     } else {
       currentUser = null; isAdmin = false;
-      // If coming from landing.html, show auth screen
-      // If directly accessing index.html with no session, redirect to landing
-      const fromLanding = document.referrer.includes('landing.html') || 
-                          sessionStorage.getItem('crs_from_landing');
-      if (!fromLanding && !window.location.hash) {
-        // First visit — go to landing page
-        window.location.href = 'https://enjanih-stack.github.io/crestville-portal/landing.html';
-      } else {
+      // Always send unauthenticated visitors to landing.html
+      // landing.html handles New Tenant, Existing Tenant Login, and Admin Login
+      const isReturningFromAuth = sessionStorage.getItem('crs_from_landing') ||
+                                  document.referrer.includes('landing.html') ||
+                                  window.location.hash === '#login' ||
+                                  window.location.search.includes('auth=1');
+      if (isReturningFromAuth) {
+        // Coming back from landing with intent to auth — show auth screen
         showAuthScreen();
+      } else {
+        // First visit or direct URL access — send to landing
+        var dest = BASE_URL + '/landing.html';
+        if (window.location.hash) dest += window.location.hash;
+        window.location.replace(dest);
       }
     }
   });
@@ -6801,9 +6809,9 @@ function resetIdleTimer() {
 
 function idleSignOut() {
   stopIdleTimer();
-  // State was already saved when warning appeared
+  sessionStorage.removeItem('crs_from_landing');
   firebase.auth().signOut().then(function() {
-    window.location.href = (typeof BASE_URL !== 'undefined' ? BASE_URL : 'https://enjanih-stack.github.io/crestville-portal') + '/landing.html';
+    window.location.replace((typeof BASE_URL !== 'undefined' ? BASE_URL : 'https://enjanih-stack.github.io/crestville-portal') + '/landing.html');
   });
 }
 
