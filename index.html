@@ -2328,6 +2328,7 @@ async function doLogout() {
     _logSession(currentUser.email, isAdmin?'admin':'tenant', 'logout');
     logActivity(currentUser.email, isAdmin?'admin':'tenant', 'login', 'Signed out', '');
   }
+  _resetMyPropertyState();
   sessionStorage.removeItem('crs_from_landing');
   await firebase.auth().signOut();
   window.location.replace(BASE_URL + '/landing.html');
@@ -3061,6 +3062,19 @@ function renderRentManager() {
 const TEN_SESSION_KEY  = 'crs_sessions';
 const TEN_ACTIVITY_KEY = 'crs_activity';
 
+/* Switch active property for multi-unit tenants */
+function switchMyProperty(unitId) {
+  window._myActiveUnitId = unitId;
+  loadMyProperty({});
+}
+
+/* Reset active unit when user logs out */
+function _resetMyPropertyState() {
+  window._myActiveUnitId = null;
+  window._myRecord = null;
+  window._myAllRecs = [];
+}
+
 /* ── Tab switching ── */
 function tenSwitchTab(tab) {
   ['roster','sessions','activity'].forEach(function(t) {
@@ -3696,102 +3710,82 @@ async function loadMyProperty(userData) {
 
   body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem;margin-bottom:10px">⏳</div><div>Loading your tenancy...</div></div>';
 
-  let rawRec = null;
+  // ── Fetch ALL records for this tenant from every source ──
+  const allMyRaws = [];
+  const seenUnits = new Set();
 
-  // ── SOURCE 1: rentLogs (localStorage) ──
-  rawRec = rentLogs.find(function(e) {
-    return (e.tenantEmail || '').toLowerCase().trim() === myEmail;
-  });
-
-  // ── SOURCE 2: seed data (always available) ──
-  if (!rawRec && window._seedData) {
-    rawRec = window._seedData.find(function(e) {
-      return (e.tenantEmail || '').toLowerCase().trim() === myEmail;
-    });
-    if (rawRec) {
-      // Patch into rentLogs and localStorage so future loads are instant
-      const already = rentLogs.findIndex(function(e) {
-        return (e.unitId || e.unit || '') === (rawRec.unitId || rawRec.unit || '');
-      });
-      if (already >= 0) {
-        // Merge seed data into existing record (fills missing fields)
-        rentLogs[already] = Object.assign({}, rawRec, rentLogs[already], {
-          tenantEmail: rawRec.tenantEmail,
-          tenant:      rawRec.tenant || rentLogs[already].tenant,
-        });
-        rawRec = rentLogs[already];
-      } else {
-        rentLogs.push(rawRec);
-      }
-      try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {}
-    }
+  function _addRec(r) {
+    if (!r) return;
+    const key = (r.unitId || r.unit || '').toLowerCase().trim();
+    if (!key || seenUnits.has(key)) return;
+    seenUnits.add(key);
+    allMyRaws.push(r);
   }
 
-  // ── SOURCE 3: Firestore rentRecords (cloud — most up-to-date admin edits) ──
-  if (!rawRec && window._db) {
+  // Source 1: rentLogs
+  rentLogs.forEach(function(e) {
+    if ((e.tenantEmail || '').toLowerCase().trim() === myEmail) _addRec(e);
+  });
+  // Source 2: seed data
+  if (window._seedData) {
+    window._seedData.forEach(function(e) {
+      if ((e.tenantEmail || '').toLowerCase().trim() === myEmail) _addRec(e);
+    });
+  }
+  // Source 3: Firestore
+  if (window._db) {
     try {
       const snap = await window._db.collection('rentRecords')
-        .where('tenantEmail', '==', myEmail).limit(1).get();
-      if (!snap.empty) {
-        rawRec = snap.docs[0].data();
-        // Push into local cache
-        if (!rentLogs.find(function(e){ return e.id === rawRec.id; })) {
-          rentLogs.push(rawRec);
-          try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {}
-        }
-      }
+        .where('tenantEmail', '==', myEmail).get();
+      snap.docs.forEach(function(d) { _addRec(d.data()); });
     } catch(fsErr) {
-      // Firestore index might not be set up — fall back to full scan
       try {
-        const all = await window._db.collection('rentRecords').limit(50).get();
+        const all = await window._db.collection('rentRecords').limit(100).get();
         all.docs.forEach(function(d) {
-          if (rawRec) return;
           const data = d.data();
-          if ((data.tenantEmail || '').toLowerCase().trim() === myEmail) rawRec = data;
+          if ((data.tenantEmail || '').toLowerCase().trim() === myEmail) _addRec(data);
         });
-      } catch(e2) { /* offline */ }
+      } catch(e2) {}
     }
   }
 
-  const myRecord = rawRec
-    ? (typeof _normaliseRecord === 'function' ? _normaliseRecord(rawRec) : rawRec)
-    : null;
-  window._myRecord = myRecord || null;
+  // Normalise all records
+  const allMyRecords = allMyRaws.map(function(r) {
+    return typeof _normaliseRecord === 'function' ? _normaliseRecord(r) : r;
+  }).filter(function(r) { return r && (r.unitId || r.unit); });
 
-  if (!myRecord) {
-    // Check if this tenant has multiple units (e.g. nkechinyereanih60@gmail.com)
-    const allMyRecs = window._seedData
-      ? window._seedData.filter(function(e){ return (e.tenantEmail||'').toLowerCase().trim() === myEmail; })
-      : [];
+  // Patch found records into rentLogs
+  allMyRaws.forEach(function(rawRec) {
+    const already = rentLogs.findIndex(function(e) {
+      return (e.unitId || e.unit || '') === (rawRec.unitId || rawRec.unit || '');
+    });
+    if (already >= 0) {
+      rentLogs[already] = Object.assign({}, rawRec, rentLogs[already], {
+        tenantEmail: rawRec.tenantEmail, tenant: rawRec.tenant || rentLogs[already].tenant
+      });
+    } else if (rawRec.tenantEmail) { rentLogs.push(rawRec); }
+  });
+  if (allMyRaws.length > 0) {
+    try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {}
+  }
 
-    if (allMyRecs.length > 1) {
-      // Multi-unit tenant — show selector
-      body.innerHTML = '<div style="padding:24px">'
-        + '<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.1rem;font-weight:700;margin-bottom:14px">Your Tenancy Units</div>'
-        + '<p style="font-size:.84rem;color:var(--dim);margin-bottom:16px">You have multiple units registered to your email. Select one to view:</p>'
-        + allMyRecs.map(function(r) {
-            return '<div style="background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px;margin-bottom:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" '
-              + 'onclick="window._myRecord=window._normaliseRecord ? _normaliseRecord(window._seedData.find(function(s){return s.unitId===\''+r.unitId+'\'})) : window._seedData.find(function(s){return s.unitId===\''+r.unitId+'\'}); loadMyProperty({});">'
-              + '<div>'
-              + '<div style="font-weight:700">' + (r.unit||r.unitId) + '</div>'
-              + '<div style="font-size:.78rem;color:var(--dim)">' + (r.location||'') + '</div>'
-              + '</div>'
-              + '<span class="btn btn-outline" style="font-size:.76rem">View →</span>'
-              + '</div>';
-          }).join('')
-        + '</div>';
-      return;
-    }
-
+  if (!allMyRecords.length) {
     body.innerHTML = '<div style="text-align:center;padding:60px 24px;color:var(--dim)">'
       + '<div style="font-size:3rem;margin-bottom:14px">🔑</div>'
       + '<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.1rem;font-weight:700;color:var(--ink);margin-bottom:8px">No tenancy record linked</div>'
       + '<div style="font-size:.84rem;line-height:1.75">Your account (<strong>' + myEmail + '</strong>) is not yet linked to a tenancy.<br>'
-      + 'Please contact <strong><a href="mailto:crestechnologies@outlook.com" style="color:var(--gold)">crestechnologies@outlook.com</a></strong> to link your account.</div>'
-      + '<div style="margin-top:16px;font-size:.76rem;color:var(--dim)">Make sure you are logged in with your registered email address.</div>'
-      + '</div>';
+      + 'Contact: <a href="mailto:crestechnologies@outlook.com" style="color:var(--gold)">crestechnologies@outlook.com</a></div></div>';
+    window._myRecord = null; window._myAllRecs = [];
     return;
   }
+
+  // Track which unit is active — default to first
+  if (!window._myActiveUnitId || !allMyRecords.find(function(r){ return (r.unitId||r.unit)===window._myActiveUnitId; })) {
+    window._myActiveUnitId = allMyRecords[0].unitId || allMyRecords[0].unit;
+  }
+  const myRecord = allMyRecords.find(function(r){ return (r.unitId||r.unit)===window._myActiveUnitId; }) || allMyRecords[0];
+  window._myRecord  = myRecord;
+  window._myAllRecs = allMyRecords;
 
   const today = new Date(); today.setHours(0,0,0,0);
   const startD = myRecord.start ? new Date(myRecord.start) : null;
@@ -3838,7 +3832,36 @@ async function loadMyProperty(userData) {
   const propObj = PROPERTIES.find(p => p.id === (myRecord.unitId||myRecord.unit));
   const locStr  = myRecord.location || propObj?.location || '';
 
-  body.innerHTML = alertStrip + `
+  // ── Build multi-property switcher bar (shown when tenant has > 1 unit) ──
+  let switcherHtml = '';
+  if (allMyRecords.length > 1) {
+    const today0 = new Date(); today0.setHours(0,0,0,0);
+    switcherHtml = '<div style="margin-bottom:16px">'
+      + '<div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:8px">YOUR PROPERTIES (' + allMyRecords.length + ')</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+      + allMyRecords.map(function(r) {
+          const isActive = (r.unitId||r.unit) === (myRecord.unitId||myRecord.unit);
+          const exp = r.expiry ? new Date(r.expiry) : null;
+          if (exp) exp.setHours(0,0,0,0);
+          const days = exp ? Math.round((exp - today0) / 864e5) : null;
+          const daysLabel = days === null ? '' : days < 0
+            ? ' · <span style="color:var(--red)">'+Math.abs(days)+'d overdue</span>'
+            : ' · <span style="color:#15803d">'+days+'d left</span>';
+          const rent = r.newRent || r.amount || '';
+          return '<div onclick="window._myActiveUnitId=\'' + (r.unitId||r.unit).replace(/'/g,"\\'") + '\';loadMyProperty({});" '
+            + 'style="cursor:pointer;padding:10px 14px;border-radius:8px;border:2px solid '
+            + (isActive ? 'var(--gold)' : 'var(--rule)') + ';background:'
+            + (isActive ? 'rgba(201,150,12,.08)' : 'var(--card)') + ';flex:1;min-width:160px;transition:all .18s">'
+            + '<div style="font-size:.76rem;font-weight:700;color:' + (isActive ? 'var(--gold)' : 'var(--ink)') + '">'
+            + (r.unit||r.unitId) + '</div>'
+            + '<div style="font-size:.68rem;color:var(--dim);margin-top:2px">' + (r.city||'') + daysLabel + '</div>'
+            + (rent ? '<div style="font-size:.72rem;font-weight:600;margin-top:4px">₦'+Number(rent).toLocaleString()+'/yr</div>' : '')
+            + '</div>';
+        }).join('')
+      + '</div></div>';
+  }
+
+  body.innerHTML = switcherHtml + alertStrip + `
     <!-- TABS -->
     <div class="tp-tabs">
       <div class="tp-tab on" onclick="tpSwitch('tpOverview')">&#127968; Overview</div>
