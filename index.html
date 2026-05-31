@@ -1587,12 +1587,30 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
               <option value="">All Status</option>
               <option value="active">Active</option>
               <option value="overdue">Overdue</option>
+              <option value="expiring">Expiring ≤60d</option>
             </select>
           </div>
+
+          <!-- Bulk action bar — shown when rows are selected -->
+          <div id="rmBulkBar" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:rgba(201,150,12,.1);border:1px solid rgba(201,150,12,.3);border-radius:8px;margin-bottom:10px;flex-wrap:wrap">
+            <span id="rmBulkCount" style="font-size:.82rem;font-weight:700;color:#7a5c00">0 selected</span>
+            <button class="btn btn-outline btn-sm" onclick="rmSelectAll()" style="font-size:.74rem">☑ Select All</button>
+            <button class="btn btn-outline btn-sm" onclick="rmClearSelection()" style="font-size:.74rem">☐ Clear</button>
+            <button class="btn btn-sm" onclick="rmBulkDelete()" style="background:rgba(140,31,31,.1);color:var(--red);border:1px solid rgba(140,31,31,.3);font-size:.74rem;padding:5px 12px;border-radius:5px;cursor:pointer">🗑 Delete Selected</button>
+            <button class="btn btn-sm btn-outline" onclick="rmBulkExport()" style="font-size:.74rem">⬆ Export Selected</button>
+          </div>
+
           <div class="sec-card">
             <div class="sec-body overflow-table" style="padding:0">
               <table class="data-table" id="rmTable">
-                <thead><tr><th>Unit / Location</th><th>Tenant</th><th>Rent (₦)</th><th>Start</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+                <thead><tr>
+                  <th style="width:36px;text-align:center">
+                    <input type="checkbox" id="rmSelectAllChk" title="Select all" onchange="rmToggleAll(this.checked)"
+                      style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer"/>
+                  </th>
+                  <th style="width:36px;text-align:center;color:var(--dim);font-size:.7rem">#</th>
+                  <th>Unit / Location</th><th>Tenant</th><th>Rent (₦)</th><th>Start</th><th>Expiry</th><th>Status</th><th>Actions</th>
+                </tr></thead>
                 <tbody id="rmBody"></tbody>
               </table>
             </div>
@@ -1601,18 +1619,97 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       </div>
 
       <!-- ── TENANTS (admin) ── -->
-      <div class="pg" id="pgTenants">
-        <div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()" title="Go back">&#8592;</button><button class="pnb-btn" onclick="historyFwd()" title="Go forward">&#8594;</button><div class="pnb-crumb" id="navCrumb"></div></div>
-        <div class="page-header"><div><h1>Tenants</h1><div class="ph-sub">All registered portal users</div></div></div>
+      <div class="pg admin-only" id="pgTenants">
+        <div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()">&#8592;</button><button class="pnb-btn" onclick="historyFwd()">&#8594;</button><div class="pnb-crumb"></div></div>
+        <div class="page-header">
+          <div><h1>Tenants</h1><div class="ph-sub">Roster, session log &amp; activity audit — admin only</div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-outline" onclick="loadTenantsTable()" style="font-size:.78rem">🔄 Refresh</button>
+            <button class="btn btn-outline" onclick="tenantExportCSV()" style="font-size:.78rem;background:rgba(26,92,46,.08);border-color:rgba(26,92,46,.3);color:var(--green)">⬆ Export</button>
+          </div>
+        </div>
         <div class="page-body">
-          <div class="sec-card">
-            <div class="sec-body overflow-table" style="padding:0">
+
+          <!-- Sub-tabs -->
+          <div style="display:flex;border-bottom:2px solid var(--rule);margin-bottom:18px;gap:0">
+            <div class="tp-tab on" id="tenTabRoster" onclick="tenSwitchTab('roster')" style="font-size:.8rem">👥 Tenant Roster</div>
+            <div class="tp-tab" id="tenTabSessions" onclick="tenSwitchTab('sessions')" style="font-size:.8rem">🔐 Session Log</div>
+            <div class="tp-tab" id="tenTabActivity" onclick="tenSwitchTab('activity')" style="font-size:.8rem">📋 Activity Audit</div>
+          </div>
+
+          <!-- PANEL: Roster -->
+          <div id="tenPanelRoster">
+            <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+              <input id="tenSearch" placeholder="🔍 Search name, email, unit..." oninput="loadTenantsTable()"
+                style="flex:1;min-width:200px;padding:9px 14px;border:1px solid var(--rule);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.84rem;background:var(--card);outline:none"/>
+              <select id="tenFilter" onchange="loadTenantsTable()"
+                style="padding:9px 12px;border:1px solid var(--rule);border-radius:6px;font-size:.78rem;background:var(--card)">
+                <option value="">All Tenants</option>
+                <option value="active">Active Only</option>
+                <option value="overdue">Overdue</option>
+                <option value="expiring">Expiring ≤60d</option>
+                <option value="noemail">No Email</option>
+              </select>
+            </div>
+            <div id="tenRosterCount" style="font-size:.76rem;color:var(--dim);margin-bottom:10px"></div>
+            <div class="sec-card"><div class="sec-body overflow-table" style="padding:0">
               <table class="data-table">
-                <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Linked Unit</th><th>Registered</th></tr></thead>
+                <thead><tr>
+                  <th style="width:30px;text-align:center">#</th>
+                  <th>Tenant</th><th>Unit / Location</th><th>Email</th>
+                  <th>Rent</th><th>Start</th><th>Expiry</th><th>Status</th><th>Actions</th>
+                </tr></thead>
                 <tbody id="tenantsBody"></tbody>
               </table>
-            </div>
+            </div></div>
           </div>
+
+          <!-- PANEL: Session Log -->
+          <div id="tenPanelSessions" style="display:none">
+            <div style="font-size:.76rem;color:var(--dim);margin-bottom:12px">
+              Login sessions recorded for this device. Shows time, email, role and duration.
+            </div>
+            <div class="sec-card"><div class="sec-body overflow-table" style="padding:0">
+              <table class="data-table">
+                <thead><tr>
+                  <th style="width:30px;text-align:center">#</th>
+                  <th>Date &amp; Time</th><th>User / Email</th><th>Role</th>
+                  <th>Duration</th><th>Browser</th><th>Status</th>
+                </tr></thead>
+                <tbody id="tenSessionsBody"></tbody>
+              </table>
+            </div></div>
+          </div>
+
+          <!-- PANEL: Activity Audit -->
+          <div id="tenPanelActivity" style="display:none">
+            <div style="font-size:.76rem;color:var(--dim);margin-bottom:12px">
+              All changes made by admin and tenants — edits, approvals, notices, logins and data modifications.
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+              <select id="tenActivityFilter" onchange="renderActivityLog()"
+                style="padding:7px 12px;border:1px solid var(--rule);border-radius:6px;font-size:.78rem;background:var(--card)">
+                <option value="">All Activity</option>
+                <option value="login">Logins</option>
+                <option value="edit">Record Edits</option>
+                <option value="mod">Mod. Requests</option>
+                <option value="notice">Notices</option>
+                <option value="delete">Deletions</option>
+              </select>
+              <button class="btn btn-outline btn-sm" onclick="clearActivityLog()" style="font-size:.74rem;color:var(--red)">🗑 Clear Log</button>
+            </div>
+            <div class="sec-card"><div class="sec-body overflow-table" style="padding:0">
+              <table class="data-table">
+                <thead><tr>
+                  <th style="width:30px;text-align:center">#</th>
+                  <th>Date &amp; Time</th><th>Who</th><th>Role</th>
+                  <th>Action</th><th>Detail</th>
+                </tr></thead>
+                <tbody id="tenActivityBody"></tbody>
+              </table>
+            </div></div>
+          </div>
+
         </div>
       </div>
 
@@ -2060,6 +2157,10 @@ async function doRegister() {
 }
 
 async function doLogout() {
+  if (currentUser) {
+    _logSession(currentUser.email, isAdmin?'admin':'tenant', 'logout');
+    logActivity(currentUser.email, isAdmin?'admin':'tenant', 'login', 'Signed out', '');
+  }
   await firebase.auth().signOut();
 }
 function friendlyAuthError(code) {
@@ -2332,6 +2433,11 @@ async function _bootApp(user, userData, adminMode) {
   if (savedState) {
     setTimeout(function() { applySessionState(savedState); }, 800);
   }
+
+  // Log login session and activity
+  _logSession(user.email, adminMode ? 'admin' : 'tenant', 'login');
+  logActivity(user.email, adminMode ? 'admin' : 'tenant', 'login',
+    'Signed in', adminMode ? 'Admin login' : 'Tenant login');
 
   // Pull cloud data in background — does NOT block the UI
   pullFromCloud(true).catch(e => console.warn('pullFromCloud:', e));
@@ -2699,20 +2805,25 @@ function renderRentManager() {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--dim);padding:20px">No records found</td></tr>';
     return;
   }
-  tbody.innerHTML = filtered.map((e,i) => {
+  // Track selected indices across renders
+  if (!window._rmSelected) window._rmSelected = new Set();
+
+  tbody.innerHTML = filtered.map((e, rowNum) => {
     const exp = e.expiry ? new Date(e.expiry) : null;
     if(exp) exp.setHours(0,0,0,0);
     const today2 = new Date(); today2.setHours(0,0,0,0);
     const isOverdue = exp && exp < today2;
     const label = getPropertyLabel(e.unitId||e.unit);
     const idx = rentLogs.indexOf(e);
-    // Calculate days left for colour coding
+    const serialNo = rowNum + 1;
+    const isChecked = window._rmSelected.has(idx);
     const daysLeft2 = exp ? Math.round((exp - today2) / 864e5) : null;
     const rowBg = daysLeft2 !== null
       ? (daysLeft2 < 0   ? 'background:rgba(140,31,31,.06);'
       : daysLeft2 <= 60  ? 'background:rgba(140,31,31,.04);'
       : daysLeft2 <= 90  ? 'background:rgba(234,120,20,.04);' : '')
       : '';
+    const rowOutline = isChecked ? 'outline:2px solid var(--gold);outline-offset:-2px;' : '';
     const expiryCell = e.expiry
       ? `<span style="font-size:.82rem">${fmtTableDate(e.expiry)}</span>`
         + (daysLeft2 !== null ? `<br><span style="font-size:.68rem;font-weight:700;${
@@ -2727,7 +2838,13 @@ function renderRentManager() {
           }</span>` : '')
       : '<span style="color:var(--dim);font-size:.8rem">—</span>';
 
-    return `<tr style="${rowBg}">
+    return `<tr style="${rowBg}${rowOutline}" id="rmRow_${idx}">
+      <td style="text-align:center;padding:8px 6px">
+        <input type="checkbox" value="${idx}" ${isChecked?'checked':''}
+          style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer"
+          onchange="rmRowCheck(this)"/>
+      </td>
+      <td style="text-align:center;font-size:.72rem;color:var(--dim);font-weight:700;padding:8px 4px">${serialNo}</td>
       <td style="max-width:180px"><div style="font-weight:600;font-size:.82rem">${label}</div>
         <div style="font-size:.7rem;color:var(--dim)">${e.tenantEmail||''}</div></td>
       <td>
@@ -2735,7 +2852,7 @@ function renderRentManager() {
         ${e.contractName && e.contractName !== e.tenant ? '<div style="font-size:.68rem;color:var(--gold);margin-top:1px">Contract: '+e.contractName+'</div>' : ''}
         <div style="font-size:.7rem;color:var(--dim)">${e.tenantPhone||''}</div>
       </td>
-      <td><strong>₦${Number(e.amount).toLocaleString()}</strong></td>
+      <td><strong>₦${Number(e.amount||0).toLocaleString()}</strong></td>
       <td style="font-size:.82rem">
         ${e.start ? fmtTableDate(e.start) : '<span style="color:var(--dim)">—</span>'}
         ${e.lastPayment ? '<div style="font-size:.68rem;color:var(--dim);margin-top:1px">Last paid: '+fmtTableDate(e.lastPayment)+'</div>' : ''}
@@ -2751,9 +2868,458 @@ function renderRentManager() {
       </td>
     </tr>`;
   }).join('');
+
+  // Sync select-all checkbox state
+  const allChk = document.getElementById('rmSelectAllChk');
+  if (allChk && filtered.length > 0) {
+    const allSelected = filtered.every(e => window._rmSelected.has(rentLogs.indexOf(e)));
+    const someSelected = filtered.some(e => window._rmSelected.has(rentLogs.indexOf(e)));
+    allChk.checked = allSelected;
+    allChk.indeterminate = !allSelected && someSelected;
+  }
+  _rmUpdateBulkBar();
 }
 
-/* ═══ ADD / EDIT RENT RECORD ══════════════════════════ */
+/* ============================================================
+   TENANTS PAGE — Roster + Session Log + Activity Audit
+   ============================================================ */
+const TEN_SESSION_KEY  = 'crs_sessions';
+const TEN_ACTIVITY_KEY = 'crs_activity';
+
+/* ── Tab switching ── */
+function tenSwitchTab(tab) {
+  ['roster','sessions','activity'].forEach(function(t) {
+    var panel = document.getElementById('tenPanel' + t.charAt(0).toUpperCase() + t.slice(1));
+    var btn   = document.getElementById('tenTab'   + t.charAt(0).toUpperCase() + t.slice(1));
+    if (panel) panel.style.display = t === tab ? '' : 'none';
+    if (btn)   btn.classList.toggle('on', t === tab);
+  });
+  if (tab === 'sessions') renderSessionLog();
+  if (tab === 'activity') renderActivityLog();
+}
+
+/* ── Session logging ── */
+function _logSession(email, role, event) {
+  var sessions = [];
+  try { sessions = JSON.parse(localStorage.getItem(TEN_SESSION_KEY) || '[]'); } catch(e) {}
+  var now = new Date().toISOString();
+  if (event === 'login') {
+    sessions.unshift({
+      id: 'ses_' + Date.now(),
+      email: (email||'').toLowerCase(),
+      role: role || 'tenant',
+      loginAt: now,
+      logoutAt: null,
+      duration: null,
+      ua: (navigator.userAgent||'').slice(0,80),
+      status: 'active',
+    });
+    // Keep last 200 sessions
+    if (sessions.length > 200) sessions = sessions.slice(0, 200);
+  } else if (event === 'logout') {
+    var active = sessions.find(function(s) {
+      return s.email === (email||'').toLowerCase() && s.status === 'active';
+    });
+    if (active) {
+      active.logoutAt = now;
+      active.status = 'ended';
+      var mins = Math.round((new Date(now) - new Date(active.loginAt)) / 60000);
+      active.duration = mins < 60 ? mins + ' min' : Math.round(mins/60) + ' hr ' + (mins%60) + ' min';
+    }
+  }
+  localStorage.setItem(TEN_SESSION_KEY, JSON.stringify(sessions));
+}
+
+/* ── Activity logging ── */
+function logActivity(who, role, type, action, detail) {
+  var log = [];
+  try { log = JSON.parse(localStorage.getItem(TEN_ACTIVITY_KEY) || '[]'); } catch(e) {}
+  log.unshift({
+    id: 'act_' + Date.now(),
+    at: new Date().toISOString(),
+    who: (who || 'System').slice(0, 40),
+    role: role || 'admin',
+    type: type || 'edit',
+    action: (action || '').slice(0, 60),
+    detail: (detail || '').slice(0, 120),
+  });
+  if (log.length > 500) log = log.slice(0, 500);
+  localStorage.setItem(TEN_ACTIVITY_KEY, JSON.stringify(log));
+}
+function clearActivityLog() {
+  if (!confirm('Clear all activity log entries?')) return;
+  localStorage.removeItem(TEN_ACTIVITY_KEY);
+  renderActivityLog();
+  notify('success', 'Activity Log Cleared', '');
+}
+
+/* ── Render Session Log ── */
+function renderSessionLog() {
+  var tbody = document.getElementById('tenSessionsBody');
+  if (!tbody) return;
+  var sessions = [];
+  try { sessions = JSON.parse(localStorage.getItem(TEN_SESSION_KEY) || '[]'); } catch(e) {}
+
+  if (!sessions.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--dim);padding:20px">No sessions recorded yet. Sessions are logged on login/logout.</td></tr>';
+    return;
+  }
+
+  var fmtDt = function(iso) {
+    if (!iso) return '—';
+    try {
+      var d = new Date(iso);
+      return d.toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})
+           + ' ' + d.toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'});
+    } catch(e) { return iso; }
+  };
+  var uaShort = function(ua) {
+    if (!ua) return '—';
+    if (/Chrome/i.test(ua) && !/Edge/i.test(ua)) return '🌐 Chrome';
+    if (/Firefox/i.test(ua)) return '🦊 Firefox';
+    if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) return '🍎 Safari';
+    if (/Edge/i.test(ua)) return '🔵 Edge';
+    if (/Mobile/i.test(ua)) return '📱 Mobile';
+    return '💻 Browser';
+  };
+
+  tbody.innerHTML = sessions.map(function(s, i) {
+    var isActive = s.status === 'active';
+    return '<tr>'
+      + '<td style="text-align:center;font-size:.72rem;color:var(--dim)">' + (i+1) + '</td>'
+      + '<td style="font-size:.78rem">' + fmtDt(s.loginAt) + '</td>'
+      + '<td><div style="font-size:.82rem;font-weight:600">' + (s.email||'—') + '</div></td>'
+      + '<td><span style="font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:12px;'
+          + (s.role==='admin' ? 'background:rgba(201,150,12,.15);color:#7a5c00' : 'background:rgba(26,92,46,.12);color:#15803d')
+          + '">' + (s.role||'tenant').toUpperCase() + '</span></td>'
+      + '<td style="font-size:.78rem">' + (s.duration || (isActive ? '<span style="color:#15803d;font-weight:700">● Active now</span>' : '—')) + '</td>'
+      + '<td style="font-size:.75rem">' + uaShort(s.ua) + '</td>'
+      + '<td><span style="font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:12px;'
+          + (isActive ? 'background:#f0fdf4;color:#15803d' : 'background:var(--cream);color:var(--dim)')
+          + '">' + (isActive ? 'Active' : 'Ended') + '</span></td>'
+      + '</tr>';
+  }).join('');
+}
+
+/* ── Render Activity Log ── */
+function renderActivityLog() {
+  var tbody = document.getElementById('tenActivityBody');
+  if (!tbody) return;
+  var log = [];
+  try { log = JSON.parse(localStorage.getItem(TEN_ACTIVITY_KEY) || '[]'); } catch(e) {}
+
+  var filter = document.getElementById('tenActivityFilter')?.value || '';
+  var shown = filter ? log.filter(function(e){ return e.type === filter; }) : log;
+
+  if (!shown.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--dim);padding:20px">No activity recorded yet.</td></tr>';
+    return;
+  }
+
+  var fmtDt = function(iso) {
+    if (!iso) return '—';
+    try {
+      var d = new Date(iso);
+      return d.toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})
+           + '<br><span style="font-size:.68rem;color:var(--dim)">' + d.toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'}) + '</span>';
+    } catch(e) { return iso; }
+  };
+  var typeIcon = { login:'🔐', edit:'✏️', mod:'📝', notice:'📢', delete:'🗑', add:'➕', export:'⬆', sync:'☁️' };
+  var typeCls  = { login:'background:#f0fdf4;color:#15803d', edit:'background:#fef9e7;color:#7a5c00',
+                   mod:'background:#eff6ff;color:#1d4ed8',  notice:'background:#f5f0ff;color:#5b21b6',
+                   delete:'background:rgba(140,31,31,.08);color:var(--red)', add:'background:#f0fdf4;color:#15803d' };
+
+  tbody.innerHTML = shown.map(function(e, i) {
+    var icon = typeIcon[e.type] || '📌';
+    var cls  = typeCls[e.type]  || 'background:var(--cream);color:var(--dim)';
+    return '<tr>'
+      + '<td style="text-align:center;font-size:.72rem;color:var(--dim)">' + (i+1) + '</td>'
+      + '<td style="font-size:.75rem">' + fmtDt(e.at) + '</td>'
+      + '<td style="font-size:.8rem;font-weight:600">' + (e.who||'—') + '</td>'
+      + '<td><span style="font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:12px;'
+          + (e.role==='admin' ? 'background:rgba(201,150,12,.15);color:#7a5c00' : 'background:rgba(26,92,46,.12);color:#15803d')
+          + '">' + (e.role||'admin').toUpperCase() + '</span></td>'
+      + '<td><span style="font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:12px;' + cls + '">'
+          + icon + ' ' + (e.type||'').toUpperCase() + '</span></td>'
+      + '<td style="font-size:.78rem"><div style="font-weight:600">' + (e.action||'—') + '</div>'
+          + (e.detail ? '<div style="font-size:.7rem;color:var(--dim);margin-top:2px">' + e.detail + '</div>' : '')
+        + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+/* ── Roster table ── */
+function loadTenantsTable() {
+  var tbody = document.getElementById('tenantsBody');
+  var countEl = document.getElementById('tenRosterCount');
+  if (!tbody) return;
+
+  var search = (document.getElementById('tenSearch')?.value || '').toLowerCase();
+  var filter = document.getElementById('tenFilter')?.value || '';
+  var today = new Date(); today.setHours(0,0,0,0);
+
+  // Build roster from rentLogs + seed, deduped by unitId
+  var unitMap = new Map();
+  var allRecs = rentLogs.concat(
+    (window._seedData || []).filter(function(s) {
+      return !rentLogs.find(function(r) { return (r.unitId||r.unit||'') === s.unitId; });
+    })
+  );
+  allRecs.forEach(function(r) {
+    var key = (r.unitId||r.unit||'').trim().toLowerCase();
+    if (!key || key === 'unit_id' || key === 'unit') return;
+    if (!unitMap.has(key)) unitMap.set(key, r);
+  });
+  var records = Array.from(unitMap.values());
+
+  // Apply search + filter
+  var filtered = records.filter(function(r) {
+    var searchStr = (r.tenant+r.tenantEmail+r.unit+r.unitId+r.location).toLowerCase();
+    var matchSearch = !search || searchStr.includes(search);
+    var exp = r.expiry ? new Date(r.expiry) : null;
+    if (exp) exp.setHours(0,0,0,0);
+    var daysLeft = exp ? Math.round((exp - today) / 864e5) : null;
+    var matchFilter = !filter
+      || (filter==='active'   && daysLeft!==null && daysLeft>=0)
+      || (filter==='overdue'  && daysLeft!==null && daysLeft<0)
+      || (filter==='expiring' && daysLeft!==null && daysLeft>=0 && daysLeft<=60)
+      || (filter==='noemail'  && !r.tenantEmail);
+    return matchSearch && matchFilter;
+  });
+
+  // Sort: overdue first, then by days left ascending
+  filtered.sort(function(a, b) {
+    var expA = a.expiry ? new Date(a.expiry) : null;
+    var expB = b.expiry ? new Date(b.expiry) : null;
+    var dA = expA ? Math.round((expA-today)/864e5) : 999;
+    var dB = expB ? Math.round((expB-today)/864e5) : 999;
+    return dA - dB;
+  });
+
+  var totalRevenue = filtered.reduce(function(sum,r){ return sum + (parseFloat((r.amount||'0').replace(/[^0-9.]/g,''))||0); }, 0);
+  var withEmail = filtered.filter(function(r){ return r.tenantEmail; }).length;
+  if (countEl) countEl.innerHTML =
+    '<strong>' + filtered.length + '</strong> tenant' + (filtered.length!==1?'s':'') +
+    ' · <span style="color:#15803d">' + withEmail + ' with email</span>' +
+    ' · Total rent: <strong>₦' + Math.round(totalRevenue).toLocaleString() + '/yr</strong>';
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--dim);padding:20px">No tenants match this filter.</td></tr>';
+    return;
+  }
+
+  var fmtDate = function(d) {
+    if (!d) return '—';
+    try { return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); }
+    catch(e) { return d; }
+  };
+
+  tbody.innerHTML = filtered.map(function(r, i) {
+    var exp = r.expiry ? new Date(r.expiry) : null;
+    if (exp) exp.setHours(0,0,0,0);
+    var daysLeft = exp ? Math.round((exp - today) / 864e5) : null;
+    var isOverdue  = daysLeft !== null && daysLeft < 0;
+    var isCritical = daysLeft !== null && daysLeft >= 0 && daysLeft <= 14;
+    var isExpiring = daysLeft !== null && daysLeft >= 0 && daysLeft <= 60;
+    var label = getPropertyLabel ? getPropertyLabel(r.unitId||r.unit) : (r.unit||r.unitId||'—');
+    var idx = rentLogs.indexOf(r);
+
+    var statusBadge = isOverdue
+      ? '<span class="badge badge-overdue">Overdue</span>'
+      : isCritical ? '<span class="badge badge-overdue" style="background:rgba(140,31,31,.1)">Critical</span>'
+      : isExpiring ? '<span class="badge" style="background:rgba(201,150,12,.12);color:#7a5c00;border-color:rgba(201,150,12,.3)">Expiring</span>'
+      : '<span class="badge badge-active">Active</span>';
+
+    var daysLabel = daysLeft === null ? '—'
+      : daysLeft < 0 ? '<span style="color:var(--red);font-weight:700">🔴 ' + Math.abs(daysLeft) + 'd overdue</span>'
+      : daysLeft <= 14 ? '<span style="color:var(--red);font-weight:700">🔴 ' + daysLeft + 'd left</span>'
+      : daysLeft <= 60 ? '<span style="color:#b45309;font-weight:700">🟠 ' + daysLeft + 'd left</span>'
+      : '<span style="color:#15803d">🟢 ' + daysLeft + 'd left</span>';
+
+    var rowBg = isOverdue ? 'background:rgba(140,31,31,.04)' : isExpiring ? 'background:rgba(201,150,12,.03)' : '';
+
+    return '<tr style="' + rowBg + '">'
+      + '<td style="text-align:center;font-size:.72rem;color:var(--dim);font-weight:600">' + (i+1) + '</td>'
+      + '<td>'
+          + '<div style="font-size:.84rem;font-weight:700">' + (r.tenant||'—') + '</div>'
+          + (r.contractName && r.contractName!==r.tenant ? '<div style="font-size:.68rem;color:var(--gold)">Contract: ' + r.contractName + '</div>' : '')
+          + (r.tenantPhone ? '<div style="font-size:.7rem;color:var(--dim)">' + r.tenantPhone + '</div>' : '')
+        + '</td>'
+      + '<td style="max-width:160px"><div style="font-size:.78rem;font-weight:600">' + label + '</div>'
+          + '<div style="font-size:.68rem;color:var(--dim)">' + (r.location||r.city||'') + '</div></td>'
+      + '<td style="font-size:.78rem">'
+          + (r.tenantEmail
+            ? '<a href="mailto:' + r.tenantEmail + '" style="color:var(--gold)">' + r.tenantEmail + '</a>'
+            : '<span style="color:var(--dim);font-style:italic">No email</span>') + '</td>'
+      + '<td style="font-size:.82rem"><strong>₦' + Number((r.amount||'0').toString().replace(/[^0-9.]/g,'')||0).toLocaleString() + '</strong>'
+          + (r.newRent ? '<div style="font-size:.68rem;color:var(--gold)">New: ₦' + Number(r.newRent).toLocaleString() + '</div>' : '') + '</td>'
+      + '<td style="font-size:.78rem">' + fmtDate(r.start) + '</td>'
+      + '<td style="font-size:.78rem">' + fmtDate(r.expiry) + '<br>' + daysLabel + '</td>'
+      + '<td>' + statusBadge + '</td>'
+      + '<td style="white-space:nowrap">'
+          + (idx>=0 ? '<button class="btn btn-sm btn-outline" onclick="editRentRecord(' + idx + ')" title="Edit">✏️</button> ' : '')
+          + (r.tenantEmail ? '<button class="btn btn-sm" onclick="window.location.href=\'mailto:' + r.tenantEmail + '\'" title="Email" style="background:rgba(201,150,12,.1);border:1px solid rgba(201,150,12,.3);padding:5px 8px;border-radius:5px;font-size:.75rem;cursor:pointer">📧</button>' : '')
+        + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+/* ── Export roster ── */
+function tenantExportCSV() {
+  var today = new Date(); today.setHours(0,0,0,0);
+  var rows = rentLogs.filter(function(r){ return r.tenant||r.unitId; });
+  var headers = ['#','Tenant','Unit','Email','Phone','Amount','NewRent','Start','Expiry','DaysLeft','Status','Notes'];
+  var csv = [headers.join(',')].concat(rows.map(function(r,i){
+    var exp = r.expiry ? new Date(r.expiry) : null;
+    if(exp) exp.setHours(0,0,0,0);
+    var days = exp ? Math.round((exp-today)/864e5) : '';
+    var status = !exp ? 'Unknown' : days<0 ? 'Overdue' : days<=60 ? 'Expiring' : 'Active';
+    return [i+1,'"'+(r.tenant||'').replace(/"/g,'""')+'"','"'+(r.unit||r.unitId||'').replace(/"/g,'""')+'"',
+      r.tenantEmail||'',r.tenantPhone||'',r.amount||'',r.newRent||'',r.start||'',r.expiry||'',days,status,
+      '"'+(r.notes||'').replace(/"/g,'""')+'"'].join(',');
+  })).join('\n');
+  var blob = new Blob([csv],{type:'text/csv'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'CRS_Tenants_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  logActivity('Admin','admin','export','Exported tenant roster','All ' + rows.length + ' records');
+  notify('success','Roster Exported',rows.length + ' tenants downloaded.');
+}
+
+/* ── Hook activity logging into key actions ── */
+(function() {
+  var _origSave = typeof saveRentRecord==='function' ? saveRentRecord : null;
+  window.saveRentRecord = async function() {
+    var unitEl = document.getElementById('rmUnit');
+    var tenEl  = document.getElementById('rmTenant');
+    var unit   = unitEl ? unitEl.value : '';
+    var tenant = tenEl  ? tenEl.value  : '';
+    var who    = (currentUser && currentUser.email) || 'Admin';
+    var role   = (typeof isAdmin!=='undefined'&&isAdmin) ? 'admin' : 'tenant';
+    var isEdit = document.getElementById('rmEditId')?.value !== '';
+    if (typeof _origSave==='function') await _origSave.apply(this, arguments);
+    logActivity(who, role, isEdit?'edit':'add', (isEdit?'Edited':'Added') + ' record', tenant + ' — ' + unit);
+  };
+})();
+
+/* Rent Manager bulk delete also logs */
+(function() {
+  var _origBulkDel = typeof rmBulkDelete==='function' ? rmBulkDelete : null;
+  window.rmBulkDelete = function() {
+    var n = window._rmSelected ? window._rmSelected.size : 0;
+    var who = (currentUser&&currentUser.email)||'Admin';
+    if (typeof _origBulkDel==='function') _origBulkDel.apply(this,arguments);
+    if (n>0) logActivity(who,'admin','delete','Bulk deleted '+n+' records','From Rent Manager');
+  };
+})();
+window._rmSelected = new Set();
+
+function rmRowCheck(cb) {
+  const idx = parseInt(cb.value);
+  if (cb.checked) window._rmSelected.add(idx);
+  else window._rmSelected.delete(idx);
+  // Highlight row
+  const row = document.getElementById('rmRow_' + idx);
+  if (row) row.style.outline = cb.checked ? '2px solid var(--gold)' : '';
+  // Sync header checkbox
+  const allChk = document.getElementById('rmSelectAllChk');
+  if (allChk) {
+    const allBoxes = document.querySelectorAll('#rmBody input[type=checkbox]');
+    const checked = [...allBoxes].filter(b => b.checked).length;
+    allChk.checked = checked === allBoxes.length;
+    allChk.indeterminate = checked > 0 && checked < allBoxes.length;
+  }
+  _rmUpdateBulkBar();
+}
+
+function rmToggleAll(checked) {
+  document.querySelectorAll('#rmBody input[type=checkbox]').forEach(function(cb) {
+    cb.checked = checked;
+    const idx = parseInt(cb.value);
+    if (checked) window._rmSelected.add(idx);
+    else window._rmSelected.delete(idx);
+    const row = document.getElementById('rmRow_' + idx);
+    if (row) row.style.outline = checked ? '2px solid var(--gold)' : '';
+  });
+  _rmUpdateBulkBar();
+}
+
+function rmSelectAll() {
+  document.getElementById('rmSelectAllChk').checked = true;
+  rmToggleAll(true);
+}
+
+function rmClearSelection() {
+  window._rmSelected.clear();
+  document.querySelectorAll('#rmBody input[type=checkbox]').forEach(function(cb) {
+    cb.checked = false;
+    const row = document.getElementById('rmRow_' + parseInt(cb.value));
+    if (row) row.style.outline = '';
+  });
+  const allChk = document.getElementById('rmSelectAllChk');
+  if (allChk) { allChk.checked = false; allChk.indeterminate = false; }
+  _rmUpdateBulkBar();
+}
+
+function _rmUpdateBulkBar() {
+  const bar = document.getElementById('rmBulkBar');
+  const countEl = document.getElementById('rmBulkCount');
+  const n = window._rmSelected.size;
+  if (bar) bar.style.display = n > 0 ? 'flex' : 'none';
+  if (countEl) countEl.textContent = n + ' record' + (n !== 1 ? 's' : '') + ' selected';
+}
+
+function rmBulkDelete() {
+  const n = window._rmSelected.size;
+  if (!n) return;
+  const selected = [...window._rmSelected].sort((a,b)=>b-a); // descending so splices don't shift indices
+  if (!confirm('Delete ' + n + ' selected record' + (n!==1?'s':'') + '? This cannot be undone.')) return;
+  selected.forEach(function(idx) {
+    const rec = rentLogs[idx];
+    if (rec && window._db && rec.id) {
+      window._db.collection('rentRecords').doc(rec.id).delete().catch(function(){});
+    }
+    rentLogs.splice(idx, 1);
+  });
+  try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {}
+  window._rmSelected.clear();
+  renderRentManager();
+  if (typeof renderProperties === 'function') renderProperties();
+  notify('success', n + ' Record' + (n!==1?'s':'') + ' Deleted', 'Selected records removed.');
+}
+
+function rmBulkExport() {
+  const selected = [...window._rmSelected];
+  if (!selected.length) return;
+  const rows = selected.map(function(idx) { return rentLogs[idx]; }).filter(Boolean);
+  const headers = ['#','Unit','Tenant','Email','Phone','Amount','NewRent','Start','Expiry','LastPayment','Status','Notes'];
+  const csv = [headers.join(',')]
+    .concat(rows.map(function(r, i) {
+      return [
+        i+1,
+        '"'+(r.unit||r.unitId||'').replace(/"/g,'""')+'"',
+        '"'+(r.tenant||'').replace(/"/g,'""')+'"',
+        r.tenantEmail||'',
+        r.tenantPhone||'',
+        r.amount||'',
+        r.newRent||'',
+        r.start||'',
+        r.expiry||'',
+        r.lastPayment||'',
+        r.vacancy||'Occupied',
+        '"'+(r.notes||'').replace(/"/g,'""')+'"',
+      ].join(',');
+    })).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'CRS_Selected_' + selected.length + '_Records_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  notify('success', 'CSV Exported', selected.length + ' records downloaded.');
+}
+
+/* ── ADD / EDIT RENT RECORD ── */
 function openRentModal(idx=null) {
   document.getElementById('rmEditId').value = idx !== null ? idx : '';
   document.getElementById('rentModalTitle').textContent = idx !== null ? 'Edit Record' : 'Add Rent Record';
