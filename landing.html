@@ -137,8 +137,8 @@ body{background:var(--ink);font-family:'DM Sans',sans-serif;color:#e8dfc8;overfl
 /* CAROUSEL */
 .car-wrap{overflow:hidden;position:relative;padding-bottom:8px}
 .car-track{display:flex;gap:22px;padding:8px 40px 16px;transition:transform .5s cubic-bezier(.4,0,.2,1)}
-.car-card{flex-shrink:0;width:320px;background:var(--card);border-radius:14px;border:1px solid var(--rule);box-shadow:0 2px 16px rgba(0,0,0,.07);overflow:hidden;cursor:pointer;transition:all .25s}
-.car-card:hover{transform:translateY(-6px);box-shadow:0 12px 40px rgba(0,0,0,.13)}
+.car-card{flex-shrink:0;width:360px;background:#1a1612;border-radius:14px;border:1px solid rgba(255,255,255,.08);box-shadow:0 2px 20px rgba(0,0,0,.18);overflow:hidden;cursor:pointer;transition:all .25s;color:#e8dfc8}
+.car-card:hover{transform:translateY(-6px);box-shadow:0 16px 48px rgba(0,0,0,.28);border-color:rgba(201,150,12,.4)}
 .ccard-top{height:190px;position:relative;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f0e0c,#1a1612)}
 .ccard-top-pattern{position:absolute;inset:0;opacity:.05;background-image:repeating-linear-gradient(45deg,var(--gold) 0,var(--gold) 1px,transparent 0,transparent 20px);background-size:20px 20px}
 .ccard-icon{font-size:4rem;position:relative;z-index:1}
@@ -149,9 +149,8 @@ body{background:var(--ink);font-family:'DM Sans',sans-serif;color:#e8dfc8;overfl
 .ccard-name{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:3px}
 .ccard-loc{font-size:.73rem;color:var(--dim);margin-bottom:10px}
 .ccard-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
-.chip{background:var(--bg);border:1px solid var(--rule);border-radius:20px;padding:2px 8px;font-size:.64rem;color:var(--dim)}
+.chip{background:rgba(201,150,12,.12);border:1px solid rgba(201,150,12,.25);border-radius:20px;padding:2px 9px;font-size:.65rem;color:rgba(201,150,12,.9);font-weight:500}
 .ccard-foot{display:flex;align-items:center;justify-content:space-between;padding-top:11px;border-top:1px solid var(--rule)}
-.ccard-rent{font-family:'DM Mono',monospace;font-size:.88rem;font-weight:600;color:var(--green)}
 .ccard-apply{background:var(--gold);color:#fff;border:none;border-radius:5px;padding:7px 15px;font-size:.77rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s}
 .ccard-apply:hover{background:var(--gl)}
 
@@ -291,7 +290,7 @@ footer{background:#060504;padding:48px 24px 24px;border-top:1px solid rgba(201,1
   .ft-grid>div:first-child{grid-column:1/-1}
   .nb-links{display:none}
   .nb-ham{display:block}
-  .car-card{width:290px}
+  .car-card{width:320px}
   .prop-grid{grid-template-columns:1fr}
 }
 @media(max-width:480px){
@@ -458,7 +457,9 @@ footer{background:#060504;padding:48px 24px 24px;border-top:1px solid rgba(201,1
     <div class="sec-hd">
       <div class="sec-eye">Available Properties</div>
       <h2 class="sec-title">Quality Homes, Transparent Process</h2>
-      <p class="sec-sub">Professionally managed units with 24hr security, borehole water, and responsive maintenance. Click any property to apply.</p>
+      <p class="sec-sub">Professionally managed units with 24hr security, borehole water, and responsive maintenance.<br>
+        <strong style="color:var(--gold)">Contact us for pricing and the full rental package.</strong>
+      </p>
     </div>
     <div class="car-wrap">
       <div class="car-track" id="carTrack"></div>
@@ -677,7 +678,32 @@ footer{background:#060504;padding:48px 24px 24px;border-top:1px solid rgba(201,1
 
 <script>
 'use strict';
-const PROPS = [{"id": "OJ-1A", "label": "2BDR Flat 1A", "location": "11 Jibewa Somorin Close, Ojodu", "city": "Ojodu", "type": "2 Bedroom Flat", "amenities": ["2 Bedrooms", "Living Room", "Kitchen", "2 Bathrooms", "Car Park", "24hr Security"], "availableFrom": "2025-06-01", "rent": 500000}, {"id": "OJ-2A", "label": "2BDR Flat 2A", "location": "11 Jibewa Somorin Close, Ojodu", "city": "Ojodu", "type": "2 Bedroom Flat", "amenities": ["2 Bedrooms", "Living Room", "Kitchen", "Borehole Water", "Car Park"], "availableFrom": "2025-07-01", "rent": 500000}, {"id": "OJ-2B", "label": "3BDR Flat 2B", "location": "11 Jibewa Somorin Close, Ojodu", "city": "Ojodu", "type": "3 Bedroom Flat", "amenities": ["3 Bedrooms", "Dining Room", "Kitchen", "3 Bathrooms", "Car Park", "Generator", "24hr Security"], "availableFrom": "2025-06-01", "rent": 700000}, {"id": "OJ-4B", "label": "3BDR Flat 4B", "location": "11 Jibewa Somorin Close, Ojodu", "city": "Ojodu", "type": "3 Bedroom Flat", "amenities": ["3 Bedrooms", "Living Room", "Kitchen", "3 Bathrooms", "Gated Estate", "Car Park"], "availableFrom": "2025-07-15", "rent": 700000}, {"id": "OJ-SC", "label": "Self Contain 2C", "location": "11 Jibewa Somorin Close, Ojodu", "city": "Ojodu", "type": "Self Contained", "amenities": ["Room", "Bathroom", "Kitchenette", "Security"], "availableFrom": "2025-06-01", "rent": 250000}, {"id": "OJ-SH", "label": "Shop & Office Space", "location": "11 Jibewa Somorin Close, Ojodu", "city": "Ojodu", "type": "Commercial", "amenities": ["Shop Space", "Office Area", "High Footfall", "Good Road Access"], "availableFrom": "2025-06-01", "rent": 600000}, {"id": "IB-2B", "label": "2 Bedroom Flat", "location": "Ababeji Engr's Residence, Ibadan", "city": "Ibadan", "type": "2 Bedroom Flat", "amenities": ["2 Bedrooms", "Living Room", "Kitchen", "Car Park", "Serene Environment"], "availableFrom": "2025-07-01", "rent": 400000}, {"id": "IB-RP", "label": "Room & Parlour", "location": "Ababeji Engr's Residence, Ibadan", "city": "Ibadan", "type": "Room & Parlour", "amenities": ["Room", "Parlour", "Bathroom", "Kitchen"], "availableFrom": "2025-06-01", "rent": 180000}, {"id": "EN-2B", "label": "2BDR Flat", "location": "Plot 7 Iyana Idaw River Ext., Enugu", "city": "Enugu", "type": "2 Bedroom Flat", "amenities": ["2 Bedrooms", "Living Room", "Kitchen", "Easy Access Road"], "availableFrom": "2025-08-01", "rent": 380000}];
+const PROPS = [
+  {
+    "id": "3BDR Flat 2B",
+    "label": "3BDR Flat 2B",
+    "location": "11 Jibewa SomorinClose,(Victorious Estate No. 20) Ojodu",
+    "city": "Ojodu",
+    "type": "3 Bedroom Flat",
+    "amenities": ["3 Bedrooms", "Dining Room", "Living Room", "Kitchen", "3 Bathrooms",
+                  "Borehole Water", "24hr Security", "Gated Estate", "Car Park",
+                  "Fitted Kitchen", "Tiled Floors", "Generator Point"],
+    "availableFrom": "2026-06-01",
+    "imgs": []
+  },
+  {
+    "id": "Room & Palour self contain",
+    "label": "Room & Parlour Self Contain",
+    "location": "Zone C Road 3 (Engrs Residence) Abaibeji off Arapaja road, Ibadan",
+    "city": "Ibadan",
+    "type": "Self Contained",
+    "amenities": ["Living Room", "Dining Room", "2 Bedrooms", "POP Ceiling",
+                  "Kitchen", "Bathroom/WC", "Tiled Floors", "Serene Environment",
+                  "Borehole Water", "Gated Compound"],
+    "availableFrom": "2026-05-31",
+    "imgs": []
+  }
+];
 const ADMINS = ['enjanih@gmail.com','crestechnologies@outlook.com','crestiton@gmail.com'];
 let _filter = 'all';
 let _carIdx = 0;
@@ -724,23 +750,41 @@ function buildCarousel() {
   const dots  = document.getElementById('carDots');
   track.innerHTML = props.map(p => {
     const d = p.availableFrom ? new Date(p.availableFrom).toLocaleDateString('en-NG',{month:'short',day:'numeric',year:'numeric'}) : 'Available Now';
-    const chips = (p.amenities||[]).slice(0,4).map(a => `<span class="chip">${a}</span>`).join('') + (p.amenities?.length>4 ? `<span class="chip">+${p.amenities.length-4}</span>` : '');
-    return `<div class="car-card" onclick="quickApply('${p.id}')">
-      <div class="ccard-top">
-        <div class="ccard-top-pattern"></div>
-        <span class="ccard-icon">${TYPE_ICONS[p.type]||'🏠'}</span>
-        <span class="ccard-avail">📅 ${d}</span>
-        <span class="ccard-city">📍 ${p.city}</span>
-      </div>
-      <div class="ccard-body">
-        <div class="ccard-type">${p.type}</div>
-        <div class="ccard-name">${p.label}</div>
-        <div class="ccard-loc">📍 ${p.location}</div>
-        <div class="ccard-chips">${chips}</div>
-        <div class="ccard-foot">
-          <div class="ccard-rent">${p.rent ? '₦'+p.rent.toLocaleString()+'/yr' : 'Enquire'}</div>
-          <button class="ccard-apply" onclick="event.stopPropagation();quickApply('${p.id}')">Apply →</button>
+    // All amenity chips
+    const chips = (p.amenities||[]).map(a => `<span class="chip">${a}</span>`).join('');
+    // Property image — stored in propExtras (localStorage from portal admin)
+    const extrasRaw = (function(){ try{ return JSON.parse(localStorage.getItem('crs_prop_extras')||'{}'); }catch(e){ return {}; } })();
+    const extra = extrasRaw[p.id] || {};
+    const img0  = extra.img0 || (p.imgs && p.imgs[0]) || '';
+    const img1  = extra.img1 || (p.imgs && p.imgs[1]) || '';
+    const imgSection = img0
+      ? `<div style="display:flex;gap:6px;margin-bottom:10px;border-radius:8px;overflow:hidden;height:130px">
+           <img src="${img0}" style="flex:1;object-fit:cover;border-radius:6px" alt="${p.label}"/>
+           ${img1 ? `<img src="${img1}" style="flex:1;object-fit:cover;border-radius:6px" alt="${p.label}"/>` : ''}
+         </div>`
+      : `<div style="height:90px;background:linear-gradient(135deg,#1a1a1a,#2a2416);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:2.8rem;margin-bottom:10px">${TYPE_ICONS[p.type]||'🏠'}</div>`;
+    // Availability
+    const isNow = !p.availableFrom || new Date(p.availableFrom) <= new Date();
+    const availBadge = isNow
+      ? '<span style="background:#15803d;color:#fff;font-size:.64rem;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.03em">✅ AVAILABLE NOW</span>'
+      : `<span style="background:rgba(201,150,12,.85);color:#fff;font-size:.64rem;font-weight:700;padding:2px 8px;border-radius:20px">📅 FROM ${d.toUpperCase()}</span>`;
+    return `<div class="car-card" onclick="quickApply('${p.id}')" style="cursor:pointer">
+      <div style="padding:16px 16px 0">
+        ${imgSection}
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
+          <div>
+            <div class="ccard-type" style="margin-bottom:3px">${p.type}</div>
+            <div class="ccard-name" style="font-size:1rem;line-height:1.2">${p.label}</div>
+          </div>
+          ${availBadge}
         </div>
+        <div class="ccard-loc" style="margin-bottom:10px">📍 ${p.location}</div>
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:6px">Amenities</div>
+        <div class="ccard-chips" style="max-height:72px;overflow:hidden;display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">${chips}</div>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,.1);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:.72rem;color:rgba(255,255,255,.5)">📞 Contact us for rent & package</div>
+        <button class="ccard-apply" onclick="event.stopPropagation();quickApply('${p.id}')">Enquire →</button>
       </div>
     </div>`;
   }).join('') || '<div style="padding:40px;text-align:center;color:var(--dim);width:100%">No units in this category currently available</div>';
@@ -749,7 +793,7 @@ function buildCarousel() {
   _carIdx = 0;
   updateCarousel();
   startAuto();
-  document.getElementById('statVacant').textContent = props.length;
+  document.getElementById('statVacant').textContent = props.length + ' unit' + (props.length !== 1 ? 's' : '');
 }
 
 function updateCarousel() {
