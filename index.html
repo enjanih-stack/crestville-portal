@@ -1895,16 +1895,25 @@ const CLOUD_URL = "https://script.google.com/macros/s/AKfycbw_T79TJ60R0bLXe2x-ph
 const ADMIN_EMAILS = ['enjanih@gmail.com','crestechnologies@outlook.com','crestiton@gmail.com'];
 
 let rentLogs = (function() {
+  // Version guard — wipe stale data from previous sessions if version mismatch
+  var DATA_VERSION = 'crs_v4';
+  var storedVersion = localStorage.getItem('crs_data_version');
+  if (storedVersion !== DATA_VERSION) {
+    // First run with new seed — clear old data so seed loads clean
+    localStorage.removeItem('rentData_CRS_v3');
+    localStorage.setItem('crs_data_version', DATA_VERSION);
+    console.log('rentLogs: cleared stale localStorage for version', DATA_VERSION);
+  }
+
   const stored = (function(){ try{ return JSON.parse(localStorage.getItem('rentData_CRS_v3')||'[]'); }catch(e){ return []; } })();
   const seed =[{"id":"crs-monsylhaven-2bdr-flat-4a","unitId":"2BDR Flat 4A","unit":"2BDR Flat 4A","location":"11 Jibewa SomorinClose,(Victorious Estate No. 20) Ojodu","city":"Ojodu, Ogun State","type":"Residential","tenant":"Mr. Monday Sylvanus","contractName":"Mr. Monday Sylvanus","tenantEmail":"monsylhaven@yahoo.com","tenantPhone":"","tenantNIN":"","amount":"750000.00","newRent":"1250000.00","start":"2026-02-27","expiry":"2027-02-28","lastPayment":"2026-03-14","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-noemail-3bdr-flat-2b","unitId":"3BDR Flat 2B","unit":"3BDR Flat 2B","location":"11 Jibewa SomorinClose,(Victorious Estate No. 20) Ojodu","city":"Ojodu, Ogun State","type":"Residential","tenant":"Mr. Segun Oyewole","contractName":"Mr. Segun Oyewole","tenantEmail":"","tenantPhone":"","tenantNIN":"","amount":"1700000.00","newRent":"3500000.00","start":"2025-02-27","expiry":"2026-02-28","lastPayment":"2025-03-12","vacancy":"Terminated","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-morohunke21-2bdr-flat-3a","unitId":"2BDR Flat 3A","unit":"2BDR Flat 3A","location":"11 Jibewa SomorinClose,(Victorious Estate No. 20) Ojodu","city":"Ojodu, Ogun State","type":"Residential","tenant":"Mrs Bologun","contractName":"Mrs Bologun","tenantEmail":"morohunke21@gmail.com","tenantPhone":"","tenantNIN":"","amount":"750000.00","newRent":"1250000.00","start":"2026-03-04","expiry":"2027-03-05","lastPayment":"2026-03-04","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-ekeneiheme02-2bdr-flat-1a","unitId":"2BDR Flat 1A","unit":"2BDR Flat 1A","location":"11 Jibewa SomorinClose,(Victorious Estate No. 20) Ojodu","city":"Ojodu, Ogun State","type":"Residential","tenant":"Mr. Ekene Iheme","contractName":"Mr. Ekene Iheme","tenantEmail":"ekeneiheme02@gmail.com","tenantPhone":"","tenantNIN":"","amount":"800000.00","newRent":"1250000.00","start":"2026-03-25","expiry":"2027-03-26","lastPayment":"2026-03-25","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-adebolalodun-2bdr-flat-2a","unitId":"2BDR Flat 2A","unit":"2BDR Flat 2A","location":"11 Jibewa SomorinClose,(Victorious Estate No. 20) Ojodu","city":"Ojodu, Ogun State","type":"Residential","tenant":"Ms Adelodun Christianna Jimoh","contractName":"Ms Adelodun Christianna Jimoh","tenantEmail":"adebolalodun@gmail.com","tenantPhone":"","tenantNIN":"","amount":"1600000.00","newRent":"1600000.00","start":"2026-04-30","expiry":"2027-05-01","lastPayment":"2026-04-20","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-kennytemmy20-room-palour-self-contain","unitId":"Room & Palour self contain","unit":"Room & Palour self contain","location":"Zone C Road 3 (Engrs Residence ) Abaibeji off Arapaja road Ibadan","city":"Ibadan, Oyo State","type":"Residential","tenant":"Mr & Mrs Bamiro Kehinde","contractName":"Mr & Mrs Bamiro Kehinde","tenantEmail":"kennytemmy2010@gmail.com","tenantPhone":"","tenantNIN":"","amount":"200000.00","newRent":"","start":"2025-05-22","expiry":"2026-05-23","lastPayment":"2025-05-24","vacancy":"Terminated","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-richbatam2-2bdr-flat-1b","unitId":"2BDR Flat 1B","unit":"2BDR Flat 1B","location":"11 Jibewa SomorinClose,(Victorious Estate No. 20) Ojodu","city":"Ojodu, Ogun State","type":"Residential","tenant":"Mr. Oyejide Olalekan","contractName":"Mr. Oyejide Olalekan","tenantEmail":"richbatam2@gmail.com","tenantPhone":"","tenantNIN":"","amount":"1500000.00","newRent":"1500000.00","start":"2025-07-18","expiry":"2026-07-19","lastPayment":"2025-08-06","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-oluwabukolaa-shop-3-c2","unitId":"Shop 3_C2","unit":"Shop 3_C2","location":"Zone C Road 2 Abaibeji off Arapaja road Ibadan","city":"Ibadan, Oyo State","type":"Commercial","tenant":"Miss Ajayi Olubukola","contractName":"Miss Ajayi Olubukola","tenantEmail":"oluwabukolaajayi22@gmail.com","tenantPhone":"","tenantNIN":"","amount":"48000.00","newRent":"60000.00","start":"2025-07-30","expiry":"2026-07-31","lastPayment":"2025-07-31","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-noemail-shop-2-c3","unitId":"Shop 2_C3","unit":"Shop 2_C3","location":"Zone C Road 3 (Engrs Residence ) Abaibeji off Arapaja road Ibadan","city":"Ibadan, Oyo State","type":"Commercial","tenant":"Moroufoluwa Adebojo","contractName":"Moroufoluwa Adebojo","tenantEmail":"","tenantPhone":"","tenantNIN":"","amount":"60000.00","newRent":"","start":"2025-08-12","expiry":"2026-08-13","lastPayment":"2025-08-14","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-ozorolabisi-shop-4-c2","unitId":"Shop 4_C2","unit":"Shop 4_C2","location":"Zone C Road 2 Abaibeji off Arapaja road Ibadan","city":"Ibadan, Oyo State","type":"Commercial","tenant":"Mrs Bisi Mary Ozor","contractName":"Mrs Bisi Mary Ozor","tenantEmail":"ozorolabisi@gmail.com","tenantPhone":"","tenantNIN":"","amount":"48000.00","newRent":"60000.00","start":"2025-08-25","expiry":"2026-08-26","lastPayment":"2025-07-31","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-oladokunolub-shop-1-c2","unitId":"Shop 1_C2","unit":"Shop 1_C2","location":"Zone C Road 2 Abaibeji off Arapaja road Ibadan","city":"Ibadan, Oyo State","type":"Commercial","tenant":"Mrs Bisi Olakanmi","contractName":"Mrs Bisi Olakanmi","tenantEmail":"oladokunolubusola@gmail.com","tenantPhone":"","tenantNIN":"","amount":"48000.00","newRent":"60000.00","start":"2025-08-29","expiry":"2026-08-30","lastPayment":"2025-09-29","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-owojorivicto-2bdr-flat-b","unitId":"2BDR Flat_B","unit":"2BDR Flat_B","location":"Zone B  ( Farm House) Abaibeji off Arapaja road Ibadan","city":"Ibadan, Oyo State","type":"Residential","tenant":"Mr. Omotosho Wasiu Olalekan","contractName":"Mr. Omotosho Wasiu Olalekan","tenantEmail":"owojorivictoria81@gmail.com","tenantPhone":"","tenantNIN":"","amount":"300000.00","newRent":"","start":"2025-09-01","expiry":"2026-09-02","lastPayment":"2025-09-03","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-noemail-shop-3-en","unitId":"Shop 3_EN","unit":"Shop 3_EN","location":"Plot 7 Iyana Idaw river Extension,Enugu","city":"Enugu, Enugu State","type":"Commercial","tenant":"Mr. Ken Egbo(Bishop)","contractName":"Mr. Ken Egbo(Bishop)","tenantEmail":"","tenantPhone":"","tenantNIN":"","amount":"240000.00","newRent":"","start":"2025-09-28","expiry":"2026-09-29","lastPayment":"2025-10-09","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-nkechinyerea-shop-1-en","unitId":"Shop 1_EN","unit":"Shop 1_EN","location":"Plot 7 Iyana Idaw river Extension,Enugu","city":"Enugu, Enugu State","type":"Commercial","tenant":"Mrs Roseline Chinyere  Anih","contractName":"Mrs Roseline Chinyere  Anih","tenantEmail":"nkechinyereanih60@gmail.com","tenantPhone":"","tenantNIN":"","amount":"240000.00","newRent":"","start":"2025-09-28","expiry":"2026-09-29","lastPayment":"2025-10-09","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-nkechinyerea-2bdr-flat-en","unitId":"2Bdr Flat_EN","unit":"2Bdr Flat_EN","location":"Plot 7 Iyana Idaw river Extension,Enugu","city":"Enugu, Enugu State","type":"Residential","tenant":"Mrs Roseline Chinyere  Anih","contractName":"Mrs Roseline Chinyere  Anih","tenantEmail":"nkechinyereanih60@gmail.com","tenantPhone":"","tenantNIN":"","amount":"500000.00","newRent":"","start":"2025-09-28","expiry":"2026-09-29","lastPayment":"2025-10-09","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-adeyemot729-shop-2-c2","unitId":"Shop 2_C2","unit":"Shop 2_C2","location":"Zone C Road 2 Abaibeji off Arapaja road Ibadan","city":"Ibadan, Oyo State","type":"Commercial","tenant":"Adeyomo Temitope Oluwaseun","contractName":"Adeyomo Temitope Oluwaseun","tenantEmail":"adeyemot729@gmail.com","tenantPhone":"","tenantNIN":"","amount":"48000.00","newRent":"60000.00","start":"2025-10-31","expiry":"2026-11-01","lastPayment":"2025-12-12","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-noemail-shop-2-en","unitId":"Shop 2_EN","unit":"Shop 2_EN","location":"Plot 7 Iyana Idaw river Extension,Enugu","city":"Enugu, Enugu State","type":"Commercial","tenant":"Mr.Ndubuisi Obinwanne","contractName":"Mr.Ndubuisi Obinwanne","tenantEmail":"","tenantPhone":"","tenantNIN":"","amount":"240000.00","newRent":"","start":"2025-11-13","expiry":"2026-11-14","lastPayment":"2025-11-30","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-omoruyiausti-1rm-self-contain-2c","unitId":"1Rm Self Contain 2C","unit":"1Rm Self Contain 2C","location":"11 Jibewa SomorinClose,(Victorious Estate No. 20) Ojodu","city":"Ojodu, Ogun State","type":"Residential","tenant":"Mr. Omoruyi Augustine","contractName":"Mr. Omoruyi Augustine","tenantEmail":"omoruyiaustine@gmail.com","tenantPhone":"","tenantNIN":"","amount":"250000.00","newRent":"500000.00","start":"2025-12-17","expiry":"2026-12-18","lastPayment":"2025-11-25","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-calebayodel-2bdr-flat-c3","unitId":"2BDR Flat_C3","unit":"2BDR Flat_C3","location":"Zone C Road 3 (Engrs Residence ) Abaibeji off Arapaja road Ibadan","city":"Ibadan, Oyo State","type":"Residential","tenant":"Mr Balogun Caleb","contractName":"Mr Balogun Caleb","tenantEmail":"caleb_ayodele@yahoo.com","tenantPhone":"","tenantNIN":"","amount":"500000.00","newRent":"","start":"2026-01-28","expiry":"2027-01-29","lastPayment":"2026-02-03","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-peaceedogun-2bdr-flat-3b","unitId":"2BDR Flat 3B","unit":"2BDR Flat 3B","location":"11 Jibewa SomorinClose,(Victorious Estate No. 20) Ojodu","city":"Ojodu, Ogun State","type":"Residential","tenant":"Ms Peace Edogun","contractName":"Ms Peace Edogun","tenantEmail":"peaceedogun@gmail.com","tenantPhone":"","tenantNIN":"","amount":"1000000.00","newRent":"1500000.00","start":"2026-02-27","expiry":"2027-02-28","lastPayment":"2026-02-27","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-noemail-1-rm-self-conatin-b","unitId":"1 Rm self conatin_B","unit":"1 Rm self conatin_B","location":"Zone B  ( Farm House) Abaibeji off Arapaja road Ibadan","city":"Ibadan, Oyo State","type":"Residential","tenant":"Mr. Ukachukwu Anthony","contractName":"Mr. Ukachukwu Anthony","tenantEmail":"","tenantPhone":"","tenantNIN":"","amount":"150000.00","newRent":"","start":"2026-04-12","expiry":"2027-04-13","lastPayment":"2026-03-30","vacancy":"Occupied","notes":"Paid","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-enjanih-3bdr-flat-4b","unitId":"3BDR Flat 4B","unit":"3BDR Flat 4B","location":"11 Jibewa SomorinClose,(Victorious Estate No. 20) Ojodu","city":"Ojodu, Ogun State","type":"Residential","tenant":"Mr Emmanuel Anih","contractName":"Mr Emmanuel Anih","tenantEmail":"enjanih@gmail.com","tenantPhone":"","tenantNIN":"","amount":"4000000.00","newRent":"4500000.00","start":"2026-04-12","expiry":"2027-04-13","lastPayment":"2026-04-12","vacancy":"Occupied","notes":"","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-usmansobo06-shop-office-space","unitId":"Shop & Office Space","unit":"Shop & Office Space","location":"11 Jibewa SomorinClose,(Victorious Estate No. 20) Ojodu","city":"Ojodu, Ogun State","type":"Commercial","tenant":"Usman Sobo","contractName":"Usman Sobo","tenantEmail":"usmansobo06@gmail.com","tenantPhone":"","tenantNIN":"","amount":"500000.00","newRent":"500000.00","start":"2026-04-12","expiry":"2027-04-13","lastPayment":"2026-04-25","vacancy":"Occupied","notes":"","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"},{"id":"crs-olawaleridwa-shop-1-c3","unitId":"Shop 1_C3","unit":"Shop 1_C3","location":"Zone C Road 3 (Engrs Residence ) Abaibeji off Arapaja road Ibadan","city":"Ibadan, Oyo State","type":"Commercial","tenant":"Crest Laundry","contractName":"Crest Laundry","tenantEmail":"olawaleridwan109@gmail.com","tenantPhone":"","tenantNIN":"","amount":"60000.00","newRent":"","start":"2026-04-12","expiry":"2027-04-13","lastPayment":"2026-04-12","vacancy":"Occupied","notes":"","importedAt":"2026-05-30T20:38:02.047961Z","updatedAt":"2026-05-30T20:38:02.047961Z"}];
   window._seedData = seed;
   const seedMap = {}; seed.forEach(function(s){ seedMap[s.unitId]=s; });
   if (stored && stored.length > 0) {
-    // Migrate old short-code IDs (OJ-1A → 2BDR Flat 1A) using seed map
+    // Migrate old short-code IDs and patch missing fields from seed
     var migrated = false;
     stored.forEach(function(r){
       if (r.unitId && !seedMap[r.unitId]) {
-        // Try to find a seed record whose unit label matches this unitId
         var match = seed.find(function(s){
           return s.unit === r.unitId || s.unitId === r.unitId ||
             (s.unit||'').toLowerCase().replace(/[^a-z0-9]/g,'') === (r.unitId||'').toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -1914,8 +1923,23 @@ let rentLogs = (function() {
       if (!r.newRent && seedMap[r.unitId] && seedMap[r.unitId].newRent) r.newRent = seedMap[r.unitId].newRent;
       if (!r.tenantEmail && seedMap[r.unitId] && seedMap[r.unitId].tenantEmail) r.tenantEmail = seedMap[r.unitId].tenantEmail;
     });
-    if (migrated) { try{ localStorage.setItem('rentData_CRS_v3', JSON.stringify(stored)); }catch(e){} }
-    return stored;
+
+    // Deduplicate by unitId — keep the record with more complete data
+    var byUnit = {};
+    stored.forEach(function(r) {
+      var key = (r.unitId || r.unit || '').trim().toLowerCase();
+      if (!key) return;
+      var prev = byUnit[key];
+      if (!prev) { byUnit[key] = r; return; }
+      var score = function(x){ return (x.tenantEmail?2:0)+(x.expiry?2:0)+(x.amount?1:0)+(x.tenant?1:0)+(x.updatedAt?1:0); };
+      if (score(r) > score(prev)) byUnit[key] = r;
+    });
+    var deduped = Object.values(byUnit);
+
+    if (migrated || deduped.length < stored.length) {
+      try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(deduped)); } catch(e) {}
+    }
+    return deduped;
   }
   try{ localStorage.setItem('rentData_CRS_v3', JSON.stringify(seed)); }catch(e){}
   return seed;
@@ -2625,6 +2649,32 @@ function fmtTableDate(d) {
 function renderRentManager() {
   const tbody = document.getElementById('rmBody');
   if(!tbody) return;
+
+  // ── DEDUPLICATE rentLogs by unitId before rendering ──
+  // Keep the record with the most data (prefer records with tenantEmail and expiry)
+  const unitMap = new Map();
+  rentLogs.forEach(function(e) {
+    const key = (e.unitId || e.unit || '').trim().toLowerCase();
+    if (!key) return;
+    const existing = unitMap.get(key);
+    if (!existing) { unitMap.set(key, e); return; }
+    // Score: prefer records with more fields filled
+    const score = function(r) {
+      return (r.tenantEmail?2:0) + (r.expiry?2:0) + (r.start?1:0) +
+             (r.amount?1:0) + (r.tenant?1:0) + (r.updatedAt?1:0);
+    };
+    if (score(e) > score(existing)) unitMap.set(key, e);
+  });
+  const deduped = Array.from(unitMap.values());
+
+  // If rentLogs had duplicates, clean them up and save
+  if (deduped.length < rentLogs.length) {
+    console.log('renderRentManager: removed', rentLogs.length - deduped.length, 'duplicate(s)');
+    rentLogs.length = 0;
+    deduped.forEach(function(r){ rentLogs.push(r); });
+    try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(ex) {}
+  }
+
   const search = (document.getElementById('rmSearch')?.value||'').toLowerCase();
   const filter = document.getElementById('rmFilter')?.value||'';
   const today = new Date(); today.setHours(0,0,0,0);
@@ -2828,9 +2878,21 @@ async function saveRentRecord() {
 
 /* ═══ VACANT UNITS ════════════════════════════════════ */
 function getVacantUnits() {
-  const occupiedIds = new Set(rentLogs.filter(e => e.vacancy !== 'vacant').map(e => e.unitId));
-  const markedVacant = new Set(rentLogs.filter(e => e.vacancy === 'vacant').map(e => e.unitId));
-  return PROPERTIES.filter(p => !occupiedIds.has(p.id) || markedVacant.has(p.id));
+  // Deduplicated occupied set by unitId
+  const occupiedIds = new Set();
+  rentLogs.forEach(function(e) {
+    if (e.vacancy !== 'vacant' && (e.tenant||'').trim()) {
+      occupiedIds.add((e.unitId||e.unit||'').trim().toLowerCase());
+    }
+  });
+  const markedVacant = new Set();
+  rentLogs.forEach(function(e) {
+    if (e.vacancy === 'vacant') markedVacant.add((e.unitId||e.unit||'').trim().toLowerCase());
+  });
+  return PROPERTIES.filter(function(p) {
+    const key = p.id.trim().toLowerCase();
+    return !occupiedIds.has(key) || markedVacant.has(key);
+  });
 }
 
 function renderVacant() {
@@ -6254,36 +6316,69 @@ function mrAdminReject(id){
   notify('success','Request Rejected','Tenant will see the rejection note.');
 }
 
-/* Pre-warm localStorage with all seed records that have emails
-   Called once on every page load so tenant lookups always work */
+/* Pre-warm localStorage with all seed records that have emails.
+   Deduplicates by unitId — never creates double entries. */
 function _prewarmTenantCache() {
   if (!window._seedData) return;
+
+  // Step 1: Build a map of existing rentLogs by unitId
+  const byUnit = new Map();
+  rentLogs.forEach(function(r) {
+    const key = (r.unitId || r.unit || '').trim().toLowerCase();
+    if (key) byUnit.set(key, r);
+  });
+
   let changed = false;
   window._seedData.forEach(function(seedRec) {
-    if (!seedRec.tenantEmail || !seedRec.unitId) return;
-    // Check if this unit already exists in rentLogs
-    const existing = rentLogs.findIndex(function(r) {
-      return (r.unitId || r.unit || '') === seedRec.unitId ||
-             r.id === seedRec.id;
-    });
-    if (existing >= 0) {
-      // Patch missing fields from seed into stored record
-      const stored = rentLogs[existing];
-      let patched = false;
+    if (!seedRec.unitId) return;
+    const key = seedRec.unitId.trim().toLowerCase();
+    const existing = byUnit.get(key);
+
+    if (existing) {
+      // Patch missing fields only — never overwrite admin edits
+      var patched = false;
       ['tenantEmail','tenant','contractName','tenantPhone','amount','newRent',
-       'start','expiry','lastPayment','location','city','type'].forEach(function(f) {
-        if (!stored[f] && seedRec[f]) { stored[f] = seedRec[f]; patched = true; }
+       'start','expiry','lastPayment','location','city','type','id'].forEach(function(f) {
+        if (!existing[f] && seedRec[f]) { existing[f] = seedRec[f]; patched = true; }
       });
       if (patched) changed = true;
-    } else {
-      // Record not in localStorage at all — add it
+    } else if (seedRec.tenantEmail) {
+      // Only add seed records that have emails (others not needed for tenant lookup)
       rentLogs.push(seedRec);
+      byUnit.set(key, seedRec);
       changed = true;
     }
   });
-  if (changed) {
+
+  // Step 2: Final dedup pass — remove any remaining duplicate unitIds
+  const seen = new Map();
+  const deduped = [];
+  rentLogs.forEach(function(r) {
+    const key = (r.unitId || r.unit || '').trim().toLowerCase();
+    if (!key) { deduped.push(r); return; }
+    if (!seen.has(key)) {
+      seen.set(key, r);
+      deduped.push(r);
+    } else {
+      // Keep the one with more data
+      const prev = seen.get(key);
+      const score = function(x){ return (x.tenantEmail?2:0)+(x.expiry?2:0)+(x.amount?1:0)+(x.tenant?1:0); };
+      if (score(r) > score(prev)) {
+        const idx = deduped.indexOf(prev);
+        if (idx >= 0) deduped[idx] = r;
+        seen.set(key, r);
+        changed = true;
+      } else {
+        changed = true; // mark changed so we save the cleaned version
+      }
+    }
+  });
+
+  if (deduped.length !== rentLogs.length || changed) {
+    rentLogs.length = 0;
+    deduped.forEach(function(r){ rentLogs.push(r); });
     try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {}
-    console.log('_prewarmTenantCache: updated localStorage with', window._seedData.length, 'seed records');
+    console.log('_prewarmTenantCache: rentLogs cleaned to', rentLogs.length, 'records');
   }
 }
 
