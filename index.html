@@ -368,6 +368,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .nb-gold{background:#fef9e7;color:#7a5c00;border:1px solid rgba(201,150,12,.3);padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
 .nb-green{background:#f0fdf4;color:var(--green);border:1px solid rgba(26,92,46,.2);padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
 .nb-purple{background:#f5f0ff;color:#5b21b6;border:1px solid #c4b5fd;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
+/* ── KYT FILE UPLOAD ── */
+.kyt-upload-area{border:2px dashed var(--rule);border-radius:8px;background:var(--card);cursor:pointer;transition:all .2s;overflow:hidden;min-height:80px}
+.kyt-upload-area:hover{border-color:var(--gold);background:rgba(201,150,12,.03)}
 /* ── KYT / Renewal Inline Form ── */
 .kyt-section{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:18px;margin-bottom:14px}
 .kyt-sec-title{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--rule)}
@@ -6161,9 +6164,123 @@ function fld(id, label, type, required, placeholder) {
     + '<input type="' + type + '" id="' + id + '" placeholder="' + (placeholder||'') + '" ' + (required ? 'required' : '') + '/></div>';
 }
 function fileField(id, label, required) {
-  return '<div class="fg"><label>' + label + (required ? ' *' : '') + '</label>'
-    + '<input type="file" id="' + id + '" accept=".pdf,.jpg,.jpeg,.png" ' + (required ? 'required' : '')
-    + ' onchange="checkFileSize(this,100)" style="font-size:.8rem"/></div>';
+  return '<div class="fg kyt-upload-field" id="wrap_' + id + '">'
+    + '<label>' + label + (required ? ' <span style="color:var(--red)">*</span>' : ' <span style="font-size:.64rem;font-weight:400;color:var(--dim)">(optional)</span>') + '</label>'
+    + '<div class="kyt-upload-area" id="area_' + id + '" onclick="document.getElementById(\'' + id + '\').click()" '
+    + 'ondragover="event.preventDefault();this.style.borderColor=\'var(--gold)\'" '
+    + 'ondragleave="this.style.borderColor=\'\'" '
+    + 'ondrop="event.preventDefault();kytHandleDrop(event,\'' + id + '\')">'
+    + '<input type="file" id="' + id + '" accept=".pdf,.jpg,.jpeg,.png" '
+    + (required ? 'required ' : '')
+    + 'onchange="kytHandleUpload(\'' + id + '\',this)" '
+    + 'style="display:none"/>'
+    + '<div id="prev_' + id + '" style="display:none;width:100%;text-align:center;padding:6px 0">'
+    + '<img id="img_' + id + '" style="max-height:90px;max-width:100%;border-radius:6px;object-fit:contain" src="" alt="preview"/>'
+    + '<div id="pdf_' + id + '" style="display:none;font-size:2rem;padding:10px">📄</div>'
+    + '</div>'
+    + '<div id="ph_' + id + '" style="text-align:center;padding:14px 8px">'
+    + '<div style="font-size:1.6rem;margin-bottom:6px">📎</div>'
+    + '<div style="font-size:.74rem;font-weight:600;color:var(--ink)">Click to upload or drag & drop</div>'
+    + '<div style="font-size:.68rem;color:var(--dim);margin-top:3px">JPG, PNG or PDF · Max 3MB</div>'
+    + '</div>'
+    + '<div id="info_' + id + '" style="display:none;padding:6px 10px;font-size:.72rem;border-top:1px solid var(--rule);background:var(--cream);text-align:center"></div>'
+    + '</div>'
+    + '<div id="err_' + id + '" style="font-size:.72rem;color:var(--red);margin-top:4px;display:none"></div>'
+    + '<div id="ok_' + id + '" style="font-size:.72rem;color:var(--green);margin-top:4px;display:none">✓ File ready</div>'
+    + '</div>';
+}
+
+function kytHandleDrop(event, id) {
+  var input = document.getElementById(id);
+  if (!input || !event.dataTransfer.files.length) return;
+  input.files = event.dataTransfer.files;
+  kytHandleUpload(id, input);
+  document.getElementById('area_' + id).style.borderColor = '';
+}
+
+function kytHandleUpload(id, input) {
+  var errEl  = document.getElementById('err_' + id);
+  var okEl   = document.getElementById('ok_'  + id);
+  var area   = document.getElementById('area_' + id);
+  var ph     = document.getElementById('ph_'  + id);
+  var prev   = document.getElementById('prev_' + id);
+  var info   = document.getElementById('info_' + id);
+  var imgEl  = document.getElementById('img_'  + id);
+  var pdfEl  = document.getElementById('pdf_'  + id);
+
+  // Clear state
+  if (errEl) errEl.style.display = 'none';
+  if (okEl)  okEl.style.display  = 'none';
+
+  if (!input || !input.files || !input.files[0]) return;
+  var file = input.files[0];
+  var maxMB = 3;
+  var maxBytes = maxMB * 1024 * 1024;
+
+  // Size check
+  if (file.size > maxBytes) {
+    if (errEl) {
+      errEl.textContent = '✕ File too large: ' + (file.size/1024/1024).toFixed(1) + 'MB. Max is ' + maxMB + 'MB. Please compress and re-upload.';
+      errEl.style.display = 'block';
+    }
+    if (area) { area.style.borderColor = 'var(--red)'; area.style.background = 'rgba(140,31,31,.04)'; }
+    input.value = '';
+    return;
+  }
+
+  // Type check
+  var allowed = ['image/jpeg','image/png','image/jpg','application/pdf'];
+  if (!allowed.includes(file.type)) {
+    if (errEl) { errEl.textContent = '✕ Invalid file type. Use JPG, PNG or PDF.'; errEl.style.display = 'block'; }
+    if (area) area.style.borderColor = 'var(--red)';
+    input.value = '';
+    return;
+  }
+
+  // Show preview
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    if (ph)   ph.style.display   = 'none';
+    if (prev) prev.style.display = 'block';
+
+    if (file.type === 'application/pdf') {
+      if (imgEl) imgEl.style.display = 'none';
+      if (pdfEl) { pdfEl.style.display = 'block'; pdfEl.textContent = '📄'; }
+    } else {
+      if (pdfEl) pdfEl.style.display = 'none';
+      if (imgEl) { imgEl.src = dataUrl; imgEl.style.display = 'block'; }
+    }
+
+    var sizeStr = file.size < 1024*1024
+      ? Math.round(file.size/1024) + ' KB'
+      : (file.size/1024/1024).toFixed(2) + ' MB';
+    if (info) {
+      info.innerHTML = '✓ <strong>' + file.name.slice(0,30) + (file.name.length>30?'…':'') + '</strong> · ' + sizeStr
+        + ' &nbsp;|&nbsp; <span style="cursor:pointer;color:var(--red);text-decoration:underline" onclick="kytClearUpload(\'' + id + '\')">Remove</span>';
+      info.style.display = 'block';
+    }
+    if (area) { area.style.borderColor = 'var(--green)'; area.style.background = 'rgba(21,128,61,.03)'; }
+    if (okEl) okEl.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function kytClearUpload(id) {
+  var input  = document.getElementById(id);
+  var area   = document.getElementById('area_' + id);
+  var ph     = document.getElementById('ph_'  + id);
+  var prev   = document.getElementById('prev_' + id);
+  var info   = document.getElementById('info_' + id);
+  var imgEl  = document.getElementById('img_'  + id);
+  var okEl   = document.getElementById('ok_'  + id);
+  if (input) input.value = '';
+  if (imgEl) { imgEl.src = ''; imgEl.style.display = 'none'; }
+  if (prev)  prev.style.display  = 'none';
+  if (ph)    ph.style.display    = 'block';
+  if (info)  { info.textContent = ''; info.style.display = 'none'; }
+  if (okEl)  okEl.style.display  = 'none';
+  if (area)  { area.style.borderColor = ''; area.style.background = ''; }
 }
 
 async function submitKYTFromForm() {
@@ -6175,6 +6292,19 @@ async function submitKYTFromForm() {
   if (!unit) { notify('error', 'Select Property', 'Please choose a property.'); return; }
   if (!name) { notify('error', 'Name Required', 'Enter your full name.'); return; }
   if (!decl) { notify('error', 'Declaration Required', 'Please tick the declaration checkbox.'); return; }
+
+  // Check required file uploads
+  var ft = _ftGet().kyt || {};
+  var missingFiles = [];
+  if (ft['idDocument'] !== false && !document.getElementById('kytIdDoc')?.files?.[0])
+    missingFiles.push('Government-issued ID');
+  if (ft['photo'] !== false && !document.getElementById('kytPhoto')?.files?.[0])
+    missingFiles.push('Passport Photograph');
+  if (missingFiles.length) {
+    notify('error', 'Required Files Missing', missingFiles.join(', ') + ' must be uploaded.');
+    return;
+  }
+
   if (!form.checkValidity()) { form.reportValidity(); return; }
 
   var gtrEmail = document.getElementById('kytGtrEmail')?.value.trim();
