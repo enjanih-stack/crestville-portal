@@ -1829,6 +1829,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       </div>
 
       <!-- ── PROPERTIES ── -->
+      <div class="pg" id="pgProperties">
         <div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()" title="Go back">&#8592;</button><button class="pnb-btn" onclick="historyFwd()" title="Go forward">&#8594;</button><div class="pnb-crumb" id="navCrumb"></div></div>
         <div class="page-header">
           <div id="propPageTitle">
@@ -1907,7 +1908,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
         </div>
       </div>
 
-    </div><!-- /pages container -->
+    </div>      </div><!-- /pgProperties -->
+
+      <!-- /pages container -->
   </div><!-- /content-area -->
 </div><!-- /vApp -->
 
@@ -2668,9 +2671,13 @@ async function _bootApp(user, userData, adminMode) {
   showApp();
   renderAll();
   restoreAutoSave();
-  // Push starting page to history
+
+  // Show the correct starting page and trigger its load function
   var startPage = adminMode ? 'pgDashboard' : 'pgMyProperty';
-  _pushHistory(startPage);
+  var startBtn  = adminMode
+    ? document.querySelector('.nav-item.on') || document.getElementById('navDashboard')
+    : document.getElementById('navMyProp');
+  showPage(startPage, startBtn);
   sessionStorage.setItem('crs_from_landing', '1');
 
   // Start idle timer
@@ -3105,18 +3112,21 @@ function showPage(pgId, btn) {
   _pushHistory(pgId);
   document.querySelectorAll('.pg').forEach(p => p.classList.remove('on'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('on'));
-  document.getElementById(pgId).classList.add('on');
+  const pg = document.getElementById(pgId);
+  if (!pg) { console.warn('showPage: page not found:', pgId); return; }
+  pg.classList.add('on');
   if(btn) btn.classList.add('on');
   closeSidebar();
-  if(pgId === 'pgVacant')        renderVacant();
-  if(pgId === 'pgProperties')    renderProperties();
-  if(pgId === 'pgRentManager')   renderRentManager();
-  if(pgId === 'pgNoticesAdmin')  { if(typeof nmRenderList==='function') nmRenderList(); }
-  if(pgId === 'pgModRequests')   { if(typeof mrAdminRender==='function') mrAdminRender(); }
-  if(pgId === 'pgApplications')  { if(typeof loadAdminApplications==='function') loadAdminApplications(); }
-  if(pgId === 'pgMyApplications'){ if(typeof loadMyApplicationStatus==='function') loadMyApplicationStatus(); }
-  if(pgId === 'pgTenants')       { if(typeof loadTenantsTable==='function') loadTenantsTable(); }
-  if(pgId === 'pgDashboard')     { if(typeof updateMetrics==='function') { updateMetrics(); if(typeof renderChart==='function') renderChart(); } }
+  if(pgId === 'pgVacant')          renderVacant();
+  if(pgId === 'pgProperties')      renderProperties();
+  if(pgId === 'pgRentManager')     renderRentManager();
+  if(pgId === 'pgMyProperty')      { if(typeof loadMyProperty==='function') loadMyProperty({}); }
+  if(pgId === 'pgNoticesAdmin')    { if(typeof nmRenderList==='function') nmRenderList(); }
+  if(pgId === 'pgModRequests')     { if(typeof mrAdminRender==='function') mrAdminRender(); }
+  if(pgId === 'pgApplications')    { if(typeof loadAdminApplications==='function') loadAdminApplications(); }
+  if(pgId === 'pgMyApplications')  { if(typeof loadMyApplicationStatus==='function') loadMyApplicationStatus(); }
+  if(pgId === 'pgTenants')         { if(typeof loadTenantsTable==='function') loadTenantsTable(); }
+  if(pgId === 'pgDashboard')       { if(typeof updateMetrics==='function') { updateMetrics(); if(typeof renderChart==='function') renderChart(); } }
   // Save state on every page navigation
   if (typeof saveSessionState === 'function') saveSessionState();
 }
