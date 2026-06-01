@@ -1539,14 +1539,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       <div class="pg" id="pgMyProperty">
         <div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()" title="Go back">&#8592;</button><button class="pnb-btn" onclick="historyFwd()" title="Go forward">&#8594;</button><div class="pnb-crumb" id="navCrumb"></div></div>
         <div class="page-header">
-          <div><h1>My Tenancy</h1><div class="ph-sub">Your tenancy details, renewal status and notices</div></div>
-          <button class="btn btn-gold" onclick="openRenewalModal()" id="renewBtn" style="display:none">🔄 Request Renewal</button>
+          <div><h1>My Tenancy</h1><div class="ph-sub">Your tenancy details and particulars</div></div>
         </div>
         <div class="page-body" id="myPropertyBody">
           <div style="text-align:center;padding:60px 24px;color:var(--dim)">
-            <div style="font-size:3rem;margin-bottom:14px">🔑</div>
-            <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;color:var(--ink);margin-bottom:8px">No tenancy record linked</div>
-            <div style="font-size:.84rem;line-height:1.7">Your account is not yet linked to a tenancy.<br>Contact <strong>crestechnologies@outlook.com</strong></div>
+            <div style="font-size:3rem;margin-bottom:14px">⏳</div>
+            <div style="font-size:.9rem">Loading tenancy record...</div>
           </div>
         </div>
       </div>
@@ -2764,6 +2762,241 @@ function _getTenantByEmail(email) {
   return null;
 }
 
+/* ══════════════════════════════════════════════════════
+   MY PROPERTY PAGE — Full Tenant Particulars
+══════════════════════════════════════════════════════ */
+async function loadMyProperty(userData) {
+  const body = document.getElementById('myPropertyBody');
+  if (!body || !currentUser) return;
+  const myEmail = (currentUser.email || '').toLowerCase().trim();
+  if (!myEmail) return;
+
+  body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--dim)">'
+    + '<div style="font-size:2rem;margin-bottom:10px">⏳</div><div>Loading your tenancy...</div></div>';
+
+  // ── Fetch ALL records for this tenant ──
+  const seenUnits = new Set();
+  const allMyRaws = [];
+  function _addRec(r) {
+    const key = (r.unitId || r.unit || '').trim().toLowerCase();
+    if (!key || seenUnits.has(key)) return;
+    seenUnits.add(key); allMyRaws.push(r);
+  }
+  rentLogs.forEach(e => { if ((e.tenantEmail||'').toLowerCase().trim() === myEmail) _addRec(e); });
+  if (window._seedData) window._seedData.forEach(e => { if ((e.tenantEmail||'').toLowerCase().trim() === myEmail) _addRec(e); });
+  if (window._db) {
+    try {
+      const snap = await window._db.collection('rentRecords').where('tenantEmail','==',myEmail).get();
+      snap.docs.forEach(d => _addRec(d.data()));
+    } catch(e) {
+      try {
+        const all = await window._db.collection('rentRecords').limit(100).get();
+        all.docs.forEach(d => { const data = d.data(); if ((data.tenantEmail||'').toLowerCase().trim()===myEmail) _addRec(data); });
+      } catch(e2) {}
+    }
+  }
+
+  const allMyRecords = allMyRaws.map(r => _normaliseRecord(r)).filter(r => r && (r.unitId||r.unit));
+
+  // Patch into rentLogs
+  allMyRaws.forEach(raw => {
+    const ri = rentLogs.findIndex(e => (e.unitId||e.unit||'') === (raw.unitId||raw.unit||''));
+    if (ri >= 0) { rentLogs[ri] = Object.assign({}, raw, rentLogs[ri], { tenantEmail: raw.tenantEmail, tenant: raw.tenant || rentLogs[ri].tenant }); }
+    else if (raw.tenantEmail) rentLogs.push(raw);
+  });
+  if (allMyRaws.length) { try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {} }
+
+  // No records found
+  if (!allMyRecords.length) {
+    body.innerHTML = '<div style="text-align:center;padding:60px 24px;color:var(--dim)">'
+      + '<div style="font-size:3.5rem;margin-bottom:16px">🔑</div>'
+      + '<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.2rem;font-weight:700;color:var(--ink);margin-bottom:10px">No Tenancy Record Found</div>'
+      + '<div style="font-size:.84rem;line-height:1.8;margin-bottom:16px">Your account (<strong>' + myEmail + '</strong>) is not yet linked to a tenancy record.<br>'
+      + 'Please contact the property manager to link your account.</div>'
+      + '<a href="mailto:crestechnologies@outlook.com" class="btn btn-gold" style="text-decoration:none;display:inline-flex">📧 Contact Admin</a>'
+      + '</div>';
+    window._myRecord = null; window._myAllRecs = [];
+    return;
+  }
+
+  // Track active unit
+  if (!window._myActiveUnitId || !allMyRecords.find(r => (r.unitId||r.unit) === window._myActiveUnitId))
+    window._myActiveUnitId = allMyRecords[0].unitId || allMyRecords[0].unit;
+
+  const rec = allMyRecords.find(r => (r.unitId||r.unit) === window._myActiveUnitId) || allMyRecords[0];
+  window._myRecord  = rec;
+  window._myAllRecs = allMyRecords;
+
+  // Date helpers
+  const today = new Date(); today.setHours(0,0,0,0);
+  const startD = rec.start  ? new Date(rec.start)  : null;
+  const expD   = rec.expiry ? new Date(rec.expiry)  : null;
+  if (expD)   expD.setHours(0,0,0,0);
+  if (startD) startD.setHours(0,0,0,0);
+  const daysLeft    = expD ? Math.round((expD - today) / 864e5) : null;
+  const isOverdue   = daysLeft !== null && daysLeft < 0;
+  const isExpiring  = daysLeft !== null && daysLeft >= 0 && daysLeft <= 60;
+  const totalDays   = (startD && expD) ? Math.round((expD - startD) / 864e5) : null;
+  const elapsedDays = startD ? Math.round((today - startD) / 864e5) : null;
+  const pctElapsed  = (totalDays && elapsedDays !== null) ? Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100))) : 0;
+  const fmtD = d => { try { return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}); } catch(e){ return d||'—'; } };
+  const fmtAmt = v => v ? '₦' + Number(v).toLocaleString() : '—';
+  const months = (startD && expD) ? ((expD.getFullYear()-startD.getFullYear())*12 + expD.getMonth()-startD.getMonth()) : null;
+
+  // Status color & label
+  const statusColor = isOverdue ? '#8C1F1F' : isExpiring ? '#b45309' : '#15803d';
+  const statusBg    = isOverdue ? 'rgba(140,31,31,.08)' : isExpiring ? 'rgba(180,83,9,.07)' : 'rgba(21,128,61,.08)';
+  const statusLabel = isOverdue ? '🔴 Overdue by ' + Math.abs(daysLeft) + ' days'
+    : isExpiring ? '🟠 Expiring in ' + daysLeft + ' days'
+    : daysLeft !== null ? '🟢 Active — ' + daysLeft + ' days remaining' : '🟢 Active';
+
+  // ── Multi-unit switcher ──
+  let switcherHtml = '';
+  if (allMyRecords.length > 1) {
+    switcherHtml = '<div style="margin-bottom:18px">'
+      + '<div style="font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:8px">Your Properties (' + allMyRecords.length + ')</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+      + allMyRecords.map(r => {
+          const isAct = (r.unitId||r.unit) === (rec.unitId||rec.unit);
+          const exp2  = r.expiry ? new Date(r.expiry) : null;
+          if (exp2) exp2.setHours(0,0,0,0);
+          const d2    = exp2 ? Math.round((exp2-today)/864e5) : null;
+          return '<div onclick="window._myActiveUnitId=\'' + (r.unitId||r.unit).replace(/'/g,"\\'") + '\';loadMyProperty({});" '
+            + 'style="cursor:pointer;padding:10px 14px;border-radius:8px;border:2px solid ' + (isAct?'var(--gold)':'var(--rule)') + ';background:' + (isAct?'rgba(201,150,12,.07)':'var(--card)') + ';flex:1;min-width:150px">'
+            + '<div style="font-size:.74rem;font-weight:700;color:' + (isAct?'var(--gold)':'var(--ink)') + '">' + (r.unit||r.unitId) + '</div>'
+            + '<div style="font-size:.66rem;color:var(--dim);margin-top:2px">' + (r.city||'') + (d2!==null ? ' · ' + (d2<0?'overdue':d2+'d left') : '') + '</div>'
+            + '</div>';
+        }).join('')
+      + '</div></div>';
+  }
+
+  // ── Alert strip ──
+  const alertStrip = (isOverdue || isExpiring)
+    ? '<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:8px;background:' + statusBg + ';border:1px solid ' + statusColor + '20;margin-bottom:18px">'
+      + '<div style="font-size:1.3rem">' + (isOverdue?'🔴':'🟠') + '</div>'
+      + '<div><div style="font-weight:700;color:' + statusColor + ';font-size:.84rem">' + (isOverdue?'Tenancy Overdue':'Tenancy Expiring Soon') + '</div>'
+      + '<div style="font-size:.76rem;color:var(--dim);margin-top:2px">' + (isOverdue?'Your tenancy expired on '+fmtD(rec.expiry)+'. Please contact admin immediately.':'Your tenancy expires on '+fmtD(rec.expiry)+'. Start your renewal now.') + '</div></div>'
+      + (isExpiring&&!isOverdue ? '<button class="btn btn-gold btn-sm" onclick="openRenewalFlow()" style="margin-left:auto;white-space:nowrap;font-size:.74rem">🔄 Renew Now</button>' : '')
+      + '</div>' : '';
+
+  // ── Property hero card ──
+  const heroCard = '<div style="background:linear-gradient(135deg,#1A1612 60%,#2a2116);border-radius:14px;padding:24px 26px;margin-bottom:20px;color:#e8dfc8">'
+    + '<div style="font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#9a8a6a;margin-bottom:10px">Your Property</div>'
+    + '<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.45rem;font-weight:700;line-height:1.2;margin-bottom:6px">'
+    + (rec.unit||rec.unitId) + ' — ' + (rec.location||rec.city||'') + '</div>'
+    + '<div style="font-size:.76rem;color:#9a8a6a;margin-bottom:18px">📍 ' + (rec.location||rec.city||'') + '</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px">'
+    + _heroStat('💰 Annual Rent', fmtAmt(rec.amount), '')
+    + (rec.newRent ? _heroStat('📈 New/Revised Rent', fmtAmt(rec.newRent), 'var(--gold)') : '')
+    + _heroStat('📅 Start Date',  rec.start  ? fmtD(rec.start)  : '—', '')
+    + _heroStat('🗓️ Expiry Date', rec.expiry ? fmtD(rec.expiry) : '—', isOverdue?'#f87171':isExpiring?'#fb923c':'#86efac')
+    + _heroStat('📊 Status', rec.vacancy||'Occupied', isOverdue?'#f87171':isExpiring?'#fb923c':'#86efac')
+    + (rec.lastPayment ? _heroStat('💳 Last Payment', fmtD(rec.lastPayment), '') : '')
+    + '</div>'
+    // Progress bar
+    + (totalDays ? '<div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:.66rem;color:#9a8a6a;margin-bottom:5px">'
+      + '<span>START ' + (startD ? startD.toLocaleDateString('en-NG',{month:'short',year:'numeric'}) : '') + '</span>'
+      + '<span style="color:' + (isOverdue?'#f87171':isExpiring?'#fb923c':'#86efac') + ';font-weight:700">' + pctElapsed + '% elapsed</span>'
+      + '<span>EXPIRY ' + (expD ? expD.toLocaleDateString('en-NG',{month:'short',year:'numeric'}) : '') + '</span></div>'
+      + '<div style="height:6px;background:rgba(255,255,255,.1);border-radius:6px;overflow:hidden">'
+      + '<div style="height:100%;width:' + pctElapsed + '%;background:' + (isOverdue?'#ef4444':isExpiring?'#f97316':'#22c55e') + ';border-radius:6px;transition:width .5s"></div>'
+      + '</div></div>' : '')
+    + '</div>';
+
+  // ── Particulars sections ──
+  const partHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'
+    // Personal info
+    + _partSection('👤 Personal Information', [
+        ['Full Name',        rec.tenant||'—'],
+        ['Name on Contract', rec.contractName !== rec.tenant ? (rec.contractName||'—') : '(same as above)'],
+        ['Email',            rec.tenantEmail||'—'],
+        ['Phone',            rec.tenantPhone||'—'],
+        ['NIN',              rec.tenantNIN ? rec.tenantNIN.slice(0,4)+'*****'+rec.tenantNIN.slice(-2) : '—'],
+      ])
+    // Property details
+    + _partSection('🏠 Property Details', [
+        ['Unit',             rec.unit||rec.unitId||'—'],
+        ['Type',             rec.type||'Residential'],
+        ['Location',         rec.location||'—'],
+        ['City',             rec.city||'—'],
+        ['Occupancy',        rec.vacancy||'Occupied'],
+      ])
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'
+    // Tenancy terms
+    + _partSection('📋 Tenancy Terms', [
+        ['Tenancy Type',     'Term Certain'],
+        ['Start Date',       rec.start  ? fmtD(rec.start)  : '—'],
+        ['Expiry Date',      rec.expiry ? fmtD(rec.expiry) : '—'],
+        ['Duration',         months ? months + ' months (' + (months>=12?Math.floor(months/12)+'yr '+(months%12)+'mo':months+'mo') + ')' : '—'],
+        ['Days Remaining',   daysLeft !== null ? (daysLeft < 0 ? Math.abs(daysLeft)+' days overdue' : daysLeft+' days left') : '—'],
+      ])
+    // Rent & financials
+    + _partSection('💰 Rent & Financial Details', [
+        ['Current Annual Rent', fmtAmt(rec.amount)],
+        ['Monthly Equivalent',  rec.amount ? '₦'+Math.round(Number(rec.amount)/12).toLocaleString() : '—'],
+        ['New / Revised Rent',  rec.newRent ? '<span style="color:var(--gold);font-weight:700">'+fmtAmt(rec.newRent)+'</span>' : 'Not revised'],
+        ['New Rent Effective',  rec.newRentDate ? '<span style="color:var(--green)">'+fmtD(rec.newRentDate)+'</span>' : '<span style="color:var(--dim)">Not specified</span>'],
+        ['Last Payment',        rec.lastPayment ? fmtD(rec.lastPayment) : '—'],
+        ['Notes from Landlord', rec.notes||'—'],
+      ])
+    + '</div>'
+    // Reference + actions
+    + '<div style="background:rgba(201,150,12,.06);border:1px solid rgba(201,150,12,.2);border-radius:8px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">'
+    + '<div><div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:4px">Tenancy Reference</div>'
+    + '<div style="font-family:\'DM Mono\',monospace;font-size:.88rem;font-weight:600;color:var(--gold)">' + (rec.id||'CRS-'+rec.unitId.replace(/[^A-Z0-9]/gi,'-').toUpperCase()) + '</div></div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    + '<button class="btn btn-outline btn-sm" onclick="window.print()" style="font-size:.74rem">🖨️ Print Particulars</button>'
+    + '<button class="btn btn-outline btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(\'' + (rec.id||rec.unitId) + '\').then(()=>notify(\'success\',\'Copied!\',\'\'))" style="font-size:.74rem">📋 Copy Reference</button>'
+    + '</div></div>'
+    // Advisory
+    + '<div style="margin-top:14px;padding:12px 16px;background:rgba(234,120,20,.06);border:1px solid rgba(234,120,20,.2);border-radius:8px;font-size:.78rem;color:#7c4a00">'
+    + '⚠️ If any of your details are incorrect, please use the <strong>Request Correction</strong> button below to notify the admin.'
+    + '</div>'
+    // Request correction + prev contract upload
+    + '<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">'
+    + '<button class="btn btn-outline btn-sm" onclick="openRenewalFlow()" style="font-size:.76rem">🔄 Request Renewal</button>'
+    + '<button class="btn btn-outline btn-sm" onclick="openModRequestModal()" style="font-size:.76rem">✏️ Request Correction</button>'
+    + '</div>'
+    + '<div id="prevContractUploadArea" style="margin-top:14px"></div>';
+
+  body.innerHTML = switcherHtml + alertStrip + heroCard + '<div style="margin-top:4px">' + partHtml + '</div>';
+
+  // Render prev contract upload and status
+  if (typeof renderPrevContractUpload === 'function') renderPrevContractUpload();
+}
+
+function _heroStat(label, value, valueColor) {
+  return '<div style="background:rgba(255,255,255,.05);border-radius:8px;padding:12px">'
+    + '<div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9a8a6a;margin-bottom:5px">' + label + '</div>'
+    + '<div style="font-size:.88rem;font-weight:700;color:' + (valueColor||'#e8dfc8') + '">' + value + '</div>'
+    + '</div>';
+}
+
+function _partSection(title, rows) {
+  return '<div style="background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden">'
+    + '<div style="font-family:\'Cormorant Garamond\',serif;font-size:.95rem;font-weight:700;color:var(--ink);padding:12px 16px;background:var(--cream);border-bottom:1px solid var(--rule)">' + title + '</div>'
+    + '<div style="padding:12px 0">'
+    + rows.map(r => '<div style="display:flex;gap:10px;padding:6px 16px;border-bottom:1px solid rgba(0,0,0,.04)">'
+      + '<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);width:140px;flex-shrink:0;padding-top:2px">' + r[0] + '</div>'
+      + '<div style="font-size:.8rem;color:var(--ink);flex:1">' + r[1] + '</div>'
+      + '</div>').join('')
+    + '</div></div>';
+}
+
+/* Mod request modal trigger — opens correction request tab */
+function openModRequestModal() {
+  if (typeof mrTenantOpenForm === 'function') { mrTenantOpenForm(); return; }
+  notify('info','Request Correction','Contact crestechnologies@outlook.com with your correction details, referencing your tenancy ID.');
+}
+
+function _resetMyPropertyState() {
+  window._myActiveUnitId = null;
+  window._myRecord  = null;
+  window._myAllRecs = [];
+}
+
 function _normaliseRecord(r) {
   if (!r) return null;
   return {
@@ -3306,12 +3539,6 @@ function switchMyProperty(unitId) {
   loadMyProperty({});
 }
 
-/* Reset active unit when user logs out */
-function _resetMyPropertyState() {
-  window._myActiveUnitId = null;
-  window._myRecord = null;
-  window._myAllRecs = [];
-}
 
 /* ── Tab switching ── */
 function tenSwitchTab(tab) {
