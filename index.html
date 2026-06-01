@@ -3000,6 +3000,148 @@ function fmtTableDate(d) {
   } catch(e) { return d; }
 }
 
+/* ══════════════════════════════════════════════════
+   RENT MODAL — Add / Edit / Delete / Save
+══════════════════════════════════════════════════ */
+function openRentModal(idx) {
+  idx = (idx !== undefined && idx !== null) ? parseInt(idx) : null;
+  const isEdit = idx !== null && !isNaN(idx);
+  document.getElementById('rmEditId').value   = isEdit ? idx : '';
+  document.getElementById('rentModalTitle').textContent = isEdit ? 'Edit Record' : 'Add Rent Record';
+
+  // Populate unit dropdown if empty
+  const sel = document.getElementById('rmUnit');
+  if (sel && sel.options.length <= 1) {
+    sel.innerHTML = '<option value="">— Select unit —</option>'
+      + PROPERTIES.map(p => `<option value="${p.id}">${p.label} — ${p.location||p.city||''}</option>`).join('');
+  }
+
+  const setV = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+
+  if (isEdit) {
+    const e = rentLogs[idx];
+    if (!e) { notify('error','Not Found','Record index not found.'); return; }
+    setV('rmUnit',         e.unitId || e.unit || '');
+    setV('rmTenant',       e.tenant || '');
+    setV('rmContractName', e.contractName || '');
+    setV('rmTenantEmail',  e.tenantEmail || '');
+    setV('rmTenantPhone',  e.tenantPhone || '');
+    setV('rmAmount',       e.amount || '');
+    setV('rmNewRent',      e.newRent || '');
+    setV('rmLastPayment',  e.lastPayment || '');
+    setV('rmStart',        e.start || '');
+    setV('rmExpiry',       e.expiry || '');
+    setV('rmVacancy',      e.vacancy || 'occupied');
+    setV('rmNotes',        e.notes || '');
+  } else {
+    ['rmUnit','rmTenant','rmContractName','rmTenantEmail','rmTenantPhone',
+     'rmAmount','rmNewRent','rmLastPayment','rmStart','rmExpiry','rmNotes']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const v = document.getElementById('rmVacancy');
+    if (v) v.value = 'occupied';
+  }
+  document.getElementById('rentModal').classList.add('on');
+}
+
+function closeRentModal() {
+  document.getElementById('rentModal').classList.remove('on');
+}
+
+function editRentRecord(idx) {
+  openRentModal(idx);
+}
+
+function editRentByUnit(propId) {
+  // Find record in rentLogs by unitId
+  const idx = rentLogs.findIndex(e => (e.unitId || e.unit || '') === propId);
+  if (idx >= 0) {
+    openRentModal(idx);
+  } else {
+    // No record — open Add modal pre-selected to this unit
+    openRentModal(null);
+    setTimeout(() => {
+      const sel = document.getElementById('rmUnit');
+      if (sel) sel.value = propId;
+    }, 50);
+  }
+}
+
+function addRecordForUnit(propId) {
+  openRentModal(null);
+  setTimeout(() => {
+    const sel = document.getElementById('rmUnit');
+    if (sel) sel.value = propId;
+  }, 50);
+}
+
+function deleteRentRecord(idx) {
+  const rec = rentLogs[idx];
+  if (!rec) return;
+  if (!confirm(`Delete record for "${rec.tenant || rec.unitId}"? This cannot be undone.`)) return;
+  if (window._db && rec.id) window._db.collection('rentRecords').doc(rec.id).delete().catch(()=>{});
+  rentLogs.splice(idx, 1);
+  try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {}
+  logActivity((currentUser?.email)||'Admin','admin','delete','Deleted record',rec.tenant||rec.unitId||'');
+  renderRentManager();
+  if (typeof renderProperties === 'function') renderProperties();
+  if (typeof renderAll === 'function') renderAll();
+  notify('success','Record Deleted', rec.tenant || rec.unitId || 'Record removed.');
+}
+
+async function saveRentRecord() {
+  const unitId = document.getElementById('rmUnit')?.value;
+  const tenant = document.getElementById('rmTenant')?.value.trim();
+  if (!unitId || !tenant) { notify('error','Missing Fields','Select a unit and enter tenant name.'); return; }
+
+  const getV = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const editIdxRaw = document.getElementById('rmEditId')?.value;
+  const editIdx    = editIdxRaw !== '' ? parseInt(editIdxRaw) : null;
+  const existingId = editIdx !== null && !isNaN(editIdx) ? (rentLogs[editIdx]?.id || '') : '';
+  const prop       = PROPERTIES.find(p => p.id === unitId) || {};
+
+  const record = {
+    id:           existingId || ('REC-' + Date.now()),
+    unitId,
+    unit:         getPropertyLabel(unitId) || unitId,
+    location:     prop.location || '',
+    city:         prop.city || '',
+    type:         prop.type || '',
+    tenant,
+    contractName: getV('rmContractName') || tenant,
+    tenantEmail:  getV('rmTenantEmail').toLowerCase(),
+    tenantPhone:  getV('rmTenantPhone'),
+    amount:       getV('rmAmount'),
+    newRent:      getV('rmNewRent'),
+    lastPayment:  getV('rmLastPayment'),
+    start:        getV('rmStart'),
+    expiry:       getV('rmExpiry'),
+    vacancy:      getV('rmVacancy') || 'occupied',
+    notes:        getV('rmNotes'),
+    updatedAt:    new Date().toISOString(),
+    importedAt:   (editIdx !== null && !isNaN(editIdx) ? (rentLogs[editIdx]?.importedAt || '') : '') || new Date().toISOString(),
+  };
+
+  if (editIdx !== null && !isNaN(editIdx) && rentLogs[editIdx]) {
+    rentLogs[editIdx] = { ...rentLogs[editIdx], ...record };
+  } else {
+    rentLogs.push(record);
+  }
+
+  try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {}
+  closeRentModal();
+  renderRentManager();
+  if (typeof renderProperties === 'function') renderProperties();
+  if (typeof renderAll === 'function') renderAll();
+  logActivity((currentUser?.email)||'Admin','admin', editIdx !== null ? 'edit' : 'add',
+    (editIdx !== null ? 'Edited' : 'Added') + ' record', tenant + ' — ' + (getPropertyLabel(unitId)||unitId));
+  notify('success', editIdx !== null ? 'Record Updated' : 'Record Added', tenant + ' — ' + (getPropertyLabel(unitId)||unitId));
+
+  // Sync to Firestore non-blocking
+  try {
+    if (window._db) await window._db.collection('rentRecords').doc(record.id).set(record, { merge: true });
+  } catch(e) { console.log('Firestore save:', e); }
+}
+
 function renderRentManager() {
   const tbody = document.getElementById('rmBody');
   if(!tbody) return;
