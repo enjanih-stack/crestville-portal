@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CRS Admin — Workflow Simulation</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#C9960C; --gold-l:rgba(201,150,12,.12); --gold-b:rgba(201,150,12,.3);
+  --ink:#1A1612; --dim:#7A6A5A; --rule:#DDD5C5; --cream:#F5F0E8; --card:#FFFFFF;
+  --bg:#F0EBE1; --green:#15803D; --green-l:rgba(21,128,61,.1); --red:#8C1F1F; --red-l:rgba(140,31,31,.08);
+  --blue:#1D4ED8; --blue-l:rgba(29,78,216,.08);
+  --shadow:0 2px 16px rgba(0,0,0,.08);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+/* ── Layout ── */
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{background:var(--ink);padding:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sb-logo{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-logo-brand{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:700;color:#C9960C;letter-spacing:.02em}
+.sb-logo-sub{font-size:.6rem;letter-spacing:.15em;color:rgba(255,255,255,.3);text-transform:uppercase;margin-top:2px}
+.sb-badge{display:inline-block;background:#C9960C;color:#fff;font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:6px;vertical-align:middle}
+.sb-section{font-size:.58rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.25);padding:18px 20px 6px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:.8rem;color:rgba(255,255,255,.55);cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:all .15s;border-left:2px solid transparent}
+.sb-item:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.85)}
+.sb-item.active{background:rgba(201,150,12,.12);color:#C9960C;border-left-color:#C9960C;font-weight:600}
+.sb-icon{font-size:1rem;width:20px;text-align:center}
+.main{overflow-y:auto;padding:28px 32px;max-width:1100px}
+/* ── Header ── */
+.page-header{margin-bottom:24px}
+.page-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:var(--ink);line-height:1.1}
+.page-sub{font-size:.82rem;color:var(--dim);margin-top:5px}
+.sim-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(201,150,12,.12);border:1px solid rgba(201,150,12,.3);color:#7a5c00;font-size:.68rem;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:.04em;margin-top:8px}
+/* ── Cards ── */
+.card{background:var(--card);border:1px solid var(--rule);border-radius:12px;overflow:hidden;margin-bottom:20px;box-shadow:var(--shadow)}
+.card-head{display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--cream);border-bottom:1px solid var(--rule)}
+.card-title{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:700;color:var(--ink)}
+.card-badge{font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:12px;letter-spacing:.04em}
+.card-body{padding:18px}
+/* ── Progress Steps ── */
+.steps{display:flex;gap:0;margin-bottom:20px;overflow-x:auto;padding-bottom:4px}
+.step{display:flex;align-items:center;gap:0;flex-shrink:0}
+.step-pill{display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:6px;font-size:.72rem;font-weight:600;white-space:nowrap;transition:all .25s}
+.step-pill.done{background:#15803d;color:#fff}
+.step-pill.active{background:#C9960C;color:#fff;box-shadow:0 2px 8px rgba(201,150,12,.35)}
+.step-pill.pending{background:var(--cream);color:var(--dim);border:1px solid var(--rule)}
+.step-arrow{color:var(--rule);font-size:.9rem;padding:0 4px}
+/* ── Actor rows ── */
+.actor-row{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start}
+.actor-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;border:2px solid var(--rule)}
+.actor-bubble{flex:1;padding:12px 14px;border-radius:0 10px 10px 10px;border:1px solid var(--rule);font-size:.8rem;line-height:1.65;background:var(--card)}
+.actor-bubble.admin{background:#F0F7FF;border-color:#BFDBFE;border-radius:10px 0 10px 10px}
+.actor-label{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+/* ── Form controls ── */
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin-bottom:5px}
+.fg input,.fg select,.fg textarea{width:100%;padding:9px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-family:'DM Sans',sans-serif;font-size:.84rem;background:var(--card);outline:none;color:var(--ink)}
+.fg textarea{resize:vertical;min-height:60px}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-bottom-color:var(--gold);box-shadow:0 2px 0 rgba(201,150,12,.2)}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* ── Buttons ── */
+.btn{padding:9px 18px;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;border:none;transition:all .18s;display:inline-flex;align-items:center;gap:6px}
+.btn-gold{background:#C9960C;color:#fff}
+.btn-gold:hover{background:#a87c08}
+.btn-outline{background:transparent;border:1px solid var(--rule);color:var(--ink)}
+.btn-outline:hover{border-color:#C9960C;color:#C9960C}
+.btn-green{background:rgba(21,128,61,.1);border:1px solid rgba(21,128,61,.3);color:#15803d}
+.btn-red{background:rgba(140,31,31,.08);border:1px solid rgba(140,31,31,.25);color:#8C1F1F}
+.btn-blue{background:rgba(29,78,216,.08);border:1px solid rgba(29,78,216,.25);color:#1D4ED8}
+.btn-sm{padding:6px 12px;font-size:.74rem}
+/* ── Info table ── */
+.info-tbl{width:100%;border-collapse:collapse;font-size:.8rem}
+.info-tbl td{padding:6px 10px;border-bottom:1px solid var(--rule)}
+.info-tbl td:first-child{font-weight:600;color:var(--dim);width:160px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+.info-tbl tr:last-child td{border-bottom:none}
+/* ── Code box ── */
+.code-box{background:#0F0E0C;border-radius:8px;padding:16px;font-family:'DM Mono',monospace;font-size:.78rem;color:#C9960C;letter-spacing:.06em;text-align:center;margin:12px 0}
+.code-label{font-size:.6rem;color:rgba(201,150,12,.5);text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px}
+.code-val{font-size:1.1rem;font-weight:500}
+/* ── Email preview ── */
+.email-preview{border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin:12px 0;font-size:.78rem}
+.email-header{background:var(--cream);padding:10px 14px;border-bottom:1px solid var(--rule)}
+.email-header strong{font-size:.76rem}
+.email-header .em-row{display:flex;gap:6px;margin-top:3px;font-size:.7rem;color:var(--dim)}
+.email-body{padding:14px;background:#fff;line-height:1.7;color:#444}
+/* ── Status badges ── */
+.status{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.68rem;font-weight:700}
+.status-active{background:var(--gold-l);color:#7a5c00;border:1px solid var(--gold-b)}
+.status-pending{background:var(--blue-l);color:var(--blue);border:1px solid rgba(29,78,216,.25)}
+.status-approved{background:var(--green-l);color:var(--green);border:1px solid rgba(21,128,61,.25)}
+.status-rejected{background:var(--red-l);color:var(--red);border:1px solid rgba(140,31,31,.2)}
+/* ── Notification toast ── */
+.toast-wrap{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--ink);color:#fff;padding:12px 18px;border-radius:8px;font-size:.8rem;border-left:4px solid #C9960C;max-width:320px;animation:slideIn .25s ease;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.toast.success{border-left-color:#15803d}
+.toast.error{border-left-color:#8C1F1F}
+.toast.info{border-left-color:#1D4ED8}
+@keyframes slideIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+/* ── Divider ── */
+.divider{height:1px;background:var(--rule);margin:16px 0}
+/* ── Highlight box ── */
+.highlight{padding:12px 14px;border-radius:8px;font-size:.78rem;line-height:1.65;margin:10px 0}
+.highlight.gold{background:rgba(201,150,12,.07);border:1px solid rgba(201,150,12,.25)}
+.highlight.green{background:rgba(21,128,61,.07);border:1px solid rgba(21,128,61,.2)}
+.highlight.red{background:rgba(140,31,31,.06);border:1px solid rgba(140,31,31,.2)}
+.highlight.blue{background:rgba(29,78,216,.06);border:1px solid rgba(29,78,216,.2)}
+/* ── Sections ── */
+.sim-section{margin-bottom:32px}
+.sim-section-title{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--dim);padding-bottom:8px;border-bottom:2px solid var(--rule);margin-bottom:16px}
+/* ── Timeline ── */
+.timeline{position:relative;padding-left:24px}
+.timeline::before{content:'';position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:var(--rule)}
+.tl-item{position:relative;padding-bottom:16px}
+.tl-item::before{content:'';position:absolute;left:-20px;top:5px;width:10px;height:10px;border-radius:50%;background:var(--rule);border:2px solid var(--card)}
+.tl-item.done::before{background:#15803d}
+.tl-item.active-tl::before{background:#C9960C}
+.tl-title{font-size:.8rem;font-weight:700;color:var(--ink);margin-bottom:2px}
+.tl-desc{font-size:.74rem;color:var(--dim)}
+/* responsive */
+@media(max-width:800px){.shell{grid-template-columns:1fr}.sidebar{display:none}.fg-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-brand">⚙️ CRS Workflow Simulator</div>
+    <div class="sb-logo-sub">Admin Process Validation</div>
+  </div>
+  <div class="sb-section">Simulations</div>
+  <button class="sb-item active" onclick="show('sim-new')"><span class="sb-icon">🏠</span> New Tenancy Flow</button>
+  <button class="sb-item" onclick="show('sim-renewal')"><span class="sb-icon">🔄</span> Renewal Flow</button>
+  <button class="sb-item" onclick="show('sim-payment')"><span class="sb-icon">💳</span> Payment Advisor</button>
+  <button class="sb-item" onclick="show('sim-approval')"><span class="sb-icon">✅</span> Payment Approval</button>
+  <button class="sb-item" onclick="show('sim-eform')"><span class="sb-icon">📝</span> eForm Review</button>
+  <button class="sb-item" onclick="show('sim-guarantor')"><span class="sb-icon">🤝</span> Guarantor Consent</button>
+  <button class="sb-item" onclick="show('sim-autovacate')"><span class="sb-icon">🏚️</span> Auto-Vacate</button>
+  <button class="sb-item" onclick="show('sim-fieldtoggle')"><span class="sb-icon">⚙️</span> Field Toggles</button>
+  <div class="sb-section">Outputs</div>
+  <button class="sb-item" onclick="show('sim-log')"><span class="sb-icon">📋</span> Simulation Log</button>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+<!-- ══════════════════════════════════════════════════════
+     SIM 1 — NEW TENANCY FLOW
+═══════════════════════════════════════════════════════ -->
+<section id="sim-new" class="sim-page">
+  <div class="page-header">
+    <div class="page-title">New Tenancy Workflow</div>
+    <div class="page-sub">End-to-end simulation from KYT submission to approved tenancy agreement</div>
+    <div class="sim-badge">🎭 SIMULATION MODE · No real emails sent · No Firestore writes</div>
+  </div>
+
+  <!-- Process Map -->
+  <div class="card">
+    <div class="card-head">
+      <span class="sb-icon">🗺️</span>
+      <div class="card-title">Process Map — New Tenant (7 Steps)</div>
+    </div>
+    <div class="card-body">
+      <div class="steps" id="new-steps">
+        <div class="step"><div class="step-pill active" id="ns-0">📋 KYT Submitted</div><span class="step-arrow">›</span></div>
+        <div class="step"><div class="step-pill pending" id="ns-1">💳 Payment Slip Issued</div><span class="step-arrow">›</span></div>
+        <div class="step"><div class="step-pill pending" id="ns-2">🏦 Payment Submitted</div><span class="step-arrow">›</span></div>
+        <div class="step"><div class="step-pill pending" id="ns-3">✅ Payment Approved</div><span class="step-arrow">›</span></div>
+        <div class="step"><div class="step-pill pending" id="ns-4">📝 eForm Completed</div><span class="step-arrow">›</span></div>
+        <div class="step"><div class="step-pill pending" id="ns-5">🤝 Consents</div><span class="step-arrow">›</span></div>
+        <div class="step"><div class="step-pill pending" id="ns-6">🏠 Complete</div></div>
+      </div>
+
+      <!-- STEP 1: KYT Data -->
+      <div class="sim-section" id="new-step-kyt">
+        <div class="sim-section-title">Step 1 — Tenant submits KYT Questionnaire</div>
+        <div class="fg-row">
+          <div class="fg"><label>Tenant Full Name</label><input id="n-name" value="Mr. Chukwuemeka Obi" onchange="newSim.name=this.value"/></div>
+          <div class="fg"><label>Email Address</label><input id="n-email" value="c.obi@gmail.com" type="email"/></div>
+        </div>
+        <div class="fg-row">
+          <div class="fg"><label>Select Property</label>
+            <select id="n-unit">
+              <option value="3BDR Flat 2B">3BDR Flat 2B — Ojodu (₦3,500,000/yr)</option>
+              <option value="Room & Palour self contain">Room & Parlour Self Contain — Ibadan (₦200,000/yr)</option>
+            </select>
+          </div>
+          <div class="fg"><label>NIN</label><input id="n-nin" value="12345678901"/></div>
+        </div>
+        <div class="fg-row">
+          <div class="fg"><label>Occupation</label><input id="n-occ" value="Software Engineer"/></div>
+          <div class="fg"><label>Employer</label><input id="n-emp" value="TechCorp Nigeria Ltd"/></div>
+        </div>
+        <div class="fg"><label>Guarantor Name</label><input id="n-gtr" value="Mrs Amaka Okonkwo"/></div>
+        <div class="fg"><label>Guarantor Email</label><input id="n-gtre" value="amaka.okonkwo@yahoo.com" type="email"/></div>
+        <div style="margin-top:14px">
+          <button class="btn btn-gold" onclick="simStep1_KYT()">📤 Simulate KYT Submission</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Admin issues Payment Slip -->
+      <div class="sim-section" id="new-step-slip" style="display:none">
+        <div class="sim-section-title">Step 2 — Admin: Review KYT & Issue Payment Advice Slip</div>
+        <div class="actor-row">
+          <div class="actor-avatar" style="background:#fef9e7">👤</div>
+          <div class="actor-bubble">
+            <div class="actor-label" style="color:var(--dim)">Tenant</div>
+            Application received. Awaiting admin review.
+          </div>
+        </div>
+        <div class="actor-row" style="flex-direction:row-reverse">
+          <div class="actor-avatar" style="background:#f0fdf4">🏛</div>
+          <div class="actor-bubble admin">
+            <div class="actor-label" style="color:var(--blue)">Admin</div>
+            KYT reviewed. Now issuing Payment Advice Slip with fee breakdown.
+          </div>
+        </div>
+        <div class="fg-row">
+          <div class="fg"><label>Annual Rent (₦)</label><input type="number" id="n-rent" value="3500000"/></div>
+          <div class="fg"><label>Agreement Fee (₦)</label><input type="number" id="n-fee" value="50000"/></div>
+        </div>
+        <div class="fg-row">
+          <div class="fg"><label>Legal / Admin Fee (₦)</label><input type="number" id="n-legal" value="35000"/></div>
+          <div class="fg"><label>Caution Deposit (₦)</label><input type="number" id="n-caution" value="175000"/></div>
+        </div>
+        <button class="btn btn-gold" onclick="simStep2_PaySlip()">💳 Generate & Send Payment Advice Slip</button>
+      </div>
+
+      <!-- STEP 3: Tenant pays & submits confirmation -->
+      <div class="sim-section" id="new-step-pay" style="display:none">
+        <div class="sim-section-title">Step 3 — Tenant Submits Payment Confirmation</div>
+        <div id="new-pad-display" class="code-box"></div>
+        <div class="fg-row">
+          <div class="fg"><label>PAD ID (auto-filled)</label><input id="n-padid" readonly style="font-family:'DM Mono',monospace;color:var(--gold)"/></div>
+          <div class="fg"><label>Amount Paid (₦)</label><input type="number" id="n-paid"/></div>
+        </div>
+        <div class="fg-row">
+          <div class="fg"><label>Bank</label><input id="n-bank" value="Zenith Bank"/></div>
+          <div class="fg"><label>Payment Date</label><input type="date" id="n-paydate"/></div>
+        </div>
+        <div class="fg"><label>Transaction Reference</label><input id="n-ref" value="ZEN/2026/0601/00123456"/></div>
+        <button class="btn btn-gold" onclick="simStep3_Payment()">🏦 Submit Payment Confirmation</button>
+      </div>
+
+      <!-- STEP 4: Admin approves payment -->
+      <div class="sim-section" id="new-step-approve" style="display:none">
+        <div class="sim-section-title">Step 4 — Admin Reviews & Approves Payment</div>
+        <div id="new-payment-review" class="card" style="border:1px solid var(--rule)"></div>
+        <div class="fg"><label>Admin Note (optional)</label><textarea id="n-adminNote" rows="2" placeholder="Payment verified against bank records..."></textarea></div>
+        <div style="display:flex;gap:10px;margin-top:10px">
+          <button class="btn btn-green" onclick="simStep4_Approve(true)">✅ Approve — Generate PCK Key</button>
+          <button class="btn btn-red" onclick="simStep4_Approve(false)">❌ Reject Payment</button>
+        </div>
+      </div>
+
+      <!-- STEP 5: PCK issued + eForm -->
+      <div class="sim-section" id="new-step-pck" style="display:none">
+        <div class="sim-section-title">Step 5 — Payment Key Code (PCK) Issued to Tenant</div>
+        <div id="new-pck-display"></div>
+        <div class="highlight green" style="margin-top:12px">
+          ✅ Tenant receives PCK by email and clicks <strong>"Open eForm →"</strong> in the portal. All codes are pre-loaded into the Tenancy Agreement.
+        </div>
+        <button class="btn btn-gold" style="margin-top:10px" onclick="simStep5_eForm()">📝 Simulate eForm Completion →</button>
+      </div>
+
+      <!-- STEP 6: eForm submitted -->
+      <div class="sim-section" id="new-step-eform" style="display:none">
+        <div class="sim-section-title">Step 6 — Admin Reviews Tenancy eForm</div>
+        <div id="new-eform-review"></div>
+        <div class="fg"><label>Admin Notes</label><textarea id="n-eformNote" rows="2" placeholder="All details verified. Agreement compliant with BS 7671..."></textarea></div>
+        <div style="display:flex;gap:10px;margin-top:10px">
+          <button class="btn btn-green" onclick="simStep6_Approve(true)">✅ Approve — Finalise Tenancy</button>
+          <button class="btn btn-red" onclick="simStep6_Approve(false)">❌ Request Amendment</button>
+        </div>
+      </div>
+
+      <!-- STEP 7: Complete -->
+      <div class="sim-section" id="new-step-complete" style="display:none">
+        <div class="sim-section-title">Step 7 — Tenancy Approved & Active</div>
+        <div id="new-complete-display"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     SIM 2 — RENEWAL FLOW
+═══════════════════════════════════════════════════════ -->
+<section id="sim-renewal" class="sim-page" style="display:none">
+  <div class="page-header">
+    <div class="page-title">Renewal Workflow</div>
+    <div class="page-sub">Simulation for existing tenant renewing their tenancy</div>
+    <div class="sim-badge">🎭 SIMULATION MODE</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><span class="sb-icon">🔄</span><div class="card-title">Process Map — Renewal (7 Steps)</div></div>
+    <div class="card-body">
+      <div class="steps">
+        <div class="step"><div class="step-pill active" id="rs-0">📋 Request</div><span class="step-arrow">›</span></div>
+        <div class="step"><div class="step-pill pending" id="rs-1">💳 Pay Slip</div><span class="step-arrow">›</span></div>
+        <div class="step"><div class="step-pill pending" id="rs-2">🏦 Payment</div><span class="step-arrow">›</span></div>
+        <div class="step"><div class="step-pill pending" id="rs-3">✅ Approved</div><span class="step-arrow">›</span></div>
+        <div class="step"><div class="step-pill pending" id="rs-4">📝 eForm</div><span class="step-arrow">›</span></div>
+        <div class="step"><div class="step-pill pending" id="rs-5">🤝 Consent</div><span class="step-arrow">›</span></div>
+        <div class="step"><div class="step-pill pending" id="rs-6">✅ Done</div></div>
+      </div>
+
+      <div class="sim-section" id="ren-step-1">
+        <div class="sim-section-title">Step 1 — Tenant Submits Renewal Request</div>
+        <div class="highlight gold">ℹ️ System pre-fills current tenancy data from database — tenant only confirms and adds notes.</div>
+        <div style="margin-top:14px">
+          <table class="info-tbl" style="border:1px solid var(--rule);border-radius:8px;overflow:hidden">
+            <tr><td>Tenant</td><td style="font-weight:700">Mr. Monday Sylvanus</td></tr>
+            <tr><td>Unit</td><td>2BDR Flat 4A — Ojodu</td></tr>
+            <tr><td>Current Expiry</td><td>28 Feb 2027</td></tr>
+            <tr><td>Current Annual Rent</td><td style="color:var(--gold);font-weight:700">₦750,000</td></tr>
+            <tr><td>New Commencement</td><td style="color:var(--green);font-weight:700">01 Mar 2027 (previous expiry + 1 day)</td></tr>
+          </table>
+        </div>
+        <div class="fg" style="margin-top:14px"><label>Renewal Term</label>
+          <select id="r-term"><option value="12">12 months (1 year)</option><option value="24">24 months (2 years)</option></select>
+        </div>
+        <div class="fg"><label>Tenant Notes</label><textarea id="r-notes" rows="2" placeholder="Requesting same unit for another year. No structural changes required."></textarea></div>
+        <button class="btn btn-gold" onclick="simRenew1()">📤 Submit Renewal Request</button>
+      </div>
+
+      <div id="ren-step-2" style="display:none">
+        <div class="sim-section">
+          <div class="sim-section-title">Step 2 → 7 — Same as New Tenancy from Payment Slip onward</div>
+          <div class="highlight blue">
+            🔄 The renewal flow is identical to the new tenancy flow from Step 2 onward, with one key difference:<br/>
+            <strong>Commencement date = previous tenancy expiry date (28 Feb 2027)</strong>, not the date of payment approval.
+          </div>
+          <div class="highlight green" style="margin-top:10px">
+            ✅ Renewal Reference: <span id="ren-ref" style="font-family:'DM Mono',monospace;color:var(--gold)"></span><br/>
+            Admin proceeds to issue a Payment Advice Slip (see "Payment Advisor" simulation →)
+          </div>
+          <div style="margin-top:14px">
+            <button class="btn btn-blue" onclick="show('sim-payment')">Continue → Payment Advisor Simulation</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     SIM 3 — PAYMENT ADVISOR
+═══════════════════════════════════════════════════════ -->
+<section id="sim-payment" class="sim-page" style="display:none">
+  <div class="page-header">
+    <div class="page-title">Payment Advisor Document</div>
+    <div class="page-sub">Simulate generating and sending a PAD with unique ID to the tenant</div>
+    <div class="sim-badge">🎭 SIMULATION MODE</div>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="sb-icon">💳</span><div class="card-title">Admin Issues Payment Advice Slip</div></div>
+    <div class="card-body">
+      <div class="fg-row">
+        <div class="fg"><label>Tenant Name</label><input id="pad-name" value="Mr. Chukwuemeka Obi"/></div>
+        <div class="fg"><label>Tenant Email</label><input id="pad-email" value="c.obi@gmail.com" type="email"/></div>
+      </div>
+      <div class="fg"><label>Unit</label><input id="pad-unit" value="3BDR Flat 2B — Ojodu"/></div>
+      <div class="sim-section-title" style="margin-top:16px">Fee Breakdown</div>
+      <div id="pad-items">
+        <div class="fg-row pad-item"><div class="fg"><label>Item</label><input value="Annual Rent"/></div><div class="fg"><label>Amount (₦)</label><input type="number" value="3500000"/></div></div>
+        <div class="fg-row pad-item"><div class="fg"><label>Item</label><input value="Agreement Fee"/></div><div class="fg"><label>Amount (₦)</label><input type="number" value="50000"/></div></div>
+        <div class="fg-row pad-item"><div class="fg"><label>Item</label><input value="Legal / Admin Fee"/></div><div class="fg"><label>Amount (₦)</label><input type="number" value="35000"/></div></div>
+        <div class="fg-row pad-item"><div class="fg"><label>Item</label><input value="Caution Deposit"/></div><div class="fg"><label>Amount (₦)</label><input type="number" value="175000"/></div></div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="addPadItem()" style="margin-bottom:16px">+ Add Item</button>
+      <div class="fg-row">
+        <div class="fg"><label>Bank Name</label><input id="pad-bank" value="Zenith Bank"/></div>
+        <div class="fg"><label>Account Number</label><input id="pad-accno" value="1014619530"/></div>
+      </div>
+      <div class="fg"><label>Account Name</label><input id="pad-accname" value="Crestechnologies IS Ltd"/></div>
+      <div class="fg"><label>Expiry (days from today)</label><input type="number" id="pad-expdays" value="14"/></div>
+      <div class="fg"><label>Additional Notes</label><textarea id="pad-notes" rows="2" placeholder="Payment must be made within 14 days. Quote reference on transfer."></textarea></div>
+      <button class="btn btn-gold" onclick="simGeneratePAD()">⚡ Generate PAD & Preview Email</button>
+
+      <div id="pad-result" style="display:none;margin-top:20px">
+        <div class="sim-section-title">Generated Payment Advice Document</div>
+        <div class="code-box"><div class="code-label">Payment Advisor ID</div><div class="code-val" id="pad-id-display"></div></div>
+        <div class="email-preview" id="pad-email-preview"></div>
+        <div class="highlight green" style="margin-top:10px">✅ In the live portal, this email is sent via Firestore <strong>mail</strong> collection → Firebase Email Extension → tenant inbox + CC: crestechnologies@outlook.com</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     SIM 4 — PAYMENT APPROVAL
+═══════════════════════════════════════════════════════ -->
+<section id="sim-approval" class="sim-page" style="display:none">
+  <div class="page-header">
+    <div class="page-title">Payment Review & Approval</div>
+    <div class="page-sub">Simulate admin reviewing payment submission and generating PCK key code</div>
+    <div class="sim-badge">🎭 SIMULATION MODE</div>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="sb-icon">✅</span><div class="card-title">Payment Review Modal</div></div>
+    <div class="card-body">
+      <div class="sim-section-title">Payment Submitted by Tenant</div>
+      <table class="info-tbl" style="border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin-bottom:16px">
+        <tr><td>Tenant</td><td style="font-weight:700">Mr. Chukwuemeka Obi</td></tr>
+        <tr><td>Unit</td><td>3BDR Flat 2B — Ojodu</td></tr>
+        <tr><td>PAD ID Issued</td><td style="font-family:'DM Mono',monospace;color:var(--gold)" id="apr-pad-issued">PAD-LQ3ABC-XY12</td></tr>
+        <tr><td>Required Amount</td><td style="font-weight:700">₦3,760,000</td></tr>
+        <tr><td>PAD Claimed by Tenant</td><td style="font-family:'DM Mono',monospace" id="apr-pad-tenant">PAD-LQ3ABC-XY12</td></tr>
+        <tr><td>Amount Paid</td><td style="font-weight:700;color:var(--green)">₦3,760,000</td></tr>
+        <tr><td>Bank</td><td>Zenith Bank</td></tr>
+        <tr><td>Payment Date</td><td>31 May 2026</td></tr>
+        <tr><td>Transaction Ref</td><td style="font-family:'DM Mono',monospace">ZEN/2026/0601/00123456</td></tr>
+        <tr><td>PAD Match</td><td><span class="status status-approved">✅ IDs Match</span></td></tr>
+        <tr><td>Amount Match</td><td><span class="status status-approved">✅ Exact Match</span></td></tr>
+      </table>
+      <div class="fg"><label>Admin Note (sent to tenant)</label><textarea id="apr-note" rows="2" placeholder="Payment verified against Zenith Bank records. Proceeding to issue key code."></textarea></div>
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <button class="btn btn-green" onclick="simApprovePayment(true)">✅ Approve — Issue PCK Key Code</button>
+        <button class="btn btn-red" onclick="simApprovePayment(false)">❌ Reject — Notify Tenant</button>
+      </div>
+      <div id="apr-result" style="display:none;margin-top:20px"></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     SIM 5 — eFORM REVIEW
+═══════════════════════════════════════════════════════ -->
+<section id="sim-eform" class="sim-page" style="display:none">
+  <div class="page-header">
+    <div class="page-title">Tenancy eForm Review</div>
+    <div class="page-sub">Admin reviews completed tenancy agreement — approve finalises the tenancy and updates all records</div>
+    <div class="sim-badge">🎭 SIMULATION MODE</div>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="sb-icon">📝</span><div class="card-title">eForm Review Modal — Admin View</div></div>
+    <div class="card-body">
+      <div class="sim-section-title">Submitted eForm Summary</div>
+      <table class="info-tbl" style="border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin-bottom:14px">
+        <tr><td>Tenant</td><td style="font-weight:700">Mr. Chukwuemeka Obi</td></tr>
+        <tr><td>Email</td><td>c.obi@gmail.com</td></tr>
+        <tr><td>Unit</td><td>3BDR Flat 2B — 11 Jibewa SomorinClose, Ojodu</td></tr>
+        <tr><td>KYT Reference</td><td style="font-family:'DM Mono',monospace;color:var(--gold)">KYT-LQ3DEF-PQ89</td></tr>
+        <tr><td>PCK Key Code</td><td style="font-family:'DM Mono',monospace;color:var(--gold);font-weight:700">PCK-LQ3GHI-MN56</td></tr>
+        <tr><td>Submission ID</td><td style="font-family:'DM Mono',monospace">SUB-LQ3JKL-RS34</td></tr>
+        <tr><td>Commencement Date</td><td style="color:var(--green);font-weight:700">01 Jun 2026 (date of payment approval)</td></tr>
+        <tr><td>Expiry Date</td><td style="font-weight:700">01 Jun 2027 (+1 year)</td></tr>
+        <tr><td>Annual Rent</td><td style="color:var(--gold);font-weight:700">₦3,500,000</td></tr>
+        <tr><td>Guarantor</td><td>Mrs Amaka Okonkwo — consent received ✅</td></tr>
+        <tr><td>eForm Status</td><td><span class="status status-active">⏳ Awaiting Admin Approval</span></td></tr>
+      </table>
+
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <button class="btn btn-outline btn-sm" onclick="simPreviewEForm()">📄 Preview Full eForm</button>
+        <button class="btn btn-outline btn-sm" onclick="alert('In live portal: opens CRS_Tenancy_EForm_v3.html?wfId=WF-XXX&view=1 in new tab')">🔍 Full Document Viewer</button>
+      </div>
+
+      <div id="eform-preview" style="display:none;margin-bottom:14px"></div>
+
+      <div class="fg"><label>Admin Notes (sent to tenant)</label><textarea id="ef-note" rows="2" placeholder="Tenancy agreement reviewed and approved. All codes verified. Welcome to Crestville Properties."></textarea></div>
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <button class="btn btn-green" onclick="simApproveEForm(true)">✅ Approve — Finalise Tenancy</button>
+        <button class="btn btn-red" onclick="simApproveEForm(false)">❌ Request Amendment</button>
+      </div>
+      <div id="ef-result" style="display:none;margin-top:20px"></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     SIM 6 — GUARANTOR CONSENT
+═══════════════════════════════════════════════════════ -->
+<section id="sim-guarantor" class="sim-page" style="display:none">
+  <div class="page-header">
+    <div class="page-title">Guarantor / Referee Consent</div>
+    <div class="page-sub">Auto-sent on KYT submission — referees receive consent request emails immediately</div>
+    <div class="sim-badge">🎭 SIMULATION MODE</div>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="sb-icon">🤝</span><div class="card-title">Consent Email Flow</div></div>
+    <div class="card-body">
+      <div class="highlight gold">⚡ These emails are sent <strong>automatically</strong> when the tenant submits their KYT form — no admin action required.</div>
+      <div class="divider"></div>
+      <div class="sim-section-title" style="margin-top:16px">Referees Declared by Tenant</div>
+      <div class="fg-row">
+        <div class="fg"><label>Referee 1 Name</label><input id="gtr1-name" value="Mrs Amaka Okonkwo"/></div>
+        <div class="fg"><label>Referee 1 Email</label><input id="gtr1-email" value="amaka.okonkwo@yahoo.com" type="email"/></div>
+      </div>
+      <div class="fg"><label>Referee 1 Role</label>
+        <select id="gtr1-role"><option>Guarantor</option><option>Previous Landlord</option><option>Employer/Reference</option><option>Agent</option></select>
+      </div>
+      <div class="divider"></div>
+      <div class="fg-row">
+        <div class="fg"><label>Referee 2 Name (optional)</label><input id="gtr2-name" value="Mr Tunde Adeyemi"/></div>
+        <div class="fg"><label>Referee 2 Email</label><input id="gtr2-email" value="tadeyemi@corplegal.ng" type="email"/></div>
+      </div>
+      <div class="fg"><label>Referee 2 Role</label>
+        <select id="gtr2-role"><option>Previous Landlord</option><option>Guarantor</option><option>Employer/Reference</option></select>
+      </div>
+      <button class="btn btn-gold" onclick="simGuarantorEmails()" style="margin-top:8px">📧 Preview Consent Emails</button>
+
+      <div id="gtr-emails" style="display:none;margin-top:20px"></div>
+
+      <div id="gtr-consent-received" style="display:none;margin-top:16px">
+        <div class="sim-section-title">Simulate Consent Received</div>
+        <div class="highlight green">Referee clicks the consent link in their email and submits the form. Admin can see consent status in the Document Viewer.</div>
+        <div style="margin-top:12px">
+          <button class="btn btn-green btn-sm" onclick="simConsentReceive('gtr1')">✅ Mrs Okonkwo Submits Consent</button>
+          <button class="btn btn-green btn-sm" style="margin-left:8px" onclick="simConsentReceive('gtr2')">✅ Mr Adeyemi Submits Consent</button>
+        </div>
+        <div id="gtr-status" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     SIM 7 — AUTO-VACATE
+═══════════════════════════════════════════════════════ -->
+<section id="sim-autovacate" class="sim-page" style="display:none">
+  <div class="page-header">
+    <div class="page-title">Auto-Vacate Engine</div>
+    <div class="page-sub">Runs on admin login — marks units vacant and emails tenants when no renewal is in progress</div>
+    <div class="sim-badge">🎭 SIMULATION MODE</div>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="sb-icon">🏚️</span><div class="card-title">Auto-Vacate Check — Simulated Scan</div></div>
+    <div class="card-body">
+      <div class="sim-section-title">Properties Within 60-Day Expiry Window</div>
+      <div class="highlight gold">⚙️ On admin login, <code>checkAndAutoVacate()</code> scans all 24 properties. Any expiring within 60 days with no active renewal workflow triggers a vacancy notice email.</div>
+      <div id="av-scan-table" style="margin-top:16px">
+        <table class="info-tbl" style="width:100%;border:1px solid var(--rule);border-radius:8px;overflow:hidden">
+          <thead><tr style="background:var(--cream)"><th style="padding:8px 12px;text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)">Unit</th><th style="padding:8px 12px;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)">Tenant</th><th style="padding:8px 12px;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)">Expiry</th><th style="padding:8px 12px;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)">Days Left</th><th style="padding:8px 12px;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)">Renewal?</th><th style="padding:8px 12px;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)">Action</th></tr></thead>
+          <tbody id="av-tbody"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-gold" onclick="simAutoVacate()" style="margin-top:16px">⚡ Run Auto-Vacate Simulation</button>
+      <div id="av-result" style="margin-top:16px"></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     SIM 8 — FIELD TOGGLES
+═══════════════════════════════════════════════════════ -->
+<section id="sim-fieldtoggle" class="sim-page" style="display:none">
+  <div class="page-header">
+    <div class="page-title">Form Field Toggles</div>
+    <div class="page-sub">Admin can mark any form field as required or optional — changes apply immediately to tenant forms</div>
+    <div class="sim-badge">🎭 SIMULATION MODE</div>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="sb-icon">⚙️</span><div class="card-title">Admin Field Settings — Form Settings Page</div></div>
+    <div class="card-body">
+      <div class="highlight gold">ℹ️ Ticking a checkbox makes that field <strong>required</strong> in the tenant form. Unticking makes it optional. Changes are saved to Firestore <code>portalSettings/fieldToggles</code> and applied instantly.</div>
+      <div style="margin-top:20px">
+        <div id="ft-forms"></div>
+      </div>
+      <button class="btn btn-gold" style="margin-top:16px" onclick="simSaveToggles()">💾 Save Field Settings</button>
+      <div id="ft-saved" style="display:none;margin-top:12px"></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     SIM 9 — SIMULATION LOG
+═══════════════════════════════════════════════════════ -->
+<section id="sim-log" class="sim-page" style="display:none">
+  <div class="page-header">
+    <div class="page-title">Simulation Log</div>
+    <div class="page-sub">All actions and outputs from this simulation session</div>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="sb-icon">📋</span>
+      <div class="card-title">Session Log</div>
+      <button class="btn btn-outline btn-sm" onclick="clearLog()" style="margin-left:auto;font-size:.7rem">🗑 Clear</button>
+    </div>
+    <div class="card-body">
+      <div id="sim-log-body">
+        <div style="text-align:center;padding:30px;color:var(--dim)"><div style="font-size:2rem;margin-bottom:8px">📋</div>No simulations run yet. Start from any panel on the left.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main><!-- /main -->
+</div><!-- /shell -->
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ══════════════════════════════════
+   UTILITIES
+══════════════════════════════════ */
+var simLog = [];
+var newSim = {};
+var today  = new Date().toISOString().slice(0,10);
+
+function genID(prefix) {
+  var t = Date.now().toString(36).toUpperCase().slice(-4);
+  var r = Math.random().toString(36).slice(2,6).toUpperCase();
+  return prefix + '-' + t + '-' + r;
+}
+function fmtCurrency(v) { return '₦' + Number(v).toLocaleString(); }
+function fmtDate(d) {
+  try { return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}); }
+  catch(e){ return d; }
+}
+function show(id) {
+  document.querySelectorAll('.sim-page').forEach(function(p){ p.style.display='none'; });
+  var pg = document.getElementById(id);
+  if (pg) pg.style.display='';
+  document.querySelectorAll('.sb-item').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('onclick') && b.getAttribute('onclick').includes(id));
+  });
+  if (id === 'sim-autovacate') buildAvTable();
+  if (id === 'sim-fieldtoggle') buildFieldToggles();
+  if (id === 'sim-log') renderLog();
+}
+function toast(msg, type) {
+  var w = document.getElementById('toastWrap');
+  var t = document.createElement('div');
+  t.className = 'toast ' + (type||'');
+  t.textContent = msg;
+  w.appendChild(t);
+  setTimeout(function(){ w.removeChild(t); }, 3500);
+}
+function addLog(icon, title, detail, data) {
+  simLog.unshift({ at: new Date().toLocaleTimeString(), icon, title, detail, data: data||null });
+}
+function renderLog() {
+  var body = document.getElementById('sim-log-body');
+  if (!simLog.length) { body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--dim)">No simulations yet.</div>'; return; }
+  body.innerHTML = simLog.map(function(e, i) {
+    return '<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--rule)">'
+      + '<div style="font-size:1.2rem;width:28px;text-align:center;flex-shrink:0">' + e.icon + '</div>'
+      + '<div style="flex:1">'
+        + '<div style="font-size:.82rem;font-weight:700;color:var(--ink)">' + e.title + '</div>'
+        + '<div style="font-size:.74rem;color:var(--dim);margin-top:2px">' + e.detail + '</div>'
+        + (e.data ? '<div style="font-family:\'DM Mono\',monospace;font-size:.7rem;color:var(--gold);margin-top:4px">' + e.data + '</div>' : '')
+      + '</div>'
+      + '<div style="font-size:.66rem;color:var(--dim);flex-shrink:0">' + e.at + '</div>'
+    + '</div>';
+  }).join('');
+}
+function clearLog() { simLog=[]; renderLog(); toast('Log cleared'); }
+
+function stepDone(prefix, idx) {
+  var el = document.getElementById(prefix + idx);
+  if (el) { el.className = 'step-pill done'; }
+}
+function stepActive(prefix, idx) {
+  var el = document.getElementById(prefix + idx);
+  if (el) { el.className = 'step-pill active'; }
+}
+
+/* ══════════════════════════════════
+   SIM 1 — NEW TENANCY FLOW
+══════════════════════════════════ */
+function simStep1_KYT() {
+  var name  = document.getElementById('n-name').value;
+  var email = document.getElementById('n-email').value;
+  var unit  = document.getElementById('n-unit').value;
+  if (!name || !email || !unit) { toast('Fill in all fields', 'error'); return; }
+  var kytRef = genID('KYT');
+  newSim = { name, email, unit, kytRef, step: 1 };
+  stepDone('ns-', 0); stepActive('ns-', 1);
+  document.getElementById('new-step-kyt').style.display = 'none';
+  var slip = document.getElementById('new-step-slip');
+  slip.style.display = '';
+  slip.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  addLog('📋','KYT Submitted','Tenant: ' + name + ' · Unit: ' + unit, 'KYT Ref: ' + kytRef);
+  toast('✅ KYT Submitted — KYT Ref: ' + kytRef, 'success');
+  // Show confirmation email preview
+  var emailPrev = document.createElement('div');
+  emailPrev.className = 'email-preview';
+  emailPrev.style.marginBottom = '14px';
+  emailPrev.innerHTML = '<div class="email-header"><strong>📧 Email sent to tenant</strong>'
+    + '<div class="em-row"><span>To: ' + email + '</span><span>CC: crestechnologies@outlook.com</span></div>'
+    + '<div class="em-row"><span>Subject: [Crestville] KYT Application Received — ' + kytRef + '</span></div></div>'
+    + '<div class="email-body">Dear <strong>' + name + '</strong>,<br/><br/>'
+    + 'Your Know Your Tenant questionnaire for <strong>' + unit + '</strong> has been received.<br/><br/>'
+    + '<div style="background:#0f0e0c;padding:12px;border-radius:6px;margin:10px 0">'
+    + '<span style="color:#c9960c;font-weight:700">Application Reference: ' + kytRef + '</span></div>'
+    + 'The admin will screen your application and send you a payment advice slip if approved (24–48 hours).</div>';
+  slip.insertBefore(emailPrev, slip.firstChild);
+}
+
+function simStep2_PaySlip() {
+  var rent    = parseFloat(document.getElementById('n-rent').value) || 3500000;
+  var fee     = parseFloat(document.getElementById('n-fee').value)  || 50000;
+  var legal   = parseFloat(document.getElementById('n-legal').value)|| 35000;
+  var caution = parseFloat(document.getElementById('n-caution').value)||175000;
+  var total   = rent + fee + legal + caution;
+  var padId   = genID('PAD');
+  var expDate = new Date(); expDate.setDate(expDate.getDate() + 14);
+  newSim.padId  = padId;
+  newSim.total  = total;
+  newSim.expDate = expDate.toISOString().slice(0,10);
+  newSim.step   = 2;
+
+  stepDone('ns-', 1); stepActive('ns-', 2);
+  document.getElementById('new-step-slip').style.display = 'none';
+  var payStep = document.getElementById('new-step-pay');
+  payStep.style.display = '';
+  payStep.scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+  document.getElementById('new-pad-display').innerHTML =
+    '<div class="code-label">Payment Advisor ID</div><div class="code-val">' + padId + '</div>'
+    + '<div style="font-size:.7rem;color:rgba(201,150,12,.6);margin-top:6px">Total: ' + fmtCurrency(total) + ' · Expires: ' + fmtDate(newSim.expDate) + '</div>';
+  document.getElementById('n-padid').value = padId;
+  document.getElementById('n-paid').value  = total;
+  var dt = new Date(); dt.setDate(dt.getDate() + 2);
+  document.getElementById('n-paydate').value = dt.toISOString().slice(0,10);
+
+  addLog('💳','Payment Advice Slip Issued','PAD: ' + padId + ' · Total: ' + fmtCurrency(total), padId);
+  toast('💳 PAD Issued: ' + padId, 'success');
+}
+
+function simStep3_Payment() {
+  var padId  = document.getElementById('n-padid').value;
+  var paid   = parseFloat(document.getElementById('n-paid').value);
+  var bank   = document.getElementById('n-bank').value;
+  var pdate  = document.getElementById('n-paydate').value;
+  if (!padId || !paid || !bank || !pdate) { toast('Fill all payment fields', 'error'); return; }
+  if (padId !== newSim.padId) { toast('❌ PAD ID does not match! Check your approval email.', 'error'); return; }
+  if (paid < newSim.total * 0.99) { toast('❌ Amount paid (' + fmtCurrency(paid) + ') is less than required (' + fmtCurrency(newSim.total) + ')', 'error'); return; }
+
+  newSim.paidAmt = paid; newSim.bank = bank; newSim.pdate = pdate; newSim.step = 3;
+  stepDone('ns-', 2); stepActive('ns-', 3);
+  document.getElementById('new-step-pay').style.display = 'none';
+  var apStep = document.getElementById('new-step-approve');
+  apStep.style.display = '';
+
+  document.getElementById('new-payment-review').innerHTML =
+    '<div class="card-body"><table class="info-tbl">'
+    + '<tr><td>Tenant</td><td style="font-weight:700">' + newSim.name + '</td></tr>'
+    + '<tr><td>Unit</td><td>' + newSim.unit + '</td></tr>'
+    + '<tr><td>PAD Issued</td><td style="font-family:\'DM Mono\',monospace;color:var(--gold)">' + newSim.padId + '</td></tr>'
+    + '<tr><td>Required</td><td style="font-weight:700">' + fmtCurrency(newSim.total) + '</td></tr>'
+    + '<tr><td>PAD Claimed</td><td style="font-family:\'DM Mono\',monospace">' + padId + '</td></tr>'
+    + '<tr><td>Amount Paid</td><td style="font-weight:700;color:var(--green)">' + fmtCurrency(paid) + '</td></tr>'
+    + '<tr><td>Bank</td><td>' + bank + '</td></tr>'
+    + '<tr><td>Date</td><td>' + fmtDate(pdate) + '</td></tr>'
+    + '<tr><td>ID Match</td><td><span class="status status-approved">✅ Match</span></td></tr>'
+    + '<tr><td>Amount Match</td><td><span class="status status-approved">✅ Match</span></td></tr>'
+    + '</table></div>';
+
+  addLog('🏦','Payment Submitted','Amount: ' + fmtCurrency(paid) + ' via ' + bank, newSim.padId);
+  toast('Payment submitted — awaiting admin review', 'success');
+}
+
+function simStep4_Approve(approved) {
+  if (approved) {
+    var pck  = genID('PCK');
+    var comm = today; // new tenant: date of payment approval
+    newSim.pck = pck; newSim.comm = comm; newSim.step = 4;
+    stepDone('ns-', 3); stepActive('ns-', 4);
+    document.getElementById('new-step-approve').style.display = 'none';
+    var pckStep = document.getElementById('new-step-pck');
+    pckStep.style.display = '';
+    pckStep.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    document.getElementById('new-pck-display').innerHTML =
+      '<div class="code-box"><div class="code-label">Payment Confirmation Key Code</div><div class="code-val">' + pck + '</div>'
+      + '<div style="font-size:.68rem;color:rgba(201,150,12,.5);margin-top:6px">Commencement Date: ' + fmtDate(comm) + '</div></div>'
+      + '<div class="email-preview"><div class="email-header"><strong>📧 Email sent to tenant</strong>'
+      + '<div class="em-row"><span>To: ' + newSim.email + '</span><span>CC: crestechnologies@outlook.com</span></div>'
+      + '<div class="em-row"><span>Subject: [Crestville] Payment Confirmed — Key: ' + pck + '</span></div></div>'
+      + '<div class="email-body">Dear <strong>' + newSim.name + '</strong>,<br/><br/>'
+      + 'Your payment for <strong>' + newSim.unit + '</strong> has been confirmed.<br/>'
+      + '<div style="background:#0f0e0c;padding:14px;border-radius:6px;margin:12px 0;text-align:center">'
+      + '<div style="color:#c9960c;font-size:1.2rem;font-weight:700;letter-spacing:.1em">' + pck + '</div>'
+      + '<div style="color:#9a8a6a;font-size:.72rem;margin-top:4px">Payment Confirmation Key Code</div></div>'
+      + 'Commencement date: <strong>' + fmtDate(comm) + '</strong><br/>'
+      + 'Log in to the portal to complete your Tenancy Agreement.</div></div>';
+    addLog('✅','Payment Approved — PCK Issued','PCK: ' + pck + ' · Commence: ' + comm, pck);
+    toast('✅ PCK Issued: ' + pck, 'success');
+  } else {
+    addLog('❌','Payment Rejected',document.getElementById('n-adminNote').value||'Reason not specified', '');
+    toast('Payment rejected — tenant notified', 'error');
+    document.getElementById('new-step-approve').innerHTML += '<div class="highlight red" style="margin-top:12px">❌ Payment rejected. Rejection email sent to tenant with reason. Tenant must resubmit.</div>';
+  }
+}
+
+function simStep5_eForm() {
+  stepDone('ns-', 4); stepActive('ns-', 5);
+  document.getElementById('new-step-pck').style.display = 'none';
+  var efStep = document.getElementById('new-step-eform');
+  efStep.style.display = '';
+  var subId = genID('SUB');
+  newSim.subId = subId;
+  var expiry = new Date(newSim.comm);
+  expiry.setFullYear(expiry.getFullYear() + 1);
+
+  document.getElementById('new-eform-review').innerHTML =
+    '<table class="info-tbl" style="border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin-bottom:14px">'
+    + '<tr><td>Tenant</td><td style="font-weight:700">' + newSim.name + '</td></tr>'
+    + '<tr><td>Email</td><td>' + newSim.email + '</td></tr>'
+    + '<tr><td>Unit</td><td>' + newSim.unit + '</td></tr>'
+    + '<tr><td>KYT Ref</td><td style="font-family:\'DM Mono\',monospace;color:var(--gold)">' + newSim.kytRef + '</td></tr>'
+    + '<tr><td>PCK Key Code</td><td style="font-family:\'DM Mono\',monospace;color:var(--gold);font-weight:700">' + newSim.pck + '</td></tr>'
+    + '<tr><td>Submission ID</td><td style="font-family:\'DM Mono\',monospace">' + subId + '</td></tr>'
+    + '<tr><td>Commencement</td><td style="color:var(--green);font-weight:700">' + fmtDate(newSim.comm) + '</td></tr>'
+    + '<tr><td>Expiry</td><td style="font-weight:700">' + fmtDate(expiry.toISOString().slice(0,10)) + '</td></tr>'
+    + '<tr><td>Annual Rent</td><td style="color:var(--gold);font-weight:700">₦3,500,000</td></tr>'
+    + '</table>';
+  addLog('📝','eForm Completed by Tenant','Sub ID: ' + subId, subId);
+  toast('eForm submitted — awaiting admin review', 'success');
+}
+
+function simStep6_Approve(approved) {
+  var note = document.getElementById('n-eformNote').value;
+  if (approved) {
+    stepDone('ns-', 5); stepDone('ns-', 6);
+    document.getElementById('new-step-eform').style.display = 'none';
+    var cmpStep = document.getElementById('new-step-complete');
+    cmpStep.style.display = '';
+    var expiry = new Date(newSim.comm); expiry.setFullYear(expiry.getFullYear()+1);
+    document.getElementById('new-complete-display').innerHTML =
+      '<div class="highlight green">'
+      + '<div style="font-size:1.1rem;font-weight:700;margin-bottom:12px">🏠 Tenancy Active!</div>'
+      + '<table class="info-tbl">'
+      + '<tr><td>Tenant</td><td style="font-weight:700">' + newSim.name + '</td></tr>'
+      + '<tr><td>Unit</td><td>' + newSim.unit + '</td></tr>'
+      + '<tr><td>Start Date</td><td style="color:var(--green);font-weight:700">' + fmtDate(newSim.comm) + '</td></tr>'
+      + '<tr><td>Expiry Date</td><td style="font-weight:700">' + fmtDate(expiry.toISOString().slice(0,10)) + '</td></tr>'
+      + '<tr><td>KYT Ref</td><td style="font-family:\'DM Mono\',monospace;color:var(--gold)">' + newSim.kytRef + '</td></tr>'
+      + '<tr><td>PCK Key</td><td style="font-family:\'DM Mono\',monospace;color:var(--gold);font-weight:700">' + newSim.pck + '</td></tr>'
+      + '<tr><td>Sub ID</td><td style="font-family:\'DM Mono\',monospace">' + newSim.subId + '</td></tr>'
+      + '</table></div>'
+      + '<div class="highlight gold" style="margin-top:12px">📋 Database updated: unit marked <strong>Occupied</strong> · Start date set · Expiry set · rentLogs + Firestore rentRecords synced</div>'
+      + '<div class="highlight blue" style="margin-top:10px">📧 Approval email sent to <strong>' + newSim.email + '</strong> with agreement print link · CC: crestechnologies@outlook.com</div>'
+      + '<div style="margin-top:16px"><button class="btn btn-gold" onclick="show(\'sim-log\')">📋 View Full Simulation Log</button></div>';
+    addLog('🏠','Tenancy APPROVED — Complete','Unit: ' + newSim.unit + ' · ' + newSim.name, 'Commence: ' + newSim.comm);
+    toast('🎉 Tenancy fully approved and activated!', 'success');
+  } else {
+    addLog('🔄','eForm Amendment Requested', note || 'Admin requested changes');
+    toast('Amendment requested — tenant notified', 'error');
+    document.getElementById('new-step-eform').innerHTML += '<div class="highlight red" style="margin-top:12px">⚠️ Amendment requested. Rejection email sent. Tenant must amend and resubmit eForm.</div>';
+  }
+}
+
+/* ══════════════════════════════════
+   SIM 2 — RENEWAL
+══════════════════════════════════ */
+function simRenew1() {
+  var rnwRef = genID('RNW');
+  document.getElementById('ren-ref').textContent = rnwRef;
+  document.getElementById('ren-step-1').style.display = 'none';
+  document.getElementById('ren-step-2').style.display = '';
+  stepDone('rs-', 0); stepActive('rs-', 1);
+  addLog('🔄','Renewal Submitted','Mr. Monday Sylvanus · 2BDR Flat 4A', 'RNW Ref: ' + rnwRef);
+  toast('Renewal submitted — ' + rnwRef, 'success');
+}
+
+/* ══════════════════════════════════
+   SIM 3 — PAYMENT ADVISOR
+══════════════════════════════════ */
+function addPadItem() {
+  var c = document.getElementById('pad-items');
+  var d = document.createElement('div'); d.className='fg-row pad-item';
+  d.innerHTML = '<div class="fg"><label>Item</label><input placeholder="e.g. Service Charge"/></div>'
+    + '<div class="fg"><label>Amount (₦)</label><input type="number" placeholder="0"/></div>';
+  c.appendChild(d);
+}
+
+function simGeneratePAD() {
+  var name    = document.getElementById('pad-name').value;
+  var email   = document.getElementById('pad-email').value;
+  var unit    = document.getElementById('pad-unit').value;
+  var items   = document.querySelectorAll('.pad-item');
+  var breakdown= []; var total = 0;
+  items.forEach(function(row){
+    var inputs = row.querySelectorAll('input');
+    var label  = inputs[0]?.value; var amt = parseFloat(inputs[1]?.value)||0;
+    if (label && amt) { breakdown.push({label, amt}); total += amt; }
+  });
+  var expDays = parseInt(document.getElementById('pad-expdays').value)||14;
+  var exp     = new Date(); exp.setDate(exp.getDate() + expDays);
+  var padId   = genID('PAD');
+
+  document.getElementById('pad-id-display').textContent = padId;
+  var rows = breakdown.map(function(b){ return '<tr><td style="padding:5px 10px;color:#666">' + b.label + '</td><td style="padding:5px 10px;text-align:right;font-weight:600">₦' + b.amt.toLocaleString() + '</td></tr>'; }).join('');
+  document.getElementById('pad-email-preview').innerHTML =
+    '<div class="email-header"><strong>📧 Email sent to tenant</strong>'
+    + '<div class="em-row"><span>To: ' + email + '</span><span>CC: crestechnologies@outlook.com</span></div>'
+    + '<div class="em-row"><span>Subject: [Crestville] Payment Advice — ' + padId + '</span></div></div>'
+    + '<div class="email-body">Dear <strong>' + name + '</strong>,<br/><br/>'
+    + 'Your application for <strong>' + unit + '</strong> has been reviewed and approved. Please make payment within ' + expDays + ' days.<br/><br/>'
+    + '<div style="background:#0f0e0c;padding:14px;border-radius:6px;margin:12px 0">'
+    + '<div style="color:#c9960c;font-weight:700;margin-bottom:8px">Payment Reference: ' + padId + '</div>'
+    + '<table style="width:100%;border-collapse:collapse">' + rows + '</table>'
+    + '<div style="border-top:1px solid #2a2620;margin-top:8px;padding-top:8px;color:#e8dfc8;font-weight:700">Total: ₦' + total.toLocaleString() + '</div>'
+    + '<div style="color:#9a8a6a;font-size:.78rem;margin-top:8px">Bank: ' + document.getElementById('pad-bank').value + '<br/>'
+    + 'Acc: ' + document.getElementById('pad-accno').value + '<br/>'
+    + 'Name: ' + document.getElementById('pad-accname').value + '<br/>'
+    + 'Expires: ' + exp.toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) + '</div>'
+    + '</div>After payment, log in to submit your payment confirmation.</div>';
+
+  document.getElementById('pad-result').style.display = '';
+  addLog('💳','PAD Generated','Total: ₦' + total.toLocaleString() + ' · 14-day expiry', padId);
+  document.getElementById('apr-pad-issued').textContent = padId;
+  document.getElementById('apr-pad-tenant').textContent = padId;
+  toast('PAD Generated: ' + padId, 'success');
+}
+
+/* ══════════════════════════════════
+   SIM 4 — PAYMENT APPROVAL
+══════════════════════════════════ */
+function simApprovePayment(approved) {
+  var note = document.getElementById('apr-note').value;
+  var res  = document.getElementById('apr-result');
+  if (approved) {
+    var pck  = genID('PCK');
+    var comm = today;
+    res.style.display = '';
+    res.innerHTML = '<div class="code-box"><div class="code-label">Payment Confirmation Key Code</div><div class="code-val">' + pck + '</div></div>'
+      + '<div class="email-preview"><div class="email-header"><strong>📧 Approval email sent</strong>'
+      + '<div class="em-row"><span>To: c.obi@gmail.com</span><span>CC: crestechnologies@outlook.com</span></div>'
+      + '<div class="em-row"><span>Subject: [Crestville] Payment Confirmed — Key: ' + pck + '</span></div></div>'
+      + '<div class="email-body">Payment confirmed. Key code: <strong style="color:#C9960C">' + pck + '</strong><br/>Commencement: ' + fmtDate(comm) + '</div></div>'
+      + '<div class="highlight green" style="margin-top:10px">✅ Tenant can now open the Tenancy Agreement eForm with this key code pre-loaded.</div>';
+    addLog('✅','Payment Approved — PCK Issued', 'Admin: ' + (note||'No note'), pck);
+    toast('✅ PCK: ' + pck, 'success');
+  } else {
+    res.style.display = '';
+    res.innerHTML = '<div class="highlight red">❌ Payment rejected. Reason: ' + (note||'Not specified') + '<br/>Rejection email sent to tenant and CC to crestechnologies@outlook.com</div>';
+    addLog('❌','Payment Rejected', note||'No reason given', '');
+    toast('Payment rejected', 'error');
+  }
+}
+
+/* ══════════════════════════════════
+   SIM 5 — eFORM REVIEW
+══════════════════════════════════ */
+function simPreviewEForm() {
+  var el = document.getElementById('eform-preview');
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+  if (el.style.display !== 'none') {
+    el.innerHTML = '<div class="card" style="border:1px solid var(--rule)">'
+      + '<div class="card-head" style="background:#0f0e0c"><div class="card-title" style="color:#c9960c;font-family:\'Cormorant Garamond\',serif">CRS Tenancy Agreement — Preview</div></div>'
+      + '<div class="card-body" style="font-size:.78rem;line-height:1.7">'
+      + '<p><strong>PARTIES:</strong> This agreement is between <strong>Crestechnologies IS Ltd</strong> (Landlord) and <strong>Mr. Chukwuemeka Obi</strong> (Tenant).</p>'
+      + '<p><strong>PROPERTY:</strong> 3BDR Flat 2B, 11 Jibewa SomorinClose (Victorious Estate No. 20), Ojodu, Ogun State.</p>'
+      + '<p><strong>TERM:</strong> 12 months commencing 01 June 2026 to 01 June 2027.</p>'
+      + '<p><strong>RENT:</strong> ₦3,500,000 per annum, payable annually in advance.</p>'
+      + '<p><strong>CODES:</strong> KYT-REF · PCK-KEY · SUB-ID all verified ✅</p>'
+      + '<p><strong>TENANT SIGNATURE:</strong> Chukwuemeka Obi (digital) — ' + new Date().toLocaleDateString() + '</p>'
+      + '</div></div>';
+  }
+}
+function simApproveEForm(approved) {
+  var note = document.getElementById('ef-note').value;
+  var res  = document.getElementById('ef-result');
+  res.style.display = '';
+  if (approved) {
+    res.innerHTML = '<div class="highlight green">'
+      + '<div style="font-weight:700;font-size:.9rem;margin-bottom:8px">✅ Tenancy Agreement Approved!</div>'
+      + '<div style="font-size:.78rem;line-height:1.75">'
+      + '• Property database updated: <strong>3BDR Flat 2B → Occupied</strong><br/>'
+      + '• rentLogs.start = 01 Jun 2026 · rentLogs.expiry = 01 Jun 2027<br/>'
+      + '• Firestore rentRecords document synced<br/>'
+      + '• Approval email sent to tenant with print link<br/>'
+      + '• CC sent to crestechnologies@outlook.com'
+      + '</div></div>';
+    addLog('🏠','eForm APPROVED','Tenancy finalised · DB updated', 'Admin: ' + (note||'No note'));
+    toast('🎉 Tenancy approved and database updated!', 'success');
+  } else {
+    res.innerHTML = '<div class="highlight red">⚠️ Amendment requested. Reason: ' + (note||'Not specified') + '<br/>Amendment email sent to tenant.</div>';
+    addLog('🔄','eForm Amendment Requested', note||'No reason', '');
+    toast('Amendment email sent to tenant', 'error');
+  }
+}
+
+/* ══════════════════════════════════
+   SIM 6 — GUARANTOR CONSENT
+══════════════════════════════════ */
+var consentStatus = {};
+function simGuarantorEmails() {
+  var gtrs = [
+    { name: document.getElementById('gtr1-name').value, email: document.getElementById('gtr1-email').value, role: document.getElementById('gtr1-role').value },
+    { name: document.getElementById('gtr2-name').value, email: document.getElementById('gtr2-email').value, role: document.getElementById('gtr2-role').value },
+  ].filter(function(g){ return g.name && g.email; });
+
+  var html = '';
+  gtrs.forEach(function(g) {
+    consentStatus[g.email] = 'pending';
+    var consentLink = 'https://enjanih-stack.github.io/crestville-portal/index.html?consent=WF-SIM-001&cemail=' + encodeURIComponent(g.email);
+    html += '<div class="email-preview" style="margin-bottom:14px">'
+      + '<div class="email-header"><strong>📧 Auto-sent to ' + g.role + '</strong>'
+      + '<div class="em-row"><span>To: ' + g.email + '</span></div>'
+      + '<div class="em-row"><span>Subject: [Crestville] Consent Request from Mr. Chukwuemeka Obi</span></div></div>'
+      + '<div class="email-body">Dear <strong>' + g.name + '</strong>,<br/><br/>'
+      + 'You are listed as <strong>' + g.role + '</strong> by <strong>Mr. Chukwuemeka Obi</strong> for tenancy of <strong>3BDR Flat 2B, Ojodu</strong>.<br/><br/>'
+      + 'Please review the application and provide your consent by clicking the link below:<br/><br/>'
+      + '<a href="' + consentLink + '" style="background:#C9960C;color:#fff;padding:10px 20px;border-radius:5px;text-decoration:none;font-weight:700">Review & Give Consent →</a><br/><br/>'
+      + '<small>If you do not recognise this applicant, contact crestechnologies@outlook.com</small></div></div>';
+    addLog('📧','Consent Email Sent','To: ' + g.name + ' (' + g.role + ')', g.email);
+  });
+
+  document.getElementById('gtr-emails').innerHTML = html;
+  document.getElementById('gtr-emails').style.display = '';
+  document.getElementById('gtr-consent-received').style.display = '';
+  toast('Consent emails sent to ' + gtrs.length + ' referee(s)', 'success');
+}
+
+function simConsentReceive(who) {
+  var name  = who === 'gtr1' ? document.getElementById('gtr1-name').value : document.getElementById('gtr2-name').value;
+  var email = who === 'gtr1' ? document.getElementById('gtr1-email').value : document.getElementById('gtr2-email').value;
+  consentStatus[email] = 'received';
+  var body = document.getElementById('gtr-status');
+  var html = '<div class="highlight green" style="margin-bottom:8px"><strong>✅ Consent received from ' + name + '</strong></div>';
+  Object.entries(consentStatus).forEach(function(e){
+    html += '<div style="font-size:.78rem;margin-top:4px">' + (e[1]==='received'?'✅':'⏳') + ' ' + e[0] + ' — ' + e[1] + '</div>';
+  });
+  body.innerHTML = html;
+  addLog('🤝','Consent Received',name + ' (' + email + ')', 'Status: received');
+  toast('✅ Consent received from ' + name, 'success');
+}
+
+/* ══════════════════════════════════
+   SIM 7 — AUTO-VACATE
+══════════════════════════════════ */
+var avData = [
+  { unit:'Room & Palour self contain', tenant:'Mr & Mrs Bamiro Kehinde', email:'kennytemmy2010@gmail.com', expiry:'2026-05-23', hasRenewal:false },
+  { unit:'2BDR Flat 4A', tenant:'Mr. Monday Sylvanus', email:'monsylhaven@yahoo.com', expiry:'2027-02-28', hasRenewal:false },
+  { unit:'Shop 2_C3', tenant:'Mr. Segun Oyewole', email:'', expiry:'2026-02-28', hasRenewal:false },
+  { unit:'2BDR Flat 3A', tenant:'Mrs Balogun', email:'morohunke21@gmail.com', expiry:'2027-03-05', hasRenewal:true },
+];
+
+function buildAvTable() {
+  var today0 = new Date(); today0.setHours(0,0,0,0);
+  var tbody  = document.getElementById('av-tbody');
+  var within60 = avData.filter(function(r) {
+    var exp = new Date(r.expiry); exp.setHours(0,0,0,0);
+    var diff = Math.round((exp - today0) / 864e5);
+    return diff <= 60;
+  });
+  if (!within60.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--dim)">No properties expire within 60 days.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = within60.map(function(r) {
+    var exp  = new Date(r.expiry); exp.setHours(0,0,0,0);
+    var days = Math.round((exp - today0) / 864e5);
+    var dCls = days < 0 ? 'color:var(--red)' : days <= 14 ? 'color:#b45309' : 'color:var(--dim)';
+    return '<tr>'
+      + '<td style="padding:8px 12px;font-size:.78rem;font-weight:600">' + r.unit + '</td>'
+      + '<td style="padding:8px 12px;font-size:.78rem">' + r.tenant + '</td>'
+      + '<td style="padding:8px 12px;font-size:.78rem">' + fmtDate(r.expiry) + '</td>'
+      + '<td style="padding:8px 12px;font-size:.78rem;font-weight:700;' + dCls + '">' + (days < 0 ? Math.abs(days)+'d overdue' : days+'d') + '</td>'
+      + '<td style="padding:8px 12px;font-size:.78rem">' + (r.hasRenewal ? '<span class="status status-approved">✅ Active</span>' : '<span class="status status-rejected">❌ None</span>') + '</td>'
+      + '<td style="padding:8px 12px;font-size:.78rem">' + (r.hasRenewal ? '<span style="color:var(--dim)">No action</span>' : '<span style="color:var(--gold);font-weight:600">Will notify</span>') + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function simAutoVacate() {
+  var today0 = new Date(); today0.setHours(0,0,0,0);
+  var notified = 0, vacated = 0;
+  var html = '<div class="sim-section-title">Auto-Vacate Results</div>';
+  avData.forEach(function(r) {
+    var exp  = new Date(r.expiry); exp.setHours(0,0,0,0);
+    var days = Math.round((exp - today0) / 864e5);
+    if (days > 60) return;
+    if (r.hasRenewal) {
+      html += '<div class="highlight green" style="margin-bottom:8px">✅ <strong>' + r.unit + '</strong> — Active renewal in progress. No action taken.</div>';
+    } else {
+      if (days <= 7) {
+        vacated++;
+        html += '<div class="highlight red" style="margin-bottom:8px">🏚️ <strong>' + r.unit + '</strong> — Auto-vacated (≤7 days, no renewal).'
+          + (r.email ? ' Expiry notice emailed to <strong>' + r.email + '</strong>.' : ' No email on file.') + '</div>';
+        addLog('🏚️','Auto-Vacated', r.unit + ' · ' + r.tenant, 'Days: ' + days);
+      } else {
+        notified++;
+        html += '<div class="highlight gold" style="margin-bottom:8px">⚠️ <strong>' + r.unit + '</strong> — Vacancy notice sent (' + days + ' days remaining).'
+          + (r.email ? ' Email sent to <strong>' + r.email + '</strong>.' : ' No email — admin notified.') + '</div>';
+        addLog('📧','Vacancy Notice Sent', r.unit + ' · ' + r.tenant, 'Days left: ' + days);
+      }
+    }
+  });
+  html += '<div class="highlight blue" style="margin-top:10px">Summary: ' + vacated + ' unit(s) auto-vacated · ' + notified + ' expiry notice email(s) sent · Activity log updated</div>';
+  document.getElementById('av-result').innerHTML = html;
+  toast('Auto-vacate complete: ' + vacated + ' vacated, ' + notified + ' notified', vacated > 0 ? 'error' : 'success');
+}
+
+/* ══════════════════════════════════
+   SIM 8 — FIELD TOGGLES
+══════════════════════════════════ */
+var ftState = {};
+var ftForms = {
+  'KYT Questionnaire': ['fullName','dateOfBirth','NIN','phone','email','occupation','employer','currentAddress','nextOfKin','guarantorName','guarantorPhone','guarantorEmail','guarantorAddress','idDocument','photo','bankStatement'],
+  'Renewal Form':      ['tenantName','unitId','renewalTerm','notes','previousContract'],
+  'Tenancy eForm':     ['fullName','NIN','phone','email','occupation','address','guarantorName','guarantorPhone','emergencyContact','digitalSignature','idDocument','photo'],
+};
+
+function buildFieldToggles() {
+  var container = document.getElementById('ft-forms');
+  var html = '';
+  Object.entries(ftForms).forEach(function(e) {
+    var fname = e[0], fields = e[1];
+    if (!ftState[fname]) ftState[fname] = {};
+    html += '<div style="margin-bottom:24px">'
+      + '<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--rule)">' + fname + '</div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:8px">';
+    fields.forEach(function(f) {
+      var isReq = ftState[fname][f] !== false;
+      html += '<label style="display:flex;align-items:center;gap:5px;font-size:.74rem;cursor:pointer;padding:5px 10px;border-radius:6px;border:1px solid ' + (isReq?'var(--gold)':'var(--rule)') + ';background:' + (isReq?'var(--gold-l)':'var(--cream)') + '">'
+        + '<input type="checkbox" data-form="' + fname + '" data-field="' + f + '" ' + (isReq?'checked':'') + ' onchange="toggleFT(this)" style="accent-color:var(--gold);cursor:pointer"/>'
+        + f.replace(/([A-Z])/g,' $1') + '</label>';
+    });
+    html += '</div></div>';
+  });
+  container.innerHTML = html;
+}
+
+function toggleFT(cb) {
+  var fname = cb.dataset.form, field = cb.dataset.field;
+  if (!ftState[fname]) ftState[fname] = {};
+  ftState[fname][field] = cb.checked;
+  var label = cb.parentElement;
+  label.style.borderColor = cb.checked ? 'var(--gold)' : 'var(--rule)';
+  label.style.background  = cb.checked ? 'var(--gold-l)' : 'var(--cream)';
+}
+
+function simSaveToggles() {
+  var saved = document.getElementById('ft-saved');
+  var summary = [];
+  Object.entries(ftState).forEach(function(e) {
+    var fname = e[0], fields = e[1];
+    var optional = Object.entries(fields).filter(function(f){ return !f[1]; }).map(function(f){ return f[0]; });
+    if (optional.length) summary.push('<strong>' + fname + ':</strong> Optional — ' + optional.join(', '));
+  });
+  saved.style.display = '';
+  saved.innerHTML = '<div class="highlight green">'
+    + '<div style="font-weight:700;margin-bottom:6px">✅ Field Settings Saved</div>'
+    + '<div style="font-size:.76rem;line-height:1.75">'
+    + (summary.length ? summary.join('<br/>') : 'All fields remain required.')
+    + '<br/>Saved to: localStorage <code>crs_field_toggles</code> + Firestore <code>portalSettings/fieldToggles</code>'
+    + '</div></div>';
+  addLog('⚙️','Field Settings Saved', summary.join(' · ') || 'All required', '');
+  toast('✅ Field settings saved', 'success');
+}
+
+/* Init */
+buildAvTable();
+document.getElementById('n-paydate').value = today;
+</script>
+</body>
+</html>

@@ -368,6 +368,14 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 .nb-gold{background:#fef9e7;color:#7a5c00;border:1px solid rgba(201,150,12,.3);padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
 .nb-green{background:#f0fdf4;color:var(--green);border:1px solid rgba(26,92,46,.2);padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
 .nb-purple{background:#f5f0ff;color:#5b21b6;border:1px solid #c4b5fd;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
+/* ── KYT / Renewal Inline Form ── */
+.kyt-section{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:18px;margin-bottom:14px}
+.kyt-sec-title{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+.tp-section{margin-bottom:16px}
+.tp-section-title{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--rule)}
+.tp-row{display:flex;gap:10px;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.04);font-size:.8rem}
+.tp-label{width:130px;flex-shrink:0;color:var(--dim);font-weight:600}
+.tp-value{flex:1;color:var(--ink)}
 /* ── TENANT PARTICULARS TABS ── */
 .tp-tabs{display:flex;border-bottom:2px solid var(--rule);margin-bottom:20px;gap:0;flex-wrap:wrap}
 .tp-tab{padding:10px 18px;font-size:.8rem;font-weight:600;color:var(--dim);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap}
@@ -1307,7 +1315,11 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       <button class="nav-item" onclick="showPage('pgMyProperty',this)" id="navMyProp">
         <span class="ni-icon">🔑</span> My Property
       </button>
-      <button class="nav-item" onclick="openRenewalModal()" id="navRenew">
+      <button class="nav-item" id="navMyApplications" onclick="showPage('pgMyApplications',this)">
+        <span class="ni-icon">📄</span> My Application
+        <span class="nav-badge gold" id="myAppBadge" style="display:none">!</span>
+      </button>
+      <button class="nav-item" onclick="openRenewalFlow()" id="navRenew">
         <span class="ni-icon">🔄</span> Renew / Request
       </button>
       <button class="nav-item" onclick="showPage('pgNotices',this)" id="navNotices">
@@ -1317,8 +1329,8 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 
       <!-- FORMS -->
       <div class="nav-section">E-Forms</div>
-      <button class="nav-item" onclick="openForm('https://enjanih-stack.github.io/crestville-portal/CRS_PreRental_Questionnaire_v3.html')">
-        <span class="ni-icon">📋</span> KYT Questionnaire
+      <button class="nav-item" onclick="openNewTenancyFlow()" id="navNewApp">
+        <span class="ni-icon">📋</span> New Application
       </button>
       <button class="nav-item" onclick="openForm('https://enjanih-stack.github.io/crestville-portal/CRS_Tenancy_EForm_v3.html')">
         <span class="ni-icon">📝</span> Tenancy Agreement
@@ -1346,8 +1358,15 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       <button class="nav-item admin-only" id="navTenants" onclick="showPage('pgTenants',this)">
         <span class="ni-icon">👥</span> Tenants
       </button>
+      <button class="nav-item admin-only" id="navApplications" onclick="showPage('pgApplications',this)">
+        <span class="ni-icon">📋</span> Applications
+        <span class="nav-badge red" id="appsBadge" style="display:none">0</span>
+      </button>
       <button class="nav-item admin-only" id="navProps" onclick="showPage('pgProperties',this)">
         <span class="ni-icon">🗂️</span> Properties
+      </button>
+      <button class="nav-item admin-only" id="navFieldToggles" onclick="showPage('pgFieldToggles',this);renderAdminFieldToggles()">
+        <span class="ni-icon">⚙️</span> Form Settings
       </button>
     </nav>
 
@@ -1754,7 +1773,52 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       </div>
 
       <!-- ── PROPERTIES (admin) ── -->
-      <div class="pg" id="pgProperties">
+      <!-- ── ADMIN APPLICATIONS ── -->
+      <div class="pg admin-only" id="pgApplications">
+        <div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()">&#8592;</button><button class="pnb-btn" onclick="historyFwd()">&#8594;</button><div class="pnb-crumb"></div></div>
+        <div class="page-header">
+          <div><h1>Applications</h1><div class="ph-sub">New tenant KYT · Renewals · Payment approvals · eForm review</div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <select id="appsFilterType" onchange="loadAdminApplications()" style="padding:7px 12px;border:1px solid var(--rule);border-radius:6px;font-size:.78rem;background:var(--card)">
+              <option value="">All Types</option>
+              <option value="new_tenant">New Tenant</option>
+              <option value="renewal">Renewal</option>
+            </select>
+            <select id="appsFilterStep" onchange="loadAdminApplications()" style="padding:7px 12px;border:1px solid var(--rule);border-radius:6px;font-size:.78rem;background:var(--card)">
+              <option value="">All Stages</option>
+              <option value="kyc_submitted">KYT Review</option>
+              <option value="renewal_submitted">Renewal Review</option>
+              <option value="payment_submitted">Payment Review</option>
+              <option value="eform_sent">eForm Review</option>
+              <option value="complete">Complete</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <button class="btn btn-outline" onclick="loadAdminApplications()" style="font-size:.78rem">🔄 Refresh</button>
+          </div>
+        </div>
+        <div class="page-body">
+          <div id="appsCount" style="font-size:.76rem;color:var(--dim);margin-bottom:12px"></div>
+          <div id="adminWfQueue">
+            <div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem">📋</div><div>No applications yet</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TENANT MY APPLICATION ── -->
+      <div class="pg" id="pgMyApplications">
+        <div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()">&#8592;</button><button class="pnb-btn" onclick="historyFwd()">&#8594;</button><div class="pnb-crumb"></div></div>
+        <div class="page-header">
+          <div><h1>My Application</h1><div class="ph-sub">Track your tenancy application progress</div></div>
+          <button class="btn btn-outline" onclick="loadMyApplicationStatus()" style="font-size:.78rem">🔄 Refresh</button>
+        </div>
+        <div class="page-body">
+          <div id="myAppStatusArea">
+            <div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem">⏳</div><div>Loading your application...</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PROPERTIES ── -->
         <div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()" title="Go back">&#8592;</button><button class="pnb-btn" onclick="historyFwd()" title="Go forward">&#8594;</button><div class="pnb-crumb" id="navCrumb"></div></div>
         <div class="page-header">
           <div><h1>Properties</h1><div class="ph-sub">Master property list · Tenant documents · Mass import</div></div>
@@ -2618,6 +2682,12 @@ async function _bootApp(user, userData, adminMode) {
     _pushSeedToFirestore();
   }
 
+    // ── Check auto-vacate (runs silently on admin boot) ──
+  if (adminMode) {
+    setTimeout(function(){ if(typeof checkAndAutoVacate==='function') checkAndAutoVacate(); }, 3000);
+    setTimeout(function(){ if(typeof updateAppsBadge==='function') updateAppsBadge(); }, 1000);
+  }
+
   // ── Load My Property for ALL users (admin may also be a tenant) ──
   setTimeout(function() { loadMyProperty(userData); }, 500);
 
@@ -2783,6 +2853,8 @@ function showPage(pgId, btn) {
   if(pgId === 'pgRentManager')   renderRentManager();
   if(pgId === 'pgNoticesAdmin')  { if(typeof nmRenderList==='function') nmRenderList(); }
   if(pgId === 'pgModRequests')   { if(typeof mrAdminRender==='function') mrAdminRender(); }
+  if(pgId === 'pgApplications')  { if(typeof loadAdminApplications==='function') loadAdminApplications(); }
+  if(pgId === 'pgMyApplications'){ if(typeof loadMyApplicationStatus==='function') loadMyApplicationStatus(); }
   if(pgId === 'pgTenants')       { if(typeof loadTenantsTable==='function') loadTenantsTable(); }
   if(pgId === 'pgDashboard')     { if(typeof updateMetrics==='function') { updateMetrics(); if(typeof renderChart==='function') renderChart(); } }
   // Save state on every page navigation
@@ -3402,776 +3474,167 @@ function tenantExportCSV() {
     if (n>0) logActivity(who,'admin','delete','Bulk deleted '+n+' records','From Rent Manager');
   };
 })();
-window._rmSelected = new Set();
 
-function rmRowCheck(cb) {
-  const idx = parseInt(cb.value);
-  if (cb.checked) window._rmSelected.add(idx);
-  else window._rmSelected.delete(idx);
-  // Highlight row
-  const row = document.getElementById('rmRow_' + idx);
-  if (row) row.style.outline = cb.checked ? '2px solid var(--gold)' : '';
-  // Sync header checkbox
-  const allChk = document.getElementById('rmSelectAllChk');
-  if (allChk) {
-    const allBoxes = document.querySelectorAll('#rmBody input[type=checkbox]');
-    const checked = [...allBoxes].filter(b => b.checked).length;
-    allChk.checked = checked === allBoxes.length;
-    allChk.indeterminate = checked > 0 && checked < allBoxes.length;
+
+
+/* ============================================================
+   WORKFLOW ENGINE — Gap Implementations
+   ============================================================ */
+function generateApprovalID(p){var t=Date.now().toString(36).toUpperCase(),r=Math.random().toString(36).slice(2,6).toUpperCase();return (p||'CRS')+'-'+t+'-'+r;}
+function generatePaymentAdvisorID(){return generateApprovalID('PAD');}
+function generatePaymentKeyCode(){return generateApprovalID('PCK');}
+function generateSubmissionID(){return generateApprovalID('SUB');}
+
+async function saveWorkflow(wf){
+  wf.updatedAt=new Date().toISOString();
+  if(!wf.id) wf.id=generateApprovalID('WF');
+  try{await window._db.collection('workflows').doc(wf.id).set(wf,{merge:true});}
+  catch(e){var a=JSON.parse(localStorage.getItem('crs_workflows')||'[]'),i=a.findIndex(function(w){return w.id===wf.id;});if(i>=0)a[i]=wf;else a.unshift(wf);localStorage.setItem('crs_workflows',JSON.stringify(a));}
+  return wf;
+}
+
+async function getWorkflow(wfId){
+  try{var d=await window._db.collection('workflows').doc(wfId).get();if(d.exists)return{id:d.id,...d.data()};}catch(e){}
+  return (JSON.parse(localStorage.getItem('crs_workflows')||'[]')).find(function(w){return w.id===wfId;})||null;
+}
+
+async function submitKYTApplication(formData){
+  if(!currentUser){notify('error','Not logged in','Sign in first.');return;}
+  var wf={id:'wf_'+currentUser.uid+'_new_'+Date.now(),type:'new_tenant',status:'active',currentStep:'kyc_submitted',
+    tenantEmail:currentUser.email,tenantName:formData.tenantName||currentUser.email,
+    unitId:formData.unitId||'',unitLabel:formData.unitLabel||formData.unitId||'',
+    submittedAt:new Date().toISOString(),kytData:formData,approvalId:generateApprovalID('KYT'),
+    steps:[{id:'kyc_submitted',completedAt:new Date().toISOString(),by:'tenant'}]};
+  await saveWorkflow(wf);
+  await _wfEmailAdmin(wf,'New KYT Application','New KYT from '+wf.tenantName+' for '+wf.unitLabel+'.');
+  updateAppsBadge();logActivity(currentUser.email,'tenant','add','KYT submitted',wf.unitLabel);
+  notify('success','Application Submitted','Admin will review your KYT questionnaire.');
+  return wf;
+}
+
+async function submitRenewalApplication(formData){
+  if(!currentUser)return;
+  var rec=window._myRecord;
+  var wf={id:'wf_'+currentUser.uid+'_renewal_'+Date.now(),type:'renewal',status:'active',currentStep:'renewal_submitted',
+    tenantEmail:currentUser.email,tenantName:rec?(rec.tenant||currentUser.email):currentUser.email,
+    unitId:rec?(rec.unitId||rec.unit||''):'',unitLabel:rec?(rec.unit||rec.unitId||''):'',
+    currentExpiry:rec?rec.expiry:'',previousRentAmt:rec?(rec.amount||''):'',
+    submittedAt:new Date().toISOString(),renewalData:formData,approvalId:generateApprovalID('RNW'),
+    steps:[{id:'renewal_submitted',completedAt:new Date().toISOString(),by:'tenant'}]};
+  await saveWorkflow(wf);
+  await _wfEmailAdmin(wf,'Renewal Application',wf.tenantName+' submitted renewal for '+wf.unitLabel+'.');
+  updateAppsBadge();logActivity(currentUser.email,'tenant','add','Renewal submitted',wf.unitLabel);
+  notify('success','Renewal Submitted','Admin will review your request.');
+  return wf;
+}
+
+async function issuePaymentSlip(wfId,slipData){
+  var wf=await getWorkflow(wfId);if(!wf){notify('error','Not found','');return;}
+  var padId=generatePaymentAdvisorID(),exp=new Date();exp.setDate(exp.getDate()+14);
+  wf.paymentSlip={padId,issuedAt:new Date().toISOString(),expiresAt:exp.toISOString(),
+    totalFee:slipData.totalFee,breakdown:slipData.breakdown||[],
+    bankName:slipData.bankName||'Zenith Bank',accountNo:slipData.accountNo||'1014619530',
+    accountName:slipData.accountName||'Crestechnologies IS Ltd',notes:slipData.notes||''};
+  wf.currentStep='payment_submitted';wf.status='active';
+  wf.steps=(wf.steps||[]).concat([{id:'payment_slip_issued',completedAt:new Date().toISOString(),by:'admin',padId}]);
+  await saveWorkflow(wf);
+  var bHtml=(slipData.breakdown||[]).map(function(b){return '<tr><td style="padding:6px 10px;color:#9a8a6a">'+b.label+'</td><td style="padding:6px 10px;color:#e8dfc8;text-align:right">\u20a6'+Number(b.amount).toLocaleString()+'</td></tr>';}).join('');
+  var html=_wfEmailTemplate('Payment Advice Slip','Dear '+wf.tenantName+','
+    +'<p>Your application for <strong>'+wf.unitLabel+'</strong> has been reviewed. Please pay within 14 days.</p>'
+    +'<div style="background:#1a1612;border:1px solid #2a2620;border-radius:8px;padding:16px;margin:16px 0">'
+    +'<p style="color:#c9960c;font-weight:700">Payment Reference: '+padId+'</p>'
+    +(bHtml?'<table style="width:100%;border-collapse:collapse">'+bHtml+'</table>':'')
+    +'<p style="color:#e8dfc8;margin-top:10px"><strong>Total: \u20a6'+Number(slipData.totalFee).toLocaleString()+'</strong></p>'
+    +'<p style="color:#9a8a6a;font-size:13px">Bank: '+wf.paymentSlip.bankName+'<br>Acc: '+wf.paymentSlip.accountNo+'<br>Name: '+wf.paymentSlip.accountName+'</p>'
+    +'<p style="color:#c9960c;font-size:13px">Expires: '+exp.toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'})+'</p>'
+    +'</div><p>After payment, log in to submit your payment confirmation.</p>'+_wfPortalBtn());
+  await sendCRSEmail(wf.tenantEmail,'[Crestville] Payment Advice \u2014 '+padId,html);
+  notify('success','Payment Slip Issued','Tenant emailed. ID: '+padId);
+  updateAppsBadge();await loadAdminApplications();
+}
+
+async function submitPaymentConfirmation(paymentData){
+  if(!currentUser)return;
+  var me=currentUser.email.toLowerCase(),wfs=JSON.parse(localStorage.getItem('crs_workflows')||'[]');
+  var wf=wfs.find(function(w){return w.tenantEmail===me&&w.status==='active';});
+  if(!wf&&window._db){try{var s=await window._db.collection('workflows').where('tenantEmail','==',me).where('status','==','active').limit(1).get();if(!s.empty)wf={id:s.docs[0].id,...s.docs[0].data()};}catch(e){}}
+  if(!wf){notify('error','No active application','Submit KYT or renewal first.');return;}
+  if(wf.paymentSlip&&paymentData.padId&&paymentData.padId.trim()!==wf.paymentSlip.padId){notify('error','Invalid PAD ID','Payment Advisor ID does not match. Check and re-enter.');return;}
+  if(wf.paymentSlip&&paymentData.amountPaid){var paid=parseFloat(String(paymentData.amountPaid).replace(/[^0-9.]/g,'')),req=parseFloat(String(wf.paymentSlip.totalFee).replace(/[^0-9.]/g,''));if(paid<req*0.99){notify('error','Amount Mismatch','\u20a6'+paid.toLocaleString()+' paid vs \u20a6'+req.toLocaleString()+' required.');return;}}
+  wf.paymentData=paymentData;wf.currentStep='payment_approved';wf.status='pending_admin';
+  wf.steps=(wf.steps||[]).concat([{id:'payment_submitted',completedAt:new Date().toISOString(),by:'tenant'}]);
+  await saveWorkflow(wf);
+  await _wfEmailAdmin(wf,'Payment Submitted',wf.tenantName+' submitted payment for '+wf.unitLabel+'.');
+  notify('success','Payment Submitted','Admin will review your payment shortly.');
+  updateAppsBadge();await loadMyApplicationStatus();
+}
+
+async function adminApprovePayment(wfId,approved,notes){
+  var wf=await getWorkflow(wfId);if(!wf)return;
+  if(approved){
+    var pck=generatePaymentKeyCode(),cd=wf.type==='renewal'&&wf.currentExpiry?wf.currentExpiry:new Date().toISOString().slice(0,10);
+    wf.paymentKeyCode=pck;wf.paymentApprovedAt=new Date().toISOString();
+    wf.currentStep='eform_sent';wf.status='active';wf.commencementDate=cd;
+    wf.steps=(wf.steps||[]).concat([{id:'payment_approved',completedAt:new Date().toISOString(),by:'admin',action:'approved',pck}]);
+    await saveWorkflow(wf);
+    var html=_wfEmailTemplate('Payment Confirmed \u2014 eForm Ready','Dear '+wf.tenantName+','
+      +'<p>Your payment for <strong>'+wf.unitLabel+'</strong> has been confirmed.</p>'
+      +'<div style="background:#1a1612;border:1px solid rgba(201,150,12,.3);border-radius:8px;padding:16px;margin:16px 0;text-align:center">'
+      +'<p style="color:#9a8a6a;font-size:13px;margin-bottom:4px">Payment Confirmation Key Code</p>'
+      +'<p style="color:#c9960c;font-size:22px;font-weight:700;letter-spacing:.08em">'+pck+'</p></div>'
+      +'<p>Commence date: <strong>'+cd+'</strong></p><p>Log in to complete your Tenancy Agreement.</p>'+_wfPortalBtn());
+    await sendCRSEmail(wf.tenantEmail,'[Crestville] Payment Confirmed \u2014 Key: '+pck,html);
+    notify('success','Payment Approved','Key '+pck+' issued to tenant.');
+  }else{
+    wf.status='rejected';wf.rejectionReason=notes||'Payment rejected.';
+    wf.steps=(wf.steps||[]).concat([{id:'payment_approved',completedAt:new Date().toISOString(),by:'admin',action:'rejected',notes}]);
+    await saveWorkflow(wf);
+    var html2=_wfEmailTemplate('Payment Not Confirmed','Dear '+wf.tenantName+','+'<p>Payment for <strong>'+wf.unitLabel+'</strong> was not confirmed.</p><p style="color:#e05c5c"><strong>Reason:</strong> '+wf.rejectionReason+'</p>'+_wfPortalBtn());
+    await sendCRSEmail(wf.tenantEmail,'[Crestville] Payment Not Confirmed \u2014 '+wf.unitLabel,html2);
+    notify('success','Rejected','Tenant notified.');
   }
-  _rmUpdateBulkBar();
+  await loadAdminApplications();
 }
 
-function rmToggleAll(checked) {
-  document.querySelectorAll('#rmBody input[type=checkbox]').forEach(function(cb) {
-    cb.checked = checked;
-    const idx = parseInt(cb.value);
-    if (checked) window._rmSelected.add(idx);
-    else window._rmSelected.delete(idx);
-    const row = document.getElementById('rmRow_' + idx);
-    if (row) row.style.outline = checked ? '2px solid var(--gold)' : '';
-  });
-  _rmUpdateBulkBar();
-}
-
-function rmSelectAll() {
-  document.getElementById('rmSelectAllChk').checked = true;
-  rmToggleAll(true);
-}
-
-function rmClearSelection() {
-  window._rmSelected.clear();
-  document.querySelectorAll('#rmBody input[type=checkbox]').forEach(function(cb) {
-    cb.checked = false;
-    const row = document.getElementById('rmRow_' + parseInt(cb.value));
-    if (row) row.style.outline = '';
-  });
-  const allChk = document.getElementById('rmSelectAllChk');
-  if (allChk) { allChk.checked = false; allChk.indeterminate = false; }
-  _rmUpdateBulkBar();
-}
-
-function _rmUpdateBulkBar() {
-  const bar = document.getElementById('rmBulkBar');
-  const countEl = document.getElementById('rmBulkCount');
-  const n = window._rmSelected.size;
-  if (bar) bar.style.display = n > 0 ? 'flex' : 'none';
-  if (countEl) countEl.textContent = n + ' record' + (n !== 1 ? 's' : '') + ' selected';
-}
-
-function rmBulkDelete() {
-  const n = window._rmSelected.size;
-  if (!n) return;
-  const selected = [...window._rmSelected].sort((a,b)=>b-a); // descending so splices don't shift indices
-  if (!confirm('Delete ' + n + ' selected record' + (n!==1?'s':'') + '? This cannot be undone.')) return;
-  selected.forEach(function(idx) {
-    const rec = rentLogs[idx];
-    if (rec && window._db && rec.id) {
-      window._db.collection('rentRecords').doc(rec.id).delete().catch(function(){});
-    }
-    rentLogs.splice(idx, 1);
-  });
-  try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {}
-  window._rmSelected.clear();
-  renderRentManager();
-  if (typeof renderProperties === 'function') renderProperties();
-  notify('success', n + ' Record' + (n!==1?'s':'') + ' Deleted', 'Selected records removed.');
-}
-
-function rmBulkExport() {
-  const selected = [...window._rmSelected];
-  if (!selected.length) return;
-  const rows = selected.map(function(idx) { return rentLogs[idx]; }).filter(Boolean);
-  const headers = ['#','Unit','Tenant','Email','Phone','Amount','NewRent','Start','Expiry','LastPayment','Status','Notes'];
-  const csv = [headers.join(',')]
-    .concat(rows.map(function(r, i) {
-      return [
-        i+1,
-        '"'+(r.unit||r.unitId||'').replace(/"/g,'""')+'"',
-        '"'+(r.tenant||'').replace(/"/g,'""')+'"',
-        r.tenantEmail||'',
-        r.tenantPhone||'',
-        r.amount||'',
-        r.newRent||'',
-        r.start||'',
-        r.expiry||'',
-        r.lastPayment||'',
-        r.vacancy||'Occupied',
-        '"'+(r.notes||'').replace(/"/g,'""')+'"',
-      ].join(',');
-    })).join('\n');
-  const blob = new Blob([csv], {type:'text/csv'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'CRS_Selected_' + selected.length + '_Records_' + new Date().toISOString().slice(0,10) + '.csv';
-  a.click();
-  notify('success', 'CSV Exported', selected.length + ' records downloaded.');
-}
-
-/* ── ADD / EDIT RENT RECORD ── */
-function openRentModal(idx=null) {
-  document.getElementById('rmEditId').value = idx !== null ? idx : '';
-  document.getElementById('rentModalTitle').textContent = idx !== null ? 'Edit Record' : 'Add Rent Record';
-
-  // Populate the unit dropdown with all PROPERTIES
-  const sel = document.getElementById('rmUnit');
-  if (sel && (!sel.options.length || (sel.options.length === 1 && sel.options[0].value === ''))) {
-    sel.innerHTML = '<option value="">— Select unit —</option>' +
-      PROPERTIES.map(p => '<option value="' + p.id + '">' + p.label + ' — ' + p.location + '</option>').join('');
+async function adminApproveEForm(wfId,approved,notes){
+  var wf=await getWorkflow(wfId);if(!wf)return;
+  if(approved){
+    wf.currentStep='complete';wf.status='complete';wf.completedAt=new Date().toISOString();
+    wf.steps=(wf.steps||[]).concat([{id:'eform_approved',completedAt:new Date().toISOString(),by:'admin',action:'approved'}]);
+    await saveWorkflow(wf);
+    if(wf.commencementDate&&wf.unitId){var ri=rentLogs.findIndex(function(r){return (r.unitId||r.unit||'')===wf.unitId;});
+      if(ri>=0){rentLogs[ri].start=wf.commencementDate;rentLogs[ri].expiry=_addOneYear(wf.commencementDate);rentLogs[ri].vacancy='Occupied';rentLogs[ri].updatedAt=new Date().toISOString();
+        try{localStorage.setItem('rentData_CRS_v3',JSON.stringify(rentLogs));}catch(e){}
+        if(window._db&&rentLogs[ri].id)window._db.collection('rentRecords').doc(rentLogs[ri].id).set(rentLogs[ri],{merge:true}).catch(function(){});}}
+    var html=_wfEmailTemplate('Tenancy Agreement Approved','Dear '+wf.tenantName+','+'<p>Your Tenancy Agreement for <strong>'+wf.unitLabel+'</strong> is approved.</p><p>Start: <strong>'+(wf.commencementDate||'\u2014')+'</strong></p><p>Log in to print your signed agreement.</p>'+_wfPortalBtn());
+    await sendCRSEmail(wf.tenantEmail,'[Crestville] \u2705 Tenancy Approved \u2014 '+wf.unitLabel,html);
+    notify('success','eForm Approved','Records updated.');renderAll();renderProperties();renderRentManager();
+  }else{
+    wf.status='rejected';wf.rejectionReason=notes;
+    wf.steps=(wf.steps||[]).concat([{id:'eform_approved',completedAt:new Date().toISOString(),by:'admin',action:'rejected',notes}]);
+    await saveWorkflow(wf);
+    var html3=_wfEmailTemplate('eForm Requires Amendment','Dear '+wf.tenantName+','+'<p>Your eForm for <strong>'+wf.unitLabel+'</strong> was not approved.</p><p style="color:#e05c5c"><strong>Reason:</strong> '+notes+'</p><p>Please amend and resubmit.</p>'+_wfPortalBtn());
+    await sendCRSEmail(wf.tenantEmail,'[Crestville] eForm Amendment Required \u2014 '+wf.unitLabel,html3);
+    notify('success','Rejected','Tenant notified.');
   }
+  await loadAdminApplications();
+}
 
-  if (idx !== null) {
-    const e = rentLogs[idx];
-    const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
-    setVal('rmUnit',          e.unitId || e.unit || '');
-    setVal('rmTenant',        e.tenant || '');
-    setVal('rmContractName',  e.contractName || '');
-    setVal('rmTenantEmail',   e.tenantEmail || '');
-    setVal('rmTenantPhone',   e.tenantPhone || '');
-    setVal('rmAmount',        e.amount || '');
-    setVal('rmNewRent',       e.newRent || '');
-    setVal('rmLastPayment',   e.lastPayment || '');
-    setVal('rmStart',         e.start || '');
-    setVal('rmExpiry',        e.expiry || '');
-    setVal('rmVacancy',       e.vacancy || 'occupied');
-    setVal('rmNotes',         e.notes || '');
-  } else {
-    ['rmUnit','rmTenant','rmContractName','rmTenantEmail','rmTenantPhone',
-     'rmAmount','rmNewRent','rmLastPayment','rmStart','rmExpiry','rmNotes']
-      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    const v = document.getElementById('rmVacancy');
-    if (v) v.value = 'occupied';
+async function sendGuarantorConsentEmails(wf,refs){
+  if(!refs||!refs.length)return;
+  wf.guarantors=refs;wf.guarantorStatus={};refs.forEach(function(r){wf.guarantorStatus[r.email]='pending';});
+  await saveWorkflow(wf);
+  for(var i=0;i<refs.length;i++){var ref=refs[i];
+    var link='https://enjanih-stack.github.io/crestville-portal/index.html?consent='+wf.id+'&cemail='+encodeURIComponent(ref.email);
+    var html=_wfEmailTemplate('Consent Request \u2014 '+wf.tenantName,'Dear '+ref.name+','
+      +'<p>You are listed as <strong>'+ref.role+'</strong> by <strong>'+wf.tenantName+'</strong> for tenancy of <strong>'+wf.unitLabel+'</strong>.</p>'
+      +'<div style="text-align:center;margin:20px 0"><a href="'+link+'" style="background:#c9960c;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:700">Review &amp; Give Consent \u2192</a></div>'
+      +'<p style="font-size:13px;color:#9a8a6a">Unknown applicant? Email: crestechnologies@outlook.com</p>');
+    await sendCRSEmail(ref.email,'[Crestville] Consent Request from '+wf.tenantName,html);
   }
-  document.getElementById('rentModal').classList.add('on');
+  notify('success','Consent Emails Sent',refs.length+' referee(s) notified.');
 }
 
-function editRentByUnit(propId) {
-  // Find the rentLogs index for this property and open the edit modal
-  const idx = rentLogs.findIndex(function(e) {
-    return (e.unitId || e.unit || '') === propId;
-  });
-  if (idx >= 0) {
-    openRentModal(idx);
-  } else {
-    // No record yet — open Add modal pre-filled with this unit
-    openRentModal(null);
-    setTimeout(function() {
-      const sel = document.getElementById('rmUnit');
-      if (sel) sel.value = propId;
-    }, 50);
-  }
-}
-
-function addRecordForUnit(propId) {
-  openRentModal(null);
-  setTimeout(function() {
-    const sel = document.getElementById('rmUnit');
-    if (sel) sel.value = propId;
-  }, 50);
-}
-function closeRentModal() { document.getElementById('rentModal').classList.remove('on'); }
-function editRentRecord(idx) { openRentModal(idx); }
-function deleteRentRecord(idx) {
-  if(!confirm('Delete this record? This cannot be undone.')) return;
-  rentLogs.splice(idx,1);
-  renderAll(); renderRentManager();
-  toast('Record deleted');
-}
-
-async function saveRentRecord() {
-  const unitId  = document.getElementById('rmUnit').value;
-  const tenant  = document.getElementById('rmTenant').value.trim();
-  if(!unitId || !tenant) { if(typeof toast==='function') toast('⚠ Select a unit and enter tenant name'); return; }
-
-  const getV = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
-  const editIdx = document.getElementById('rmEditId').value;
-  const existingId = editIdx !== '' ? (rentLogs[parseInt(editIdx)]?.id || '') : '';
-
-  const record = {
-    id:           existingId || 'REC-' + Date.now(),
-    unitId,
-    unit:         getPropertyLabel(unitId) || unitId,
-    location:     (PROPERTIES.find(p=>p.id===unitId)||{}).location || '',
-    city:         (PROPERTIES.find(p=>p.id===unitId)||{}).city || '',
-    type:         (PROPERTIES.find(p=>p.id===unitId)||{}).type || '',
-    tenant,
-    contractName: getV('rmContractName') || tenant,
-    tenantEmail:  getV('rmTenantEmail').toLowerCase(),
-    tenantPhone:  getV('rmTenantPhone'),
-    amount:       getV('rmAmount'),
-    newRent:      getV('rmNewRent'),
-    lastPayment:  getV('rmLastPayment'),
-    start:        getV('rmStart'),
-    expiry:       getV('rmExpiry'),
-    vacancy:      getV('rmVacancy') || 'occupied',
-    notes:        getV('rmNotes'),
-    updatedAt:    new Date().toISOString(),
-    importedAt:   existingId ? (rentLogs[parseInt(editIdx)]?.importedAt || new Date().toISOString()) : new Date().toISOString(),
-  };
-
-  if (editIdx !== '') {
-    rentLogs[parseInt(editIdx)] = { ...rentLogs[parseInt(editIdx)], ...record };
-  } else {
-    rentLogs.push(record);
-  }
-
-  // Save to localStorage
-  try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {}
-
-  closeRentModal();
-  renderAll();
-  renderRentManager();
-  if (typeof renderProperties === 'function') renderProperties();
-  if (typeof toast === 'function') toast('✓ Record saved');
-  notify('success', editIdx!=='' ? 'Record Updated' : 'Record Added', tenant + ' — ' + (getPropertyLabel(unitId)||unitId));
-
-  // Save to Firestore (non-blocking)
-  try {
-    if (window._db) await window._db.collection('rentRecords').doc(record.id).set(record);
-  } catch(e) { console.log('Firestore save:', e); }
-}
-
-/* ═══ VACANT UNITS ════════════════════════════════════ */
-function getVacantUnits() {
-  // Deduplicated occupied set by unitId
-  const occupiedIds = new Set();
-  rentLogs.forEach(function(e) {
-    if (e.vacancy !== 'vacant' && (e.tenant||'').trim()) {
-      occupiedIds.add((e.unitId||e.unit||'').trim().toLowerCase());
-    }
-  });
-  const markedVacant = new Set();
-  rentLogs.forEach(function(e) {
-    if (e.vacancy === 'vacant') markedVacant.add((e.unitId||e.unit||'').trim().toLowerCase());
-  });
-  return PROPERTIES.filter(function(p) {
-    const key = p.id.trim().toLowerCase();
-    return !occupiedIds.has(key) || markedVacant.has(key);
-  });
-}
-
-function renderVacant() {
-  const search = (document.getElementById('vacantSearch')?.value||'').toLowerCase();
-  const city = document.getElementById('vacantCity')?.value||'';
-  const type = document.getElementById('vacantType')?.value||'';
-  let units = getVacantUnits();
-  if(search) units = units.filter(p => (p.label+p.location+p.city+p.type).toLowerCase().includes(search));
-  if(city) units = units.filter(p => p.city === city);
-  if(type) units = units.filter(p => p.type === type);
-  const grid = document.getElementById('vacantGrid');
-  const empty = document.getElementById('vacantEmpty');
-  if(!units.length) { grid.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
-  const icons = {'2 Bedroom Flat':'🏠','3 Bedroom Flat':'🏡','Self Contained':'🏘','Room & Parlour':'🛋️','Commercial':'🏪'};
-  grid.innerHTML = units.map(p => {
-    // Find rent from logs if previously occupied
-    const prev = rentLogs.find(e => e.unitId === p.id);
-    const rentHint = prev ? '₦'+Number(prev.amount).toLocaleString()+'/yr (prev.)' : 'Enquire for rent';
-    return `<div class="unit-card">
-      <div class="uc-top">
-        <div class="uc-type-row">
-          <span class="uc-icon">${icons[p.type]||'🏠'}</span>
-          <span class="badge badge-vacant">Vacant</span>
-        </div>
-        <div class="uc-title">${p.label}</div>
-        <div class="uc-loc">📍 ${p.location}</div>
-        <div style="margin-top:8px"><span class="badge" style="background:#f0f0f0;color:var(--dim)">${p.type}</span></div>
-      </div>
-      <div class="uc-bottom">
-        <div class="uc-rent">${rentHint}</div>
-        <button class="btn btn-gold btn-sm" onclick="showInterest('${p.id}')">Enquire →</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function showInterest(propId) {
-  _selectedUnit = PROPERTIES.find(p => p.id === propId);
-  if(!_selectedUnit) return;
-  document.getElementById('interestUnitInfo').innerHTML =
-    `<strong>${_selectedUnit.label}</strong><br>📍 ${_selectedUnit.location}<br>Type: ${_selectedUnit.type}`;
-  document.getElementById('interestModal').classList.add('on');
-}
-function closeInterestModal() { document.getElementById('interestModal').classList.remove('on'); }
-function goToKYT() {
-  closeInterestModal();
-  const url = _selectedUnit ?
-    'CRS_PreRental_Questionnaire_v3.html#' + btoa(JSON.stringify({q21_apartments: _selectedUnit.label+' — '+_selectedUnit.location})) :
-    'https://enjanih-stack.github.io/crestville-portal/CRS_PreRental_Questionnaire_v3.html';
-  window.open(url,'_blank');
-}
-
-/* ═══ MY PROPERTY (tenant view) ═══════════════════════ */
-async function loadMyProperty(userData) {
-  const body = document.getElementById('myPropertyBody');
-  if (!body || !currentUser) return;
-  const myEmail = (currentUser.email || '').toLowerCase().trim();
-  if (!myEmail) return;
-
-  body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem;margin-bottom:10px">⏳</div><div>Loading your tenancy...</div></div>';
-
-  // ── Fetch ALL records for this tenant from every source ──
-  const allMyRaws = [];
-  const seenUnits = new Set();
-
-  function _addRec(r) {
-    if (!r) return;
-    const key = (r.unitId || r.unit || '').toLowerCase().trim();
-    if (!key || seenUnits.has(key)) return;
-    seenUnits.add(key);
-    allMyRaws.push(r);
-  }
-
-  // Source 1: rentLogs
-  rentLogs.forEach(function(e) {
-    if ((e.tenantEmail || '').toLowerCase().trim() === myEmail) _addRec(e);
-  });
-  // Source 2: seed data
-  if (window._seedData) {
-    window._seedData.forEach(function(e) {
-      if ((e.tenantEmail || '').toLowerCase().trim() === myEmail) _addRec(e);
-    });
-  }
-  // Source 3: Firestore
-  if (window._db) {
-    try {
-      const snap = await window._db.collection('rentRecords')
-        .where('tenantEmail', '==', myEmail).get();
-      snap.docs.forEach(function(d) { _addRec(d.data()); });
-    } catch(fsErr) {
-      try {
-        const all = await window._db.collection('rentRecords').limit(100).get();
-        all.docs.forEach(function(d) {
-          const data = d.data();
-          if ((data.tenantEmail || '').toLowerCase().trim() === myEmail) _addRec(data);
-        });
-      } catch(e2) {}
-    }
-  }
-
-  // Normalise all records
-  const allMyRecords = allMyRaws.map(function(r) {
-    return typeof _normaliseRecord === 'function' ? _normaliseRecord(r) : r;
-  }).filter(function(r) { return r && (r.unitId || r.unit); });
-
-  // Patch found records into rentLogs
-  allMyRaws.forEach(function(rawRec) {
-    const already = rentLogs.findIndex(function(e) {
-      return (e.unitId || e.unit || '') === (rawRec.unitId || rawRec.unit || '');
-    });
-    if (already >= 0) {
-      rentLogs[already] = Object.assign({}, rawRec, rentLogs[already], {
-        tenantEmail: rawRec.tenantEmail, tenant: rawRec.tenant || rentLogs[already].tenant
-      });
-    } else if (rawRec.tenantEmail) { rentLogs.push(rawRec); }
-  });
-  if (allMyRaws.length > 0) {
-    try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {}
-  }
-
-  if (!allMyRecords.length) {
-    body.innerHTML = '<div style="text-align:center;padding:60px 24px;color:var(--dim)">'
-      + '<div style="font-size:3rem;margin-bottom:14px">🔑</div>'
-      + '<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.1rem;font-weight:700;color:var(--ink);margin-bottom:8px">No tenancy record linked</div>'
-      + '<div style="font-size:.84rem;line-height:1.75">Your account (<strong>' + myEmail + '</strong>) is not yet linked to a tenancy.<br>'
-      + 'Contact: <a href="mailto:crestechnologies@outlook.com" style="color:var(--gold)">crestechnologies@outlook.com</a></div></div>';
-    window._myRecord = null; window._myAllRecs = [];
-    return;
-  }
-
-  // Track which unit is active — default to first
-  if (!window._myActiveUnitId || !allMyRecords.find(function(r){ return (r.unitId||r.unit)===window._myActiveUnitId; })) {
-    window._myActiveUnitId = allMyRecords[0].unitId || allMyRecords[0].unit;
-  }
-  const myRecord = allMyRecords.find(function(r){ return (r.unitId||r.unit)===window._myActiveUnitId; }) || allMyRecords[0];
-  window._myRecord  = myRecord;
-  window._myAllRecs = allMyRecords;
-
-  const today = new Date(); today.setHours(0,0,0,0);
-  const startD = myRecord.start ? new Date(myRecord.start) : null;
-  const expD   = myRecord.expiry ? new Date(myRecord.expiry) : null;
-  if(expD)   expD.setHours(0,0,0,0);
-  if(startD) startD.setHours(0,0,0,0);
-
-  const daysLeft    = expD ? Math.round((expD - today)/(864e5)) : null;
-  const totalDays   = (startD && expD) ? Math.round((expD - startD)/(864e5)) : 365;
-  const elapsedDays = startD ? Math.round((today - startD)/(864e5)) : 0;
-  const progressPct = Math.min(100, Math.max(0, Math.round((elapsedDays/totalDays)*100)));
-  const isOverdue   = daysLeft !== null && daysLeft < 0;
-  const isExpiring  = daysLeft !== null && daysLeft >= 0 && daysLeft <= 60;
-  const isCritical  = daysLeft !== null && daysLeft >= 0 && daysLeft <= 14;
-  const tlColor     = isOverdue ? 'var(--red)' : isExpiring ? '#c9960c' : 'var(--green)';
-  const fmt = d => d ? new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : '—';
-
-  const renewBtn = document.getElementById('renewBtn');
-  if(renewBtn) renewBtn.style.display = (isExpiring||isOverdue) ? '' : 'none';
-
-  // RENEWAL ALERT
-  let alertStrip = '';
-  if(isOverdue) {
-    alertStrip = `<div class="renewal-strip rs-urgent"><span class="rs-icon">🚨</span>
-      <div class="rs-body"><div class="rs-title">Tenancy Expired — Action Required</div>
-      <div class="rs-desc">Your tenancy expired <strong>${Math.abs(daysLeft)} days ago</strong> on <strong>${fmt(myRecord.expiry)}</strong>. Please contact the landlord immediately to renew or vacate per Clause X.</div></div>
-      <div class="rs-action"><button class="btn btn-red" onclick="openRenewalModal()">🔄 Renew Now</button></div></div>`;
-  } else if(isCritical) {
-    alertStrip = `<div class="renewal-strip rs-urgent"><span class="rs-icon">⚠️</span>
-      <div class="rs-body"><div class="rs-title">Expiring in ${daysLeft} Day${daysLeft===1?'':'s'} — Renew Immediately</div>
-      <div class="rs-desc">Your tenancy expires on <strong>${fmt(myRecord.expiry)}</strong>. Submit a renewal request immediately.</div></div>
-      <div class="rs-action"><button class="btn btn-gold" onclick="openRenewalModal()">🔄 Renew Now</button></div></div>`;
-  } else if(isExpiring) {
-    alertStrip = `<div class="renewal-strip rs-warn"><span class="rs-icon">📅</span>
-      <div class="rs-body"><div class="rs-title">Renewal Reminder — ${daysLeft} Days Remaining</div>
-      <div class="rs-desc">Your tenancy expires on <strong>${fmt(myRecord.expiry)}</strong>. Submit your renewal request at least 30 days in advance.</div></div>
-      <div class="rs-action"><button class="btn btn-outline" onclick="openRenewalModal()">Request Renewal</button></div></div>`;
-  } else {
-    alertStrip = `<div class="renewal-strip rs-ok"><span class="rs-icon">✅</span>
-      <div class="rs-body"><div class="rs-title">Tenancy Active — ${daysLeft!==null?daysLeft+' days remaining':'Current'}</div>
-      <div class="rs-desc">Your tenancy runs until <strong>${fmt(myRecord.expiry)}</strong>. You will receive a reminder when 60 days remain.</div></div></div>`;
-  }
-
-  const propObj = PROPERTIES.find(p => p.id === (myRecord.unitId||myRecord.unit));
-  const locStr  = myRecord.location || propObj?.location || '';
-
-  // ── Build multi-property switcher bar (shown when tenant has > 1 unit) ──
-  let switcherHtml = '';
-  if (allMyRecords.length > 1) {
-    const today0 = new Date(); today0.setHours(0,0,0,0);
-    switcherHtml = '<div style="margin-bottom:16px">'
-      + '<div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:8px">YOUR PROPERTIES (' + allMyRecords.length + ')</div>'
-      + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
-      + allMyRecords.map(function(r) {
-          const isActive = (r.unitId||r.unit) === (myRecord.unitId||myRecord.unit);
-          const exp = r.expiry ? new Date(r.expiry) : null;
-          if (exp) exp.setHours(0,0,0,0);
-          const days = exp ? Math.round((exp - today0) / 864e5) : null;
-          const daysLabel = days === null ? '' : days < 0
-            ? ' · <span style="color:var(--red)">'+Math.abs(days)+'d overdue</span>'
-            : ' · <span style="color:#15803d">'+days+'d left</span>';
-          const rent = r.newRent || r.amount || '';
-          return '<div onclick="window._myActiveUnitId=\'' + (r.unitId||r.unit).replace(/'/g,"\\'") + '\';loadMyProperty({});" '
-            + 'style="cursor:pointer;padding:10px 14px;border-radius:8px;border:2px solid '
-            + (isActive ? 'var(--gold)' : 'var(--rule)') + ';background:'
-            + (isActive ? 'rgba(201,150,12,.08)' : 'var(--card)') + ';flex:1;min-width:160px;transition:all .18s">'
-            + '<div style="font-size:.76rem;font-weight:700;color:' + (isActive ? 'var(--gold)' : 'var(--ink)') + '">'
-            + (r.unit||r.unitId) + '</div>'
-            + '<div style="font-size:.68rem;color:var(--dim);margin-top:2px">' + (r.city||'') + daysLabel + '</div>'
-            + (rent ? '<div style="font-size:.72rem;font-weight:600;margin-top:4px">₦'+Number(rent).toLocaleString()+'/yr</div>' : '')
-            + '</div>';
-        }).join('')
-      + '</div></div>';
-  }
-
-  body.innerHTML = switcherHtml + alertStrip + `
-    <!-- TABS -->
-    <div class="tp-tabs">
-      <div class="tp-tab on" onclick="tpSwitch('tpOverview')">&#127968; Overview</div>
-      <div class="tp-tab" onclick="tpSwitch('tpParticulars')">&#128203; My Particulars</div>
-    </div>
-    <div class="tp-panel on" id="tpOverview">
-    <div class="t-hero">
-      <div class="t-hero-eyebrow">Your Property</div>
-      <div class="t-hero-unit">${getPropertyLabel(myRecord.unitId||myRecord.unit)}</div>
-      <div class="t-hero-loc">📍 ${locStr}</div>
-      <div class="t-hero-grid">
-        <div class="t-stat"><div class="t-stat-label">Annual Rent</div><div class="t-stat-value">₦${Number(myRecord.amount||0).toLocaleString()}</div><div class="t-stat-sub">${myRecord.newRent?'New: ₦'+Number(myRecord.newRent).toLocaleString():'Per year'}</div></div>
-        <div class="t-stat"><div class="t-stat-label">Start Date</div><div class="t-stat-value" style="font-size:.92rem">${fmt(myRecord.start)}</div><div class="t-stat-sub">Tenancy began</div></div>
-        <div class="t-stat"><div class="t-stat-label">Expiry Date</div><div class="t-stat-value" style="font-size:.92rem">${fmt(myRecord.expiry)}</div><div class="t-stat-sub">${daysLeft!==null?(isOverdue?Math.abs(daysLeft)+' days ago':daysLeft+' days left'):'—'}</div></div>
-        <div class="t-stat"><div class="t-stat-label">Status</div><div class="t-stat-value" style="font-size:.92rem">${isOverdue?'🔴 Expired':isExpiring?'🟡 Expiring':'🟢 Active'}</div><div class="t-stat-sub">${isOverdue?'Renewal required':isExpiring?'Renewal due':'In good standing'}</div></div>
-        ${myRecord.lastPayment?`<div class="t-stat"><div class="t-stat-label">Last Payment</div><div class="t-stat-value" style="font-size:.9rem">${fmt(myRecord.lastPayment)}</div><div class="t-stat-sub">Most recent payment</div></div>`:''}
-        ${myRecord.vacancy?`<div class="t-stat"><div class="t-stat-label">Occupancy</div><div class="t-stat-value" style="font-size:.9rem;text-transform:capitalize">${myRecord.vacancy}</div><div class="t-stat-sub">Current status</div></div>`:''}
-      </div>
-      <div style="margin-top:18px;position:relative;z-index:1">
-        <div style="display:flex;justify-content:space-between;font-size:.62rem;color:#7a6e62;margin-bottom:5px">
-          <span>START ${startD?startD.toLocaleDateString('en-NG',{month:'short',year:'numeric'}):'—'}</span>
-          <span style="color:${tlColor};font-weight:700">${progressPct}% elapsed</span>
-          <span>EXPIRY ${expD?expD.toLocaleDateString('en-NG',{month:'short',year:'numeric'}):'—'}</span>
-        </div>
-        <div class="timeline-bar"><div class="timeline-fill" style="width:${progressPct}%;background:${tlColor}"></div></div>
-      </div>
-    </div>
-
-    <div class="qa-grid">
-      <div class="qa-card" onclick="openRenewalModal()"><span class="qa-icon">🔄</span><div class="qa-label">Request Renewal</div><div class="qa-sub">Submit a renewal request</div></div>
-      <div class="qa-card" onclick="window.open('https://enjanih-stack.github.io/crestville-portal/tenancy_deviation_requisition_v2.html','_blank')"><span class="qa-icon">📝</span><div class="qa-label">Deviation Request</div><div class="qa-sub">Mid-tenancy changes</div></div>
-      <div class="qa-card" onclick="generateReceiptByRecord(window._myRecord)"><span class="qa-icon">🧾</span><div class="qa-label">Print Receipt</div><div class="qa-sub">Rent receipt</div></div>
-      <div class="qa-card" onclick="showPage('pgNotices',document.getElementById('navNotices'))"><span class="qa-icon">📋</span><div class="qa-label">View Notices</div><div class="qa-sub">Landlord announcements</div></div>
-    </div>
-
-    <!-- FULL TENANCY DETAILS CARD -->
-    <div class="sec-card">
-      <div class="sec-head"><h2>📋 Your Tenancy Details</h2></div>
-      <div class="sec-body">
-        <table style="width:100%;border-collapse:collapse;font-size:.84rem">
-          <tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:9px 0;color:var(--dim);width:45%;font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Tenant Name (Portal)</td>
-            <td style="padding:9px 0;font-weight:600;color:var(--ink)">${myRecord.tenant||'—'}</td>
-          </tr>
-          ${myRecord.contractName && myRecord.contractName !== myRecord.tenant ? `<tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Name on Agreement</td>
-            <td style="padding:9px 0;font-weight:600;color:var(--gold)">${myRecord.contractName}</td>
-          </tr>` : ''}
-          <tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Email on Record</td>
-            <td style="padding:9px 0">${myRecord.tenantEmail||'—'}</td>
-          </tr>
-          ${myRecord.tenantPhone ? `<tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Phone</td>
-            <td style="padding:9px 0">${myRecord.tenantPhone}</td>
-          </tr>` : ''}
-          <tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Property / Unit</td>
-            <td style="padding:9px 0;font-weight:600">${getPropertyLabel(myRecord.unitId||myRecord.unit)}</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Location</td>
-            <td style="padding:9px 0">${myRecord.location||locStr||'—'}</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Unit ID</td>
-            <td style="padding:9px 0;font-family:monospace;font-size:.82rem">${myRecord.unitId||myRecord.unit||'—'}</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Annual Rent</td>
-            <td style="padding:9px 0;font-weight:700;color:var(--ink)">₦${Number(myRecord.amount||0).toLocaleString()}</td>
-          </tr>
-          ${myRecord.newRent ? `<tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">New / Proposed Rent</td>
-            <td style="padding:9px 0;font-weight:700;color:var(--gold)">₦${Number(myRecord.newRent).toLocaleString()}</td>
-          </tr>` : ''}
-          <tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Tenancy Start</td>
-            <td style="padding:9px 0">${fmt(myRecord.start)}</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Tenancy Expiry</td>
-            <td style="padding:9px 0;font-weight:600;color:${isOverdue?'var(--red)':isExpiring?'#b45309':'var(--green)'}">${fmt(myRecord.expiry)}${daysLeft!==null?' ('+Math.abs(daysLeft)+(isOverdue?' days overdue':' days remaining')+')'  :''}</td>
-          </tr>
-          ${myRecord.lastPayment ? `<tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Last Payment Date</td>
-            <td style="padding:9px 0">${fmt(myRecord.lastPayment)}</td>
-          </tr>` : ''}
-          ${myRecord.tenantNIN ? `<tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">NIN (on file)</td>
-            <td style="padding:9px 0;font-family:monospace">••••••${myRecord.tenantNIN.slice(-4)}</td>
-          </tr>` : ''}
-          <tr>
-            <td style="padding:9px 0;color:var(--dim);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Term</td>
-            <td style="padding:9px 0;font-weight:700;color:var(--gold)">TERM CERTAIN</td>
-          </tr>
-        </table>
-      </div>
-    </div>
-
-    ${myRecord.notes?`<div class="sec-card"><div class="sec-head"><h2>📌 Notes from Landlord</h2></div><div class="sec-body" style="font-size:.84rem;color:var(--dim);line-height:1.75">${myRecord.notes}</div></div>`:''}
-
-    <div class="sec-card">
-      <div class="sec-head"><h2>📖 Renewal & Vacating Guide</h2></div>
-      <div class="sec-body" style="font-size:.82rem;color:var(--dim);line-height:1.9">
-        <div style="margin-bottom:10px"><strong style="color:var(--ink)">60 days before expiry:</strong> You will receive an automatic reminder. Begin renewal discussions with the landlord.</div>
-        <div style="margin-bottom:10px"><strong style="color:var(--ink)">30 days before expiry:</strong> Submit your formal renewal request. Landlord confirms new rent and tenure dates.</div>
-        <div style="margin-bottom:10px"><strong style="color:var(--ink)">On renewal:</strong> A new digital tenancy agreement is issued and signed by all parties. Pay the agreed rent to confirm.</div>
-        <div style="margin-bottom:10px"><strong style="color:var(--ink)">Clause X — Obligation to Vacate:</strong> If not renewing, you must vacate on or before the expiry date and surrender vacant possession to the landlord.</div>
-        <div><strong style="color:var(--ink)">Contact:</strong> crestechnologies@outlook.com · Victoria Estate #20, Ojodu, Ogun State</div>
-      </div>
-    </div>`;/* close tpOverview */
-
-  /* Build Particulars panel */
-  const _pp = document.getElementById('tpParticulars');
-  if (_pp) {
-    const _rAmt = parseFloat((myRecord.amount ||'0').toString().replace(/[^0-9.]/g,''))||0;
-    const _nAmt = parseFloat((myRecord.newRent||'0').toString().replace(/[^0-9.]/g,''))||0;
-    const _diff = _nAmt>0&&_nAmt!==_rAmt ? (_nAmt>_rAmt
-      ? ' <span style="color:#15803d;font-weight:700;font-size:.78rem">(+&#8358;'+(_nAmt-_rAmt).toLocaleString()+' increase)</span>'
-      : ' <span style="color:var(--red);font-weight:700;font-size:.78rem">(-&#8358;'+(_rAmt-_nAmt).toLocaleString()+' decrease)</span>') : '';
-    const _pct = Math.min(100,Math.max(0,Math.round((elapsedDays/Math.max(totalDays,1))*100)));
-    const _tlc = isOverdue?'var(--red)':isExpiring?'#c9960c':'var(--green)';
-    let _sb = '';
-    if(daysLeft===null)   _sb='<span style="background:rgba(100,100,100,.1);color:#666;font-size:.72rem;font-weight:700;padding:3px 12px;border-radius:20px;border:1px solid #ddd">No Expiry Set</span>';
-    else if(daysLeft<0)   _sb='<span style="background:rgba(140,31,31,.12);color:var(--red);font-size:.72rem;font-weight:700;padding:3px 12px;border-radius:20px">Expired '+Math.abs(daysLeft)+' Days Ago</span>';
-    else if(daysLeft<=14) _sb='<span style="background:rgba(140,31,31,.08);color:var(--red);font-size:.72rem;font-weight:700;padding:3px 12px;border-radius:20px">Critical - '+daysLeft+' Days Left</span>';
-    else if(daysLeft<=60) _sb='<span style="background:rgba(201,150,12,.1);color:#7a5c00;font-size:.72rem;font-weight:700;padding:3px 12px;border-radius:20px">Expiring - '+daysLeft+' Days Left</span>';
-    else                  _sb='<span style="background:rgba(26,92,46,.08);color:var(--green);font-size:.72rem;font-weight:700;padding:3px 12px;border-radius:20px">Active - '+daysLeft+' Days Left</span>';
-    const _row=(l,v,c)=>'<div class="tp-row"><div class="tp-label">'+l+'</div><div class="tp-value'+(c?' '+c:'')+'">' +v+'</div></div>';
-    const _ev=v=>v?'':'empty';
-    const _pobj=PROPERTIES.find(p=>p.id===(myRecord.unitId||myRecord.unit));
-    _pp.innerHTML=
-      '<div style="background:linear-gradient(135deg,var(--ink),#1a1612);border-radius:12px;padding:22px 24px;margin-bottom:16px;color:#e8dfc8">'
-        +'<div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;color:var(--gold);text-transform:uppercase;margin-bottom:6px">Tenancy Particulars</div>'
-        +'<div style="font-family:Garamond,serif;font-size:1.5rem;font-weight:700;margin-bottom:4px">'+(myRecord.tenant||'Tenant')+'</div>'
-        +'<div style="font-size:.84rem;opacity:.75;margin-bottom:14px">'+(myRecord.unit||myRecord.unitId||'--')+'&middot;'+(locStr||'')+'</div>'
-        +'<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">'+_sb+'<span style="font-size:.7rem;opacity:.55">Ref: '+(myRecord.id||'N/A').slice(-8).toUpperCase()+'</span></div>'
-        +'<div style="margin-top:16px"><div style="display:flex;justify-content:space-between;font-size:.65rem;opacity:.6;margin-bottom:5px"><span>'+(fmt(myRecord.start)||'Start')+'</span><span>'+_pct+'% elapsed</span><span>'+(fmt(myRecord.expiry)||'Expiry')+'</span></div>'
-        +'<div style="background:rgba(255,255,255,.12);border-radius:6px;height:7px;overflow:hidden"><div style="height:100%;background:'+_tlc+';border-radius:6px;width:'+_pct+'%;transition:width .5s"></div></div></div>'
-      +'</div>'
-      +'<div class="tp-section"><div class="tp-section-title">&#128100; Personal Information</div>'
-        +_row('Full Name',myRecord.tenant||'Not recorded',_ev(myRecord.tenant))
-        +_row('Name on Contract',myRecord.contractName||'Not recorded',_ev(myRecord.contractName))
-        +_row('Email Address',myRecord.tenantEmail||'Not recorded',_ev(myRecord.tenantEmail))
-        +_row('Phone Number',myRecord.tenantPhone||'Not recorded',_ev(myRecord.tenantPhone))
-        +_row('NIN',myRecord.tenantNIN?'&bull;&bull;&bull;&bull;&bull;&bull;'+myRecord.tenantNIN.slice(-4)+' <span style="font-size:.68rem;color:var(--dim)">(masked)</span>':'Not recorded',_ev(myRecord.tenantNIN))
-      +'</div>'
-      +'<div class="tp-section"><div class="tp-section-title">&#127968; Property Details</div>'
-        +_row('Unit / Property',myRecord.unit||myRecord.unitId||'--','')
-        +_row('Property Type',_pobj?_pobj.type:(myRecord.type||'Residential'),'')
-        +_row('Full Address',locStr||'--',_ev(locStr))
-        +_row('City / Area',(_pobj?_pobj.city:myRecord.city)||'--','')
-      +'</div>'
-      +'<div class="tp-section"><div class="tp-section-title">&#128203; Tenancy Terms</div>'
-        +_row('Tenancy Start',fmt(myRecord.start)||'--',_ev(myRecord.start))
-        +_row('Expiry Date',fmt(myRecord.expiry)||'--',_ev(myRecord.expiry))
-        +_row('Duration',(startD&&expD)?Math.round((expD-startD)/864e5/30.44)+' months ('+Math.round((expD-startD)/864e5)+' days)':'--','')
-        +_row('Days Remaining',daysLeft!==null?(daysLeft<0?Math.abs(daysLeft)+' days overdue':daysLeft+' days'):'--',daysLeft!==null&&daysLeft<0?'empty':'')
-        +_row('Tenancy Type','Term Certain','')
-        +_row('Occupancy',myRecord.vacancy&&myRecord.vacancy.toLowerCase()!=='occupied'?myRecord.vacancy:'Occupied','')
-      +'</div>'
-      +'<div class="tp-section"><div class="tp-section-title">&#128176; Rent &amp; Financial Details</div>'
-        +_row('Current Annual Rent',_rAmt>0?'&#8358;'+_rAmt.toLocaleString():'Not set',_ev(myRecord.amount))
-        +_row('Monthly Equivalent',_rAmt>0?'&#8358;'+Math.round(_rAmt/12).toLocaleString()+'/month':'--',_ev(myRecord.amount))
-        +_row('New / Revised Rent',_nAmt>0?'<span style="font-weight:700;color:var(--gold)">&#8358;'+_nAmt.toLocaleString()+'</span>'+_diff:'<span class="empty">Not set &mdash; current rent applies</span>','')
-        +_row('New Rent Effective Date',myRecord.newRentDate?'<span style="color:#15803d;font-weight:700">'+fmt(myRecord.newRentDate)+'</span>':'<span class="empty">Not specified</span>','')
-        +_row('Last Payment Date',myRecord.lastPayment?fmt(myRecord.lastPayment):'Not recorded',_ev(myRecord.lastPayment))
-        +(myRecord.notes?_row('Notes from Landlord','<em style="color:var(--dim)">'+myRecord.notes+'</em>',''):'')
-      +'</div>'
-      +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'
-        +'<button class="btn btn-outline" onclick="window.print()" style="font-size:.78rem">&#128424;&#65039; Print Particulars</button>'
-      +'</div>'
-      +'<div style="padding:14px;background:rgba(201,150,12,.07);border:1px solid rgba(201,150,12,.25);border-radius:8px;font-size:.78rem;color:#7a5c00;line-height:1.7">'
-        +'&#9888;&#65039; If any detail is incorrect, email crestechnologies@outlook.com to request a correction.'
-      +'</div>';
-  }
-
-  loadNotices();
-}
-
-/* ═══ RENEWAL MODAL ═══════════════════════════════ */
-function _openRenewalModalInner() {
-  const rec = window._myRecord;
-  const info = document.getElementById('renewRecordInfo');
-  if(info && rec) {
-    const fmt = d => d ? new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : '—';
-    info.innerHTML = `<strong>${getPropertyLabel(rec.unitId||rec.unit)}</strong><br>
-      Current expiry: <strong>${fmt(rec.expiry)}</strong> &nbsp;·&nbsp; Annual rent: <strong>₦${Number(rec.amount||0).toLocaleString()}</strong>`;
-  }
-  document.getElementById('renewModal').classList.add('on');
-}
-function closeRenewModal() { document.getElementById('renewModal').classList.remove('on'); }
-
-async function submitRenewalRequest() {
-  const rec = window._myRecord;
-  if(!rec) { toast('⚠ No tenancy record found'); return; }
-  const duration = document.getElementById('renewDuration').value;
-  const message  = document.getElementById('renewMessage').value.trim();
-  const name = currentUser.displayName || currentUser.email.split('@')[0];
-  const unit = getPropertyLabel(rec.unitId||rec.unit);
-  const fmt  = d => d ? new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : '—';
-  const html = `<div style="font-family:Arial,sans-serif;max-width:600px;border:1px solid #e0d8c8;border-radius:8px;overflow:hidden">
-    <div style="background:#0f0e0c;padding:16px 20px;text-align:center"><h2 style="color:#c9960c;margin:0;font-size:18px">Crestechnologies IS Ltd</h2><p style="color:#888;font-size:12px;margin:4px 0 0">Tenancy Renewal Request</p></div>
-    <div style="padding:20px;background:#faf8f4">
-      <h3 style="color:#1a5c2e;margin:0 0 14px">Renewal Request Received</h3>
-      <table style="width:100%;border-collapse:collapse;font-size:13px">
-        <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888;width:140px">Tenant</td><td style="padding:8px;font-weight:600">${name}</td></tr>
-        <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Email</td><td style="padding:8px">${currentUser.email}</td></tr>
-        <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Unit</td><td style="padding:8px">${unit}</td></tr>
-        <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Current Expiry</td><td style="padding:8px">${fmt(rec.expiry)}</td></tr>
-        <tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Renewal Duration</td><td style="padding:8px;font-weight:600">${duration}</td></tr>
-        <tr><td style="padding:8px;color:#888">Message</td><td style="padding:8px">${message||'—'}</td></tr>
-      </table>
-    </div>
-    <div style="background:#0f0e0c;padding:10px 20px;text-align:center;font-size:11px;color:#888">Submitted: ${new Date().toLocaleString('en-NG')}</div>
-  </div>`;
-  let sent = false;
-  if(typeof window.sendCRSEmail === 'function')
-    sent = await window.sendCRSEmail(['crestechnologies@outlook.com','enjanih@gmail.com'],`[CRS Renewal] ${unit} — ${name}`,html);
-  closeRenewModal();
-  toast(sent ? '✓ Renewal request sent to landlord!' : '✓ Request recorded.', 4000);
-}
-
-/* ═══ NOTICES ═════════════════════════════════════ */
-const STATIC_NOTICES = [
-  {id:'n1',type:'info',badgeClass:'nb-info',title:'Welcome to the Crestville Tenant Portal',date:'2026-01-01',
-   body:'You can view your tenancy, submit renewals, raise deviation requests and receive notices — all in one place. Contact crestechnologies@outlook.com for any issues.'},
-  {id:'n2',type:'gold',badgeClass:'nb-gold',title:'Rent Payment Reminder',date:'2026-05-01',
-   body:'<strong>All tenants are reminded</strong> that rent is due on or before the tenancy expiry date. Late payment may attract penalties. Kindly pay promptly and request receipts from management.'},
-  {id:'n3',type:'info',badgeClass:'nb-info',title:'Estate Maintenance — Water & Generator',date:'2026-04-15',
-   body:'The borehole pump has been serviced and is fully operational. Generator maintenance is scheduled quarterly. Report any faults to caretaker Mr. Sobo Usman or contact management.'},
-  {id:'n4',type:'green',badgeClass:'nb-green',title:'Estate Rules & Community Conduct',date:'2026-03-01',
-   body:'<strong>Reminders:</strong><br>• No loud noise after 10 PM<br>• Dispose waste in designated bins<br>• No subletting without written consent<br>• Register visitors staying 7+ days with caretaker<br>• Keep common areas clean.'},
-];
-
-async function loadNotices() {
-  const body = document.getElementById('noticesBody');
-  if(!body) return;
-  let notices = [...STATIC_NOTICES];
-  try {
-    const snap = await window._db.collection('notices').get();
-    snap.docs.forEach(d => notices.unshift({...d.data(),id:d.id}));
-  } catch(e){}
-  notices.sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
-  const labels = {info:'📢 Information',urgent:'⚠ Urgent',gold:'💰 Payment',green:'📋 Estate Rules'};
-  body.innerHTML = notices.map(n => {
-    const dateStr = n.date ? new Date(n.date).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : '';
-    return `<div class="notice-card">
-      <div class="nc-head">
-        <span class="nc-badge ${n.badgeClass||'nb-info'}">${labels[n.type]||'📢 Notice'}</span>
-        <span class="nc-title">${n.title}</span>
-        <span class="nc-date">${dateStr}</span>
-      </div>
-      <div class="nc-body">${n.body}</div>
-    </div>`;
-  }).join('');
-  const badge = document.getElementById('noticesBadge');
-  if(badge) badge.style.display = notices.length ? '' : 'none';
-}
-
-function generateReceiptByRecord(rec) {  if(!rec) return;
-  try { fillReceipt(typeof rec === 'string' ? JSON.parse(rec) : rec); window.print(); } catch(e){}
-}
-
-function generateReceiptByIdx(idx) { fillReceipt(rentLogs[idx]); window.print(); }
-
-/* ═══ CLOUD SYNC ══════════════════════════════════════ */
-async function syncToCloud() {
-  try {
-    await fetch(CLOUD_URL, {method:'POST', body: JSON.stringify(rentLogs)});
-    toast('☁️ Synced to cloud');
-  } catch(e) { toast('⚠ Sync failed'); }
-}
-async function pullFromCloud(silent=false) {
-  try {
-    // Timeout after 8 seconds — never block the UI
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-    const res = await fetch(CLOUD_URL, { signal: controller.signal });
-    clearTimeout(timer);
-    const data = await res.json();
-    if(data && data.length > 0) {
-      // Merge cloud data into local (cloud wins on conflicts by id)
-      const cloudMap = {};
-      data.forEach(e => { if(e.id) cloudMap[e.id] = e; });
-      rentLogs.forEach(e => { if(e.id && !cloudMap[e.id]) cloudMap[e.id] = e; });
-      rentLogs = Object.values(cloudMap);
-      renderAll(); renderRentManager();
-      if(!silent) toast('✓ Data pulled from cloud');
-    }
-  } catch(e) { if(!silent) toast('Cloud unavailable — using local data'); }
-}
-
-/* ═══ SEND EMAIL VIA FIREBASE ═════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════════════════
-   60-DAY RENEWAL DEADLINE EMAIL — runs automatically after data loads
-   Sends to the tenant's own email address
-═══════════════════════════════════════════════════════════════════ */
-
-/* Key used to avoid sending the same email twice in one session */
-const _sentRenewalAlerts = new Set(
-  JSON.parse(localStorage.getItem('crs_sentAlerts_v1') || '[]')
-);
-function _markAlertSent(key) {
-  _sentRenewalAlerts.add(key);
-  localStorage.setItem('crs_sentAlerts_v1',
-    JSON.stringify([..._sentRenewalAlerts]));
-}
 
 async function checkAndSendRenewalEmails() {
   // Admin only — checks all tenants in rentLogs
@@ -4377,6 +3840,259 @@ async function sendAllRenewalReminders() {
   localStorage.removeItem('crs_sentAlerts_v1');
   await checkAndSendRenewalEmails();
   toast(`✓ Reminder emails sent to ${count} tenant(s)`, 4000);
+}
+
+/* ══ RESTORED WORKFLOW FUNCTIONS ══════════════════════════════ */
+
+function _wfEmailTemplate(title,bodyHtml){return '<div style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;background:#faf8f4;border:1px solid #e8dfc8;border-radius:12px;overflow:hidden"><div style="background:#0f0e0c;padding:20px 24px"><div style="font-family:Georgia,serif;font-size:1.1rem;font-weight:700;color:#c9960c">CRESTVILLE PROPERTIES</div><div style="color:#a09070;font-size:.72rem;letter-spacing:.1em;margin-top:2px">'+title.toUpperCase()+'</div></div><div style="padding:24px;color:#0f0e0c;font-size:.9rem;line-height:1.75">'+bodyHtml+'</div><div style="padding:16px 24px;background:#f5f0e8;border-top:1px solid #e8dfc8;font-size:.75rem;color:#9a8a7a">Crestechnologies IS Ltd · RC 1643396 · crestechnologies@outlook.com</div></div>';}
+function _wfPortalBtn(){return '<div style="text-align:center;margin:20px 0"><a href="https://enjanih-stack.github.io/crestville-portal/" style="background:#c9960c;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:700">Open Tenant Portal →</a></div>';}
+async function _wfEmailAdmin(wf,subject,msg){var html=_wfEmailTemplate(subject,'<p>'+msg+'</p><p><strong>Type:</strong> '+(wf.type==='new_tenant'?'New Tenant':'Renewal')+'</p><p><strong>Unit:</strong> '+wf.unitLabel+'</p><p><strong>Email:</strong> '+wf.tenantEmail+'</p>'+_wfPortalBtn());await sendCRSEmail(['crestechnologies@outlook.com','enjanih@gmail.com'],'[CRS Admin] '+subject,html);}
+
+function addBreakdownItem(){
+  var c=document.getElementById('psmBreakdownItems');if(!c)return;
+  var d=document.createElement('div');d.style.cssText='display:flex;gap:8px;margin-bottom:6px';
+  d.innerHTML='<input class="psm-label" placeholder="Item" style="flex:2;padding:8px;border:1px solid var(--rule);border-radius:5px"/>'
+    +'<input class="psm-amount" type="number" placeholder="Amount" style="flex:1;padding:8px;border:1px solid var(--rule);border-radius:5px"/>';
+  c.appendChild(d);
+}
+
+async function savePaymentSlip(){
+  var wi=(document.getElementById('psmWfId')||{}).value;
+  if(!wi){notify('error','Error','No workflow ID.');return;}
+  var tot=parseFloat(document.getElementById('psmTotal')?.value||'0');
+  if(!tot){notify('error','Amount Required','Enter the total fee.');return;}
+  var labels=document.querySelectorAll('.psm-label'),amounts=document.querySelectorAll('.psm-amount');
+  var breakdown=[];
+  labels.forEach(function(l,i){if(l.value&&amounts[i]?.value)breakdown.push({label:l.value,amount:parseFloat(amounts[i].value)||0});});
+  await issuePaymentSlip(wi,{
+    totalFee:tot,breakdown,
+    bankName:document.getElementById('psmBank')?.value||'Zenith Bank',
+    accountNo:document.getElementById('psmAccNo')?.value||'1014619530',
+    accountName:document.getElementById('psmAccName')?.value||'Crestechnologies IS Ltd',
+    notes:document.getElementById('psmNotes')?.value||'',
+  });
+  document.getElementById('paymentSlipModal')?.classList.remove('on');
+}
+
+function openPaymentSlipModal(elOrId){
+  var wfId=typeof elOrId==='string'?elOrId:(elOrId.dataset?elOrId.dataset.wfid:elOrId);
+  var mo=document.getElementById('paymentSlipModal');
+  if(!mo){var d=document.createElement('div');d.className='modal-overlay';d.id='paymentSlipModal';
+    d.innerHTML='<div class="modal" style="max-width:540px"><div class="modal-head"><h3>💳 Issue Payment Advice Slip</h3>'
+      +'<button class="modal-close" onclick="document.getElementById(\'paymentSlipModal\').classList.remove(\'on\')">✕</button></div>'
+      +'<div class="modal-body"><input type="hidden" id="psmWfId"/>'
+      +'<div class="fg"><label>Total Fee (₦) *</label><input type="number" id="psmTotal" placeholder="850000"/></div>'
+      +'<div class="fg"><label>Fee Breakdown</label>'
+        +'<div id="psmBreakdownItems"><div style="display:flex;gap:8px;margin-bottom:6px">'
+          +'<input class="psm-label" placeholder="e.g. Annual Rent" style="flex:2;padding:8px;border:1px solid var(--rule);border-radius:5px"/>'
+          +'<input class="psm-amount" type="number" placeholder="Amount" style="flex:1;padding:8px;border:1px solid var(--rule);border-radius:5px"/>'
+        +'</div></div>'
+        +'<button onclick="addBreakdownItem()" class="btn btn-sm btn-outline" style="font-size:.74rem;margin-top:4px">+ Add Item</button>'
+      +'</div>'
+      +'<div class="fg"><label>Bank</label><input type="text" id="psmBank" value="Zenith Bank"/></div>'
+      +'<div class="fg"><label>Account Number</label><input type="text" id="psmAccNo" value="1014619530"/></div>'
+      +'<div class="fg"><label>Account Name</label><input type="text" id="psmAccName" value="Crestechnologies IS Ltd"/></div>'
+      +'<div class="fg"><label>Notes</label><textarea id="psmNotes" rows="2" style="width:100%"></textarea></div>'
+      +'<div style="display:flex;gap:10px;justify-content:flex-end">'
+        +'<button class="btn btn-outline" onclick="document.getElementById(\'paymentSlipModal\').classList.remove(\'on\')">Cancel</button>'
+        +'<button class="btn btn-gold" onclick="savePaymentSlip()">💾 Issue Slip</button>'
+      +'</div></div></div>';
+    document.body.appendChild(d);mo=d;
+  }
+  document.getElementById('psmWfId').value=wfId;
+  mo.classList.add('on');
+}
+
+function rejectWorkflowPrompt(el){
+  var wfId=el.dataset.wfid,action=el.dataset.action||'payment';
+  var reason=prompt('Rejection reason (will be sent to tenant):');
+  if(reason===null)return;
+  if(action==='payment')adminApprovePayment(wfId,false,reason);
+  else adminApproveEForm(wfId,false,reason);
+}
+
+function openPaymentReviewModal(elOrId){
+  var wfId=typeof elOrId==='string'?elOrId:(elOrId.dataset?elOrId.dataset.wfid:elOrId);
+  getWorkflow(wfId).then(function(wf){
+    if(!wf)return;
+    var d2=wf.paymentData||{};
+    var mo=document.getElementById('payReviewModal');
+    if(!mo){var d=document.createElement('div');d.className='modal-overlay';d.id='payReviewModal';
+      d.innerHTML='<div class="modal" style="max-width:500px"><div class="modal-head"><h3>💳 Review Payment</h3>'
+        +'<button class="modal-close" onclick="document.getElementById(\'payReviewModal\').classList.remove(\'on\')">✕</button></div>'
+        +'<div class="modal-body" id="payReviewBody"></div></div>';
+      document.body.appendChild(d);mo=d;
+    }
+    var body=document.getElementById('payReviewBody');
+    var fmtN=function(v){return v?'₦'+Number(v).toLocaleString():'—';};
+    body.innerHTML='<div class="tp-section"><div class="tp-section-title">Payment Details</div>'
+      +'<div class="tp-row"><div class="tp-label">Tenant</div><div class="tp-value">'+(wf.tenantName||'')+'</div></div>'
+      +'<div class="tp-row"><div class="tp-label">Unit</div><div class="tp-value">'+(wf.unitLabel||'')+'</div></div>'
+      +'<div class="tp-row"><div class="tp-label">PAD Issued</div><div class="tp-value">'+(wf.paymentSlip&&wf.paymentSlip.padId||'—')+'</div></div>'
+      +'<div class="tp-row"><div class="tp-label">Required</div><div class="tp-value">'+fmtN(wf.paymentSlip&&wf.paymentSlip.totalFee)+'</div></div>'
+      +'<div class="tp-row"><div class="tp-label">Claimed PAD</div><div class="tp-value">'+(d2.padId||'—')+'</div></div>'
+      +'<div class="tp-row"><div class="tp-label">Amount Paid</div><div class="tp-value">'+fmtN(d2.amountPaid)+'</div></div>'
+      +'<div class="tp-row"><div class="tp-label">Bank</div><div class="tp-value">'+(d2.bank||'—')+'</div></div>'
+      +'<div class="tp-row"><div class="tp-label">Date</div><div class="tp-value">'+(d2.paymentDate||'—')+'</div></div>'
+      +'<div class="tp-row"><div class="tp-label">Ref / Teller</div><div class="tp-value">'+(d2.ref||'—')+'</div></div>'
+      +'</div>'
+      +'<div class="fg"><label>Admin Note</label><input type="hidden" id="payRevWfId" value="'+wf.id+'"/><textarea id="payRevNote" rows="2" style="width:100%"></textarea></div>'
+      +'<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">'
+        +'<button class="btn btn-outline" onclick="document.getElementById(\'payReviewModal\').classList.remove(\'on\')">Cancel</button>'
+        +'<button class="btn" onclick="adminApprovePayment(document.getElementById(\'payRevWfId\').value,false,document.getElementById(\'payRevNote\').value)" style="background:rgba(140,31,31,.1);border:1px solid rgba(140,31,31,.3);color:var(--red)">❌ Reject</button>'
+        +'<button class="btn btn-gold" onclick="adminApprovePayment(document.getElementById(\'payRevWfId\').value,true,document.getElementById(\'payRevNote\').value)">✅ Approve & Issue Key</button>'
+      +'</div>';
+    mo.classList.add('on');
+  });
+}
+
+function openEFormReviewModal(elOrId){
+  var wfId=typeof elOrId==='string'?elOrId:(elOrId.dataset?elOrId.dataset.wfid:elOrId);
+  getWorkflow(wfId).then(function(wf){
+    if(!wf)return;
+    var mo=document.getElementById('eformReviewModal');
+    if(!mo){var d=document.createElement('div');d.className='modal-overlay';d.id='eformReviewModal';
+      d.innerHTML='<div class="modal" style="max-width:620px"><div class="modal-head"><h3>📝 Review eForm</h3>'
+        +'<button class="modal-close" onclick="document.getElementById(\'eformReviewModal\').classList.remove(\'on\')">✕</button></div>'
+        +'<div class="modal-body" id="eformReviewBody"></div></div>';
+      document.body.appendChild(d);mo=d;
+    }
+    var body=document.getElementById('eformReviewBody');
+    body.innerHTML='<div class="tp-section"><div class="tp-section-title">eForm Submission</div>'
+      +'<div class="tp-row"><div class="tp-label">Tenant</div><div class="tp-value">'+(wf.tenantName||'')+'</div></div>'
+      +'<div class="tp-row"><div class="tp-label">Unit</div><div class="tp-value">'+(wf.unitLabel||'')+'</div></div>'
+      +'<div class="tp-row"><div class="tp-label">Key Code (PCK)</div><div class="tp-value" style="color:var(--gold);font-weight:700">'+(wf.paymentKeyCode||'—')+'</div></div>'
+      +'<div class="tp-row"><div class="tp-label">Commence Date</div><div class="tp-value">'+(wf.commencementDate||'—')+'</div></div>'
+      +'</div>'
+      +'<div class="fg" style="margin:8px 0">'
+        +'<a href="CRS_Tenancy_EForm_v3.html?wfId='+wf.id+'&view=1" target="_blank" class="btn btn-outline" style="display:inline-block;font-size:.78rem;margin-right:6px">📄 Open eForm</a>'
+        +'<button class="btn btn-outline" onclick="openEFormDocViewer(\''+wf.id+'\')" style="font-size:.78rem">🔍 Full Document</button>'
+      +'</div>'
+      +'<div class="fg"><input type="hidden" id="eformRevWfId" value="'+wf.id+'"/><label>Admin Notes</label><textarea id="eformRevNote" rows="3" style="width:100%"></textarea></div>'
+      +'<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">'
+        +'<button class="btn btn-outline" onclick="document.getElementById(\'eformReviewModal\').classList.remove(\'on\')">Cancel</button>'
+        +'<button class="btn" onclick="adminApproveEForm(document.getElementById(\'eformRevWfId\').value,false,document.getElementById(\'eformRevNote\').value)" style="background:rgba(140,31,31,.1);border:1px solid rgba(140,31,31,.3);color:var(--red)">❌ Reject</button>'
+        +'<button class="btn btn-gold" onclick="adminApproveEForm(document.getElementById(\'eformRevWfId\').value,true,\'\')">✅ Approve & Finalise</button>'
+      +'</div>';
+    mo.classList.add('on');
+  });
+}
+
+function openTenantPaymentFormById(el){openTenantPaymentForm(el.dataset.wfid);}
+function openTenantEFormById(el){openTenantEForm(el.dataset.wfid);}
+
+function checkFileSize(input,maxKB){if(!input.files||!input.files[0])return;var s=input.files[0].size/1024;if(s>maxKB){notify('error','File Too Large','File is '+Math.round(s)+'KB. Max: '+maxKB+'KB.');input.value='';}}
+function _addOneYear(ds){try{var d=new Date(ds);d.setFullYear(d.getFullYear()+1);return d.toISOString().slice(0,10);}catch(e){return ds;}}
+
+async function loadAdminApplications(){
+  var c=document.getElementById('adminWfQueue'),ce=document.getElementById('appsCount');if(!c)return;
+  c.innerHTML='<div style="text-align:center;padding:30px;color:var(--dim)">Loading applications...</div>';
+  var wfs=[];
+  try{var s=await window._db.collection('workflows').orderBy('updatedAt','desc').limit(50).get();
+    wfs=s.docs.map(function(d){return Object.assign({id:d.id},d.data());});}
+  catch(e){wfs=JSON.parse(localStorage.getItem('crs_workflows')||'[]');}
+  if(ce)ce.textContent=wfs.filter(function(w){return w.status==='active'||w.status==='pending_admin';}).length;
+  if(!wfs.length){c.innerHTML='<div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem">📋</div><div>No applications yet.</div></div>';return;}
+  var fdt=function(iso){try{return new Date(iso).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});}catch(e){return iso||'';}};
+  var html='';
+  wfs.forEach(function(wf){
+    var steps=(wf.type==='new_tenant'?WF_STEPS_NEW:WF_STEPS_RENEWAL)||[];
+    var cs=steps.find(function(s){return s.id===wf.currentStep;});
+    var isC=wf.status==='complete',isR=wf.status==='rejected';
+    var pct=Math.min(100,Math.round(((wf.steps||[]).length/Math.max(steps.length,1))*100));
+    var wfId=wf.id;
+    var isPS=(wf.currentStep==='kyc_submitted'||wf.currentStep==='renewal_submitted')&&(wf.status==='active');
+    var isPR=wf.currentStep==='payment_approved'&&wf.status==='pending_admin';
+    var isEF=wf.currentStep==='eform_sent'&&wf.status==='pending_admin';
+    var btns='<button class="btn btn-sm btn-outline" onclick="openEFormDocViewer(\''+wfId+'\')" style="font-size:.74rem">📄 View Doc</button>';
+    if(isPS)btns='<button class="btn btn-sm btn-gold" onclick="openPaymentSlipModal(\''+wfId+'\')" style="font-size:.74rem">💳 Issue Payment Slip</button> <button class="btn btn-sm btn-outline" onclick="openEFormDocViewer(\''+wfId+'\')" style="font-size:.74rem">📄 View Doc</button>';
+    if(isPR)btns='<button class="btn btn-sm" onclick="openPaymentReviewModal(\''+wfId+'\')" style="background:rgba(26,92,46,.12);border:1px solid rgba(26,92,46,.3);color:var(--green);font-size:.74rem">✅ Review Payment</button> <button class="btn btn-sm btn-outline" onclick="openEFormDocViewer(\''+wfId+'\')" style="font-size:.74rem">📄 View Doc</button>';
+    if(isEF)btns='<button class="btn btn-sm" onclick="openEFormReviewModal(\''+wfId+'\')" style="background:rgba(26,92,46,.12);border:1px solid rgba(26,92,46,.3);color:var(--green);font-size:.74rem">📝 Review eForm</button> <button class="btn btn-sm btn-outline" onclick="openEFormDocViewer(\''+wfId+'\')" style="font-size:.74rem">📄 View Doc</button>';
+    var stepsHtml='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
+    steps.forEach(function(s){var done=(wf.steps||[]).some(function(x){return x.id===s.id;}),isc=s.id===wf.currentStep;stepsHtml+='<span style="font-size:.65rem;padding:2px 7px;border-radius:10px;'+(done?'background:var(--green);color:#fff':isc?'background:var(--gold);color:#fff':'background:var(--cream);color:var(--dim)')+'">' +s.label+'</span>';});
+    stepsHtml+='</div>';
+    html+='<div class="mr-card" style="margin-bottom:16px">'
+      +'<div class="mr-card-head">'
+        +'<span style="font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:12px;background:rgba(201,150,12,.12);color:#7a5c00">'+(wf.type==='new_tenant'?'🏠 New':'🔄 Renewal')+'</span>'
+        +'<span style="font-weight:700;font-size:.84rem">'+(wf.unitLabel||'Application')+'</span>'
+        +'<span style="font-size:.76rem;color:var(--dim)">'+(wf.tenantName||wf.tenantEmail||'')+'</span>'
+        +'<span style="margin-left:auto;font-size:.72rem;color:var(--dim)">'+fdt(wf.submittedAt)+'</span>'
+      +'</div>'
+      +'<div class="mr-card-body">'
+        +'<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--dim);margin-bottom:4px"><span>Progress</span><span>'+pct+'%</span></div><div style="background:var(--bg);border-radius:6px;height:6px;overflow:hidden"><div style="height:100%;background:'+(isC?'var(--green)':isR?'var(--red)':'var(--gold)')+';width:'+pct+'%;transition:width .5s"></div></div></div>'
+        +stepsHtml
+        +'<div style="font-size:.78rem;margin-bottom:8px"><strong>Stage:</strong> <span style="color:'+(isR?'var(--red)':isC?'var(--green)':'var(--gold)')+';">'+(isR?'❌ Rejected':isC?'✅ Complete':cs?'⏳ '+cs.label:'—')+'</span></div>'
+        +(wf.paymentKeyCode?'<div style="font-size:.74rem;color:var(--gold);margin-bottom:6px">PCK: <strong>'+wf.paymentKeyCode+'</strong></div>':'')
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap">'+btns+'</div>'
+      +'</div>'
+    +'</div>';
+  });
+  c.innerHTML=html;
+}
+
+async function loadMyApplicationStatus(){
+  var c=document.getElementById('myAppStatusArea');if(!c||!currentUser)return;
+  c.innerHTML='<div style="text-align:center;padding:30px;color:var(--dim)">Loading...</div>';
+  var me=currentUser.email.toLowerCase(),wfs=[];
+  try{var s=await window._db.collection('workflows').where('tenantEmail','==',me).orderBy('updatedAt','desc').limit(10).get();
+    wfs=s.docs.map(function(d){return Object.assign({id:d.id},d.data());});}
+  catch(e){wfs=JSON.parse(localStorage.getItem('crs_workflows')||'[]').filter(function(w){return w.tenantEmail===me;});}
+  if(!wfs.length){
+    c.innerHTML='<div style="text-align:center;padding:60px;color:var(--dim)"><div style="font-size:3rem">📋</div>'
+      +'<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.1rem;font-weight:700;color:var(--ink);margin:12px 0">No Applications Yet</div>'
+      +'<div style="font-size:.84rem;margin-bottom:16px">Start a new tenancy application or renewal from the sidebar.</div>'
+      +'<div style="display:flex;gap:10px;justify-content:center">'
+      +'<button class="btn btn-gold" onclick="openNewTenancyFlow()">🏠 New Application →</button>'
+      +'<button class="btn btn-outline" onclick="openRenewalFlow()">🔄 Renew Tenancy →</button>'
+      +'</div></div>';
+    return;
+  }
+  var fdt=function(iso){try{return new Date(iso).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});}catch(e){return iso||'';}};
+  var html='';
+  wfs.forEach(function(wf){
+    var steps=(wf.type==='new_tenant'?WF_STEPS_NEW:WF_STEPS_RENEWAL)||[];
+    var cs=steps.find(function(s){return s.id===wf.currentStep;});
+    var isC=wf.status==='complete',isR=wf.status==='rejected';
+    var pct=Math.min(100,Math.round(((wf.steps||[]).length/Math.max(steps.length,1))*100));
+    var wfId=wf.id;
+    var ta='';
+    if(wf.currentStep==='payment_submitted'&&wf.status==='active'){
+      ta='<div style="margin-top:12px;padding:12px;background:rgba(201,150,12,.08);border:1px solid rgba(201,150,12,.25);border-radius:8px">'
+        +'<div style="font-size:.8rem;font-weight:700;color:#7a5c00;margin-bottom:8px">⚡ Submit Payment Confirmation</div>'
+        +'<div style="font-size:.76rem;color:var(--dim);margin-bottom:8px">PAD ID: <strong>'+(wf.paymentSlip&&wf.paymentSlip.padId||'—')+'</strong> · ₦'+Number((wf.paymentSlip&&wf.paymentSlip.totalFee)||0).toLocaleString()+'</div>'
+        +'<button class="btn btn-gold btn-sm" onclick="openTenantPaymentForm(\''+wfId+'\')" style="font-size:.76rem">Submit Receipt →</button></div>';
+    }
+    if(wf.currentStep==='eform_sent'&&wf.status==='active'){
+      ta='<div style="margin-top:12px;padding:12px;background:rgba(26,92,46,.07);border:1px solid rgba(26,92,46,.2);border-radius:8px">'
+        +'<div style="font-size:.8rem;font-weight:700;color:#15803d;margin-bottom:8px">⚡ Complete Tenancy Agreement</div>'
+        +'<div style="font-size:.76rem;color:var(--dim);margin-bottom:8px">Key Code: <strong style="color:var(--gold)">'+(wf.paymentKeyCode||'—')+'</strong></div>'
+        +'<button class="btn btn-gold btn-sm" onclick="openTenantEForm(\''+wfId+'\')" style="font-size:.76rem">Open eForm →</button></div>';
+    }
+    if(isC){
+      ta='<div style="margin-top:12px;padding:12px;background:rgba(26,92,46,.07);border:1px solid rgba(26,92,46,.2);border-radius:8px">'
+        +'<div style="font-size:.8rem;font-weight:700;color:#15803d;margin-bottom:6px">✅ Approved! Your tenancy agreement is ready.</div>'
+        +'<button class="btn btn-outline btn-sm" onclick="openForm(\'CRS_Tenancy_EForm_v3.html\')" style="font-size:.76rem">🖨️ Print Agreement →</button></div>';
+    }
+    var stepsHtml='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
+    steps.forEach(function(s){var done=(wf.steps||[]).some(function(x){return x.id===s.id;}),isc=s.id===wf.currentStep;stepsHtml+='<span style="font-size:.65rem;padding:2px 7px;border-radius:10px;'+(done?'background:var(--green);color:#fff':isc?'background:var(--gold);color:#fff':'background:var(--cream);color:var(--dim)')+'">' +s.label+'</span>';});
+    stepsHtml+='</div>';
+    html+='<div class="mr-card" style="margin-bottom:16px">'
+      +'<div class="mr-card-head">'
+        +'<span style="font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:12px;background:rgba(201,150,12,.12);color:#7a5c00">'+(wf.type==='new_tenant'?'🏠 New':'🔄 Renewal')+'</span>'
+        +'<span style="font-weight:700;font-size:.84rem">'+(wf.unitLabel||'Application')+'</span>'
+        +'<span style="margin-left:auto;font-size:.72rem;color:var(--dim)">'+fdt(wf.submittedAt)+'</span>'
+      +'</div>'
+      +'<div class="mr-card-body">'
+        +'<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--dim);margin-bottom:4px"><span>Progress</span><span>'+pct+'%</span></div><div style="background:var(--bg);border-radius:6px;height:6px;overflow:hidden"><div style="height:100%;background:'+(isC?'var(--green)':isR?'var(--red)':'var(--gold)')+';width:'+pct+'%;transition:width .5s"></div></div></div>'
+        +stepsHtml
+        +'<div style="font-size:.78rem"><strong>Stage:</strong> <span style="color:'+(isR?'var(--red)':isC?'var(--green)':'var(--gold)')+';">'+(isR?'❌ Rejected':isC?'✅ Complete':cs?'⏳ '+cs.label:'—')+'</span></div>'
+        +(wf.rejectionReason?'<div style="font-size:.75rem;color:var(--red);margin-top:4px">'+wf.rejectionReason+'</div>':'')
+        +(wf.paymentKeyCode?'<div style="font-size:.76rem;margin-top:4px;color:var(--gold)">Key Code: <strong>'+wf.paymentKeyCode+'</strong></div>':'')
+        +ta
+      +'</div>'
+    +'</div>';
+  });
+  c.innerHTML=html;
 }
 
 
@@ -5613,6 +5329,8 @@ function _navTo(pgId) {
     pgProperties:  'navProps',
     pgNoticesAdmin:'navNoticesAdmin',
     pgModRequests: 'navModRequests',
+    pgApplications:'navApplications',
+    pgMyApplications:'navMyApplications',
   };
   var navId = navMap[pgId];
   if (navId) {
@@ -5857,1378 +5575,657 @@ async function loadTenantWorkflow() {
   return _currentWorkflow;
 }
 
-/* ── SAVE WORKFLOW ── */
-async function saveWorkflow(wf) {
+/* ============================================================
+   GAP IMPLEMENTATIONS — All missing features
+   ============================================================ */
+
+/* ── 1. sendCRSEmail — Firestore mail trigger ── */
+async function sendCRSEmail(to, subject, html) {
+  var recipients = Array.isArray(to) ? to : [to];
+  // Always CC company email
+  if (!recipients.includes('crestechnologies@outlook.com'))
+    recipients = recipients.concat(['crestechnologies@outlook.com']);
   try {
-    wf.updatedAt = new Date().toISOString();
-    await window._db.collection('workflows').doc(wf.id).set(wf);
-    _currentWorkflow = wf;
-  } catch(e) { console.warn('Workflow save failed:', e); }
+    if (window._db) {
+      await window._db.collection('mail').add({
+        to: recipients, message: { subject, html },
+        createdAt: new Date().toISOString(),
+      });
+    }
+  } catch(e) { console.warn('sendCRSEmail:', e.message); }
 }
 
-/* ── GET STEP INDEX ── */
-function getStepIndex(wf) {
-  var steps = wf.type === 'new_tenant' ? WF_STEPS_NEW : WF_STEPS_RENEWAL;
-  var idx = steps.findIndex(function(s) { return s.id === wf.currentStep; });
-  return idx >= 0 ? idx : 0;
+/* ── 2. Admin Field Toggle System ── */
+const FT_KEY = 'crs_field_toggles';
+function _ftGet() { try { return JSON.parse(localStorage.getItem(FT_KEY) || '{}'); } catch(e) { return {}; } }
+function _ftSave(obj) { localStorage.setItem(FT_KEY, JSON.stringify(obj)); if (window._db) window._db.collection('portalSettings').doc('fieldToggles').set(obj).catch(function(){}); }
+function isFieldRequired(formKey, fieldKey, defaultVal) {
+  var ft = _ftGet();
+  return ft[formKey] && ft[formKey][fieldKey] !== undefined ? ft[formKey][fieldKey] : (defaultVal !== false);
+}
+function toggleFormField(formKey, fieldKey, required) {
+  var ft = _ftGet();
+  if (!ft[formKey]) ft[formKey] = {};
+  ft[formKey][fieldKey] = required;
+  _ftSave(ft);
+  logActivity((currentUser&&currentUser.email)||'Admin', 'admin', 'edit',
+    (required ? 'Made required' : 'Made optional') + ': ' + formKey + '.' + fieldKey, '');
 }
 
-/* ── RENDER TENANT WORKFLOW TRACKER ── */
-function renderTenantWorkflowTracker(wf) {
-  var container = document.getElementById('wfTrackerContainer');
+function renderAdminFieldToggles() {
+  var container = document.getElementById('adminFieldToggles');
   if (!container) return;
-  if (!wf) {
-    container.innerHTML = '';
-    return;
-  }
-
-  var steps = wf.type === 'new_tenant' ? WF_STEPS_NEW : WF_STEPS_RENEWAL;
-  var currentIdx = getStepIndex(wf);
-  var typeLabel = wf.type === 'new_tenant' ? '🏠 New Tenant' : '🔑 Existing Tenant';
-
-  var stepsHtml = steps.map(function(step, i) {
-    var isDone     = i < currentIdx;
-    var isActive   = i === currentIdx && wf.status !== 'rejected';
-    var isLocked   = i > currentIdx;
-    var isRejected = wf.status === 'rejected' && i === currentIdx;
-    var isPendingAdmin = isActive && step.adminReview;
-
-    var stateClass = isDone ? 'wf-done' : isRejected ? 'wf-rejected' : isActive ? (isPendingAdmin ? 'wf-pending-admin' : 'wf-active') : 'wf-locked';
-    var dotContent = isDone ? '✓' : isRejected ? '✗' : (i+1);
-
-    var badge = isDone ? '<span class="wft-badge wfb-done">✓ Complete</span>'
-      : isRejected ? '<span class="wft-badge wfb-rejected">✗ Rejected</span>'
-      : isPendingAdmin ? '<span class="wft-badge wfb-waiting">⏳ Awaiting admin review</span>'
-      : isActive ? '<span class="wft-badge wfb-active">▶ Current step</span>'
-      : '<span class="wft-badge wfb-locked">🔒 Locked</span>';
-
-    var rejNote = (isRejected && wf.rejectionReason)
-      ? '<div class="wft-rejection-note">✗ Rejected: ' + wf.rejectionReason + '</div>' : '';
-
-    var actionBtn = '';
-    if (isActive && !isPendingAdmin && !isRejected) {
-      if (step.id === 'payment_submitted') {
-        actionBtn = '<div class="wft-action"><button class="btn btn-gold btn-sm" onclick="openPaymentSubmitModal()">💳 Submit Payment Receipt</button></div>';
-      } else if (step.id === 'eform_sent') {
-        actionBtn = '<div class="wft-action"><a href="' + PORTAL_BASE + '/CRS_Tenancy_EForm_v3.html" target="_blank" class="btn btn-gold btn-sm">📝 Complete Tenancy eForm</a></div>';
-      }
-    }
-    if (step.id === 'payment_slip_issued' && isDone && wf.paymentSlipUrl) {
-      actionBtn = '<div class="wft-action"><a href="' + wf.paymentSlipUrl + '" target="_blank" class="btn btn-outline btn-sm">📄 View Payment Slip</a></div>';
-    }
-    if (step.id === 'complete' && isDone) {
-      actionBtn = '<div class="wft-action"><button class="btn btn-gold btn-sm" onclick="downloadApprovedEForm()">⬇ Download Approved eForm</button></div>';
-    }
-
-    return '<div class="wft-step ' + stateClass + '">'
-      + '<div class="wft-dot">' + dotContent + '</div>'
-      + '<div class="wft-info">'
-        + '<div class="wft-name">' + step.label + '</div>'
-        + '<div class="wft-desc">' + step.desc + '</div>'
-        + badge + rejNote + actionBtn
-      + '</div></div>';
-  }).join('');
-
-  container.innerHTML = '<div class="wf-tracker">'
-    + '<div class="wft-head"><h3>📋 Tenancy Process Tracker</h3><span class="wft-type">' + typeLabel + '</span></div>'
-    + '<div class="wft-steps">' + stepsHtml + '</div>'
-    + '</div>';
-}
-
-var PORTAL_BASE = 'https://enjanih-stack.github.io/crestville-portal';
-
-/* ── OPEN RENEWAL MODAL — check for existing pending workflow ── */
-async function openRenewalModal() {
-  var wf = await loadTenantWorkflow();
-  if (wf && wf.status !== 'complete' && wf.status !== 'rejected' && wf.status !== 'amendment') {
-    // Show the pending status modal instead of just a toast
-    showPendingWorkflowModal(wf);
-    return;
-  }
-  // If rejected or amendment — allow resubmission
-  _openRenewalModalInner();
-}
-
-function showPendingWorkflowModal(wf) {
-  var steps   = wf.type === 'new_tenant' ? WF_STEPS_NEW : WF_STEPS_RENEWAL;
-  var curIdx  = steps.findIndex(function(s){ return s.id === wf.currentStep; });
-  var curStep = steps[curIdx] || {};
-  var nextStep= steps[curIdx+1] || null;
-  var isPendingAdmin = curStep.adminReview;
-
-  var stepsHtml = steps.map(function(step, i) {
-    var done   = i < curIdx;
-    var active = i === curIdx;
-    var locked = i > curIdx;
-    var dot    = done ? '✓' : (i+1);
-    var cls    = done ? 'wf-done' : active ? 'wf-active' : 'wf-locked';
-    return '<div class="wft-step ' + cls + '" style="padding-bottom:14px">'
-      + '<div class="wft-dot">' + dot + '</div>'
-      + '<div class="wft-info">'
-        + '<div class="wft-name">' + step.label + '</div>'
-        + (active ? '<span class="wft-badge wfb-active">▶ Current step</span>' : '')
-        + (done   ? '<span class="wft-badge wfb-done">✓ Complete</span>'       : '')
-        + (locked ? '<span class="wft-badge wfb-locked">🔒 Locked</span>'      : '')
-      + '</div>'
-    + '</div>';
-  }).join('');
-
-  var adminMsg = isPendingAdmin
-    ? '<div style="background:rgba(201,150,12,.1);border:1px solid rgba(201,150,12,.25);border-radius:8px;padding:12px 14px;font-size:.82rem;color:#b45309;line-height:1.65;margin-bottom:14px">'
-      + '⏳ <strong>Awaiting admin review.</strong> Crestechnologies IS Ltd is reviewing your request at this step. You will be notified by email when action is taken.</div>'
-    : '<div style="background:rgba(26,92,46,.08);border:1px solid rgba(26,92,46,.2);border-radius:8px;padding:12px 14px;font-size:.82rem;color:#15803d;line-height:1.65;margin-bottom:14px">'
-      + '▶ <strong>Action required from you.</strong> '
-      + (wf.currentStep === 'payment_submitted' ? 'Please submit your payment receipt using the button below.' : 'Please complete the required action for the current step.')
-      + '</div>';
-
-  // Show in a modal
-  var overlay = document.getElementById('pendingWfOverlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'pendingWfOverlay';
-    overlay.className = 'modal-overlay on';
-    overlay.innerHTML = '<div class="modal" style="max-width:480px;padding:0;overflow:hidden">'
-      + '<div class="modal-head"><h3>\ud83d\udccb Your Renewal Request Status</h3>'
-      + '<button class="modal-close" onclick="closePendingWfModal()">\u2715</button></div>'
-      + '<div class="modal-body" id="pendingWfBody"></div>'
-      + '<div class="modal-foot" style="display:flex;gap:8px;justify-content:flex-end" id="pendingWfFoot"></div>'
-      + '</div>';
-    document.body.appendChild(overlay);
-  }
-
-  overlay.classList.add('on');
-
-  var body = document.getElementById('pendingWfBody');
-  body.innerHTML = adminMsg
-    + '<div style="font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">Request Progress</div>'
-    + '<div class="wf-tracker" style="margin-bottom:0"><div class="wft-steps">' + stepsHtml + '</div></div>';
-
-  var foot = document.getElementById('pendingWfFoot');
-  foot.innerHTML = '<button class="btn btn-outline" onclick="closePendingWfModal()">Close</button>';
-
-  // Add action button if tenant needs to do something
-  if (wf.currentStep === 'payment_submitted') {
-    foot.innerHTML += '<button class="btn btn-gold" onclick="closePendingWfModal();openPaymentSubmitModal()">\ud83d\udcb3 Submit Payment Receipt</button>';
-  } else if (wf.currentStep === 'eform_sent') {
-    foot.innerHTML += '<a href="https://enjanih-stack.github.io/crestville-portal/CRS_Tenancy_EForm_v3.html" target="_blank" class="btn btn-gold">\ud83d\udcdd Complete eForm</a>';
-  }
-}
-
-/* ── SUBMIT RENEWAL WITH WORKFLOW + GUARANTORS ── */
-async function submitRenewalWithWorkflow(formData) {
-  var rec = window._myRecord;
-  if (!rec || !currentUser) { toast('⚠ No tenancy record found'); return; }
-
-  var wfId = (rec.unitId||rec.unit) + '_' + currentUser.uid;
-
-  var wf = {
-    id: wfId,
-    type: 'existing_tenant',
-    status: 'active',
-    currentStep: 'payment_slip_issued', // moves to next after admin issues slip
-    tenantEmail: currentUser.email,
-    tenantName: formData.tenantName || (currentUser.displayName || currentUser.email),
-    unitId: rec.unitId || rec.unit,
-    unitLabel: getPropertyLabel(rec.unitId||rec.unit),
-    currentExpiry: rec.expiry || '',
-    renewalData: formData,
-    guarantors: formData.guarantors || [],
-    steps: [
-      {id:'renewal_submitted', completedAt: new Date().toISOString(), by:'tenant'}
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+  var ft = _ftGet();
+  var forms = {
+    kyt: { label: 'KYT / Pre-Rental Questionnaire', fields: [
+      'fullName','dob','nin','phone','email','occupation','employer','address',
+      'nextOfKin','guarantorName','guarantorPhone','guarantorEmail','guarantorAddress',
+      'prevLandlord','bankStatement','idDocument','photo',
+    ]},
+    renewal: { label: 'Renewal Application', fields: [
+      'tenantName','unitId','requestedTerm','notes','attachPrevContract',
+    ]},
+    eform: { label: 'Tenancy Agreement eForm', fields: [
+      'fullName','nin','phone','email','occupation','address','guarantorName',
+      'guarantorPhone','emergencyContact','signature','idDocument','photo',
+    ]},
   };
-
-  await saveWorkflow(wf);
-
-  // Send email to admin
-  var ref = 'CRS-RNW-' + Date.now().toString(36).toUpperCase().slice(-6);
-  var html = buildRenewalEmailHtml(formData, wf, ref);
-  try {
-    await window._db.collection('mail').add({
-      to: ['crestechnologies@outlook.com','enjanih@gmail.com'],
-      message: {subject:'[CRS] Renewal Request — ' + wf.unitLabel + ' — ' + wf.tenantName + ' — ' + ref, html}
+  var html = '';
+  Object.entries(forms).forEach(function(entry) {
+    var fk = entry[0], form = entry[1];
+    html += '<div style="margin-bottom:20px">'
+      + '<div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--rule)">'
+      + form.label + '</div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    form.fields.forEach(function(field) {
+      var isReq = isFieldRequired(fk, field, true);
+      html += '<label style="display:flex;align-items:center;gap:5px;font-size:.74rem;cursor:pointer;padding:4px 8px;border-radius:5px;border:1px solid var(--rule);background:var(--cream)">'
+        + '<input type="checkbox" ' + (isReq ? 'checked' : '') + ' onchange="toggleFormField(\'' + fk + '\',\'' + field + '\',this.checked)"'
+        + ' style="accent-color:var(--gold);width:13px;height:13px;cursor:pointer"/>'
+        + field.replace(/([A-Z])/g,' $1').toLowerCase() + '</label>';
     });
-  } catch(e) {}
-
-  // Send consent emails to guarantors
-  for (var g of (formData.guarantors||[])) {
-    if (g.email) sendGuarantorConsentEmail(g, formData, ref);
-  }
-
-  renderTenantWorkflowTracker(wf);
-  closeRenewModal();
-  toast('✓ Renewal request submitted! Reference: ' + ref, 5000);
+    html += '</div></div>';
+  });
+  container.innerHTML = html;
 }
 
-function buildRenewalEmailHtml(d, wf, ref) {
-  return '<div style="font-family:Arial;max-width:640px">'
-    + '<div style="background:#0f0e0c;padding:18px 24px;border-bottom:3px solid #c9960c">'
-    + '<div style="font-size:18px;color:#fff;font-family:Georgia;font-weight:700">Tenancy Renewal Request</div>'
-    + '<div style="font-size:12px;color:#9a8a6a;margin-top:3px">Ref: ' + ref + '</div></div>'
-    + '<div style="background:#faf8f4;padding:22px 24px">'
-    + '<table style="width:100%;border-collapse:collapse;font-size:13px">'
-    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888;width:150px">Tenant</td><td style="padding:8px;font-weight:600">' + wf.tenantName + '</td></tr>'
-    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Email</td><td style="padding:8px">' + wf.tenantEmail + '</td></tr>'
-    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Unit</td><td style="padding:8px">' + wf.unitLabel + '</td></tr>'
-    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Current Expiry</td><td style="padding:8px">' + (wf.currentExpiry||'—') + '</td></tr>'
-    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Duration</td><td style="padding:8px;font-weight:600">' + (d.renewalDuration||'—') + '</td></tr>'
-    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:8px;color:#888">Guarantor 1</td><td style="padding:8px">' + (d.guarantors&&d.guarantors[0] ? d.guarantors[0].name + ' &lt;' + d.guarantors[0].email + '&gt;' : '—') + '</td></tr>'
-    + '<tr><td style="padding:8px;color:#888">Guarantor 2</td><td style="padding:8px">' + (d.guarantors&&d.guarantors[1] ? d.guarantors[1].name + ' &lt;' + d.guarantors[1].email + '&gt;' : '—') + '</td></tr>'
-    + '</table></div>'
-    + '<div style="background:#0f0e0c;padding:10px;text-align:center;font-size:11px;color:#7a6e62">Crestechnologies IS Ltd &middot; RC 1643396</div></div>';
+/* ── 3. Inline KYT Application Form ── */
+function openNewTenancyFlow() {
+  showPage('pgNewApplication', document.getElementById('navMyApplications'));
+  setTimeout(renderKYTForm, 100);
 }
 
-function sendGuarantorConsentEmail(g, formData, ref) {
-  var consentLink = PORTAL_BASE + '/CRS_Consent_Portal_v2.html';
-  try {
-    var payload = {_role:'guarantor',applicantName:formData.tenantName,
-      property:formData.unitLabel||'',refCode:ref,name:g.name,email:g.email};
-    var json  = JSON.stringify(payload);
-    var bytes = (typeof pako !== 'undefined')
-      ? pako.deflate(json,{level:9})
-      : new TextEncoder().encode(json);
-    var bin = ''; for(var i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]);
-    var b64 = btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
-    consentLink += '#' + b64;
-  } catch(e) {}
-
-  window._db.collection('mail').add({
-    to: [g.email],
-    message: {
-      subject: '[CRS] Guarantor Consent Request — ' + (formData.tenantName||'Tenant') + ' — Ref: ' + ref,
-      html: '<div style="font-family:Arial;max-width:600px">'
-        + '<div style="background:#0f0e0c;padding:18px 24px;border-bottom:3px solid #c9960c">'
-        + '<div style="font-size:16px;color:#fff;font-family:Georgia">Guarantor Consent Request</div>'
-        + '<div style="font-size:12px;color:#9a8a6a">Ref: ' + ref + '</div></div>'
-        + '<div style="background:#faf8f4;padding:20px 24px">'
-        + '<p style="font-size:14px">Dear ' + (g.name||'Guarantor') + ',</p>'
-        + '<p style="font-size:14px;line-height:1.75;margin-top:10px">You have been listed as a <strong>Financial Guarantor</strong> for a tenancy renewal application by <strong>' + (formData.tenantName||'the tenant') + '</strong> with Crestechnologies IS Ltd (Crestville Properties).</p>'
-        + '<p style="font-size:14px;line-height:1.75;margin-top:10px">Please click the link below to review the advisory notice, confirm your details, upload your passport photo and NIN, sign and submit your consent:</p>'
-        + '<div style="margin:18px 0;padding:14px;background:#fff8e6;border-left:3px solid #c9960c;border-radius:0 6px 6px 0">'
-        + '<a href="' + consentLink + '" style="color:#c9960c;font-weight:700;word-break:break-all">' + consentLink + '</a></div>'
-        + '<p style="font-size:13px;color:#888">If the link is not clickable, copy and paste it into your browser.<br>Queries: <a href="mailto:crestechnologies@outlook.com">crestechnologies@outlook.com</a></p>'
-        + '</div><div style="background:#0f0e0c;padding:10px;text-align:center;font-size:11px;color:#7a6e62">Crestechnologies IS Ltd &middot; RC 1643396</div></div>'
-    }
-  }).catch(function(e){});
-}
-
-/* ── ADMIN: LOAD ALL WORKFLOWS ── */
-async function loadAdminWorkflows() {
-  try {
-    var snap = await window._db.collection('workflows')
-      .where('status','in',['active','pending_admin'])
-      .orderBy('updatedAt','desc').get();
-    var workflows = snap.docs.map(function(d){ return {id:d.id,...d.data()}; });
-    renderAdminWorkflowQueue(workflows);
-  } catch(e) {
-    console.warn('Load workflows:', e);
-    // Fallback without index
-    try {
-      var snap2 = await window._db.collection('workflows').orderBy('updatedAt','desc').limit(50).get();
-      var wfs = snap2.docs.map(function(d){ return {id:d.id,...d.data()}; })
-        .filter(function(w){ return w.status !== 'complete'; });
-      renderAdminWorkflowQueue(wfs);
-    } catch(e2) { renderAdminWorkflowQueue([]); }
-  }
-}
-
-/* ── ADMIN: ADVANCE WORKFLOW STEP ── */
-async function adminAdvanceWorkflow(wfId, action, notes) {
-  try {
-    var doc = await window._db.collection('workflows').doc(wfId).get();
-    if (!doc.exists) { toast('⚠ Workflow not found'); return; }
-    var wf = {id:wfId, ...doc.data()};
-    var steps = wf.type === 'new_tenant' ? WF_STEPS_NEW : WF_STEPS_RENEWAL;
-    var curIdx = steps.findIndex(function(s){ return s.id === wf.currentStep; });
-
-    if (action === 'approve') {
-      var nextStep = steps[curIdx + 1];
-      wf.steps = (wf.steps||[]).concat([{id:wf.currentStep, completedAt:new Date().toISOString(), by:'admin', action:'approved', notes}]);
-      wf.currentStep = nextStep ? nextStep.id : 'complete';
-      wf.status = nextStep ? 'active' : 'complete';
-      wf.rejectionReason = '';
-      toast('✓ Step approved — workflow advanced to: ' + (nextStep ? nextStep.label : 'Complete'));
-
-      // If advancing to payment_slip_issued, open payment slip generator
-      if (wf.currentStep === 'payment_submitted') {
-        toast('→ Now issue the payment advice slip to the tenant', 4000);
-      }
-      // If eform approved, mark complete and notify tenant
-      if (wf.currentStep === 'complete') {
-        notifyTenantWorkflowComplete(wf);
-      }
-    } else if (action === 'reject') {
-      wf.status = 'rejected';
-      wf.rejectionReason = notes || 'Rejected by admin';
-      wf.steps = (wf.steps||[]).concat([{id:wf.currentStep, completedAt:new Date().toISOString(), by:'admin', action:'rejected', notes}]);
-      toast('Request rejected');
-    } else if (action === 'issue_payment_slip') {
-      wf.currentStep = 'payment_submitted';
-      wf.status = 'active';
-      wf.steps = (wf.steps||[]).concat([{id:'payment_slip_issued', completedAt:new Date().toISOString(), by:'admin'}]);
-      toast('✓ Payment slip issued — tenant can now submit payment');
-    }
-
-    await saveWorkflow(wf);
-    await loadAdminWorkflows();
-  } catch(e) { toast('✗ Error: ' + e.message); }
-}
-
-async function notifyTenantWorkflowComplete(wf) {
-  if (!wf.tenantEmail) return;
-  try {
-    await window._db.collection('mail').add({
-      to: [wf.tenantEmail],
-      message: {
-        subject: '[CRS] Tenancy Process Complete — ' + wf.unitLabel,
-        html: '<div style="font-family:Arial;max-width:600px;background:#0f0e0c;padding:20px">'
-          + '<div style="font-family:Georgia;font-size:18px;color:#c9960c">Tenancy Process Complete</div>'
-          + '<p style="color:#e8dfc8;font-size:14px;margin-top:14px">Dear ' + wf.tenantName + ',</p>'
-          + '<p style="color:#9a8a6a;font-size:14px;line-height:1.75">Your tenancy for <strong style="color:#e8dfc8">' + wf.unitLabel + '</strong> has been fully approved and processed. Your signed tenancy agreement is now available to download from your tenant portal.</p>'
-          + '<div style="margin:18px 0"><a href="https://enjanih-stack.github.io/crestville-portal/index.html" style="background:#c9960c;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:700">Access Tenant Portal →</a></div>'
-          + '<p style="color:#7a6e62;font-size:12px">Crestechnologies IS Ltd · RC 1643396 · crestechnologies@outlook.com</p></div>'
-      }
-    });
-  } catch(e) {}
-}
-
-/* ── PAYMENT RECEIPT SUBMISSION ── */
-async function openPaymentSubmitModal() {
-  document.getElementById('paySubmitModal').classList.add('on');
-}
-function closePaySubmitModal() {
-  document.getElementById('paySubmitModal').classList.remove('on');
-}
-async function submitPaymentReceipt() {
-  var txRef    = document.getElementById('psxRef') ? document.getElementById('psxRef').value.trim() : '';
-  var amtPaid  = document.getElementById('psAmount') ? document.getElementById('psAmount').value : '';
-  var payDate  = document.getElementById('psDate') ? document.getElementById('psDate').value : '';
-  var method   = document.getElementById('psMethod') ? document.getElementById('psMethod').value : '';
-  if (!txRef || !amtPaid) { toast('⚠ Enter transaction reference and amount'); return; }
-
-  var rec = window._myRecord;
-  var wfId = (rec.unitId||rec.unit) + '_' + currentUser.uid;
-  var wf = _currentWorkflow;
-  if (!wf) { toast('⚠ No active workflow'); return; }
-
-  wf.paymentReceipt = {txRef, amtPaid, payDate, method, submittedAt: new Date().toISOString()};
-  wf.currentStep = 'payment_approved';
-  wf.steps = (wf.steps||[]).concat([{id:'payment_submitted', completedAt:new Date().toISOString(), by:'tenant'}]);
-  await saveWorkflow(wf);
-
-  // Email admin
-  var html = '<div style="font-family:Arial;max-width:600px"><div style="background:#0f0e0c;padding:16px 20px;border-bottom:3px solid #c9960c"><div style="font-size:16px;color:#fff;font-family:Georgia">Payment Receipt Submitted</div></div>'
-    + '<div style="background:#faf8f4;padding:18px 20px"><table style="width:100%;border-collapse:collapse;font-size:13px">'
-    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:7px;color:#888;width:140px">Tenant</td><td style="padding:7px;font-weight:600">' + wf.tenantName + '</td></tr>'
-    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:7px;color:#888">Unit</td><td style="padding:7px">' + wf.unitLabel + '</td></tr>'
-    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:7px;color:#888">Amount Paid</td><td style="padding:7px;font-weight:600">₦' + Number(amtPaid).toLocaleString() + '</td></tr>'
-    + '<tr style="border-bottom:1px solid #e0d8c8"><td style="padding:7px;color:#888">Tx Reference</td><td style="padding:7px">' + txRef + '</td></tr>'
-    + '<tr><td style="padding:7px;color:#888">Date</td><td style="padding:7px">' + payDate + '</td></tr>'
-    + '</table></div></div>';
-  try {
-    await window._db.collection('mail').add({
-      to:['crestechnologies@outlook.com','enjanih@gmail.com'],
-      message:{subject:'[CRS] Payment Submitted — '+wf.unitLabel+' — '+wf.tenantName, html}
-    });
-  } catch(e){}
-
-  renderTenantWorkflowTracker(wf);
-  closePaySubmitModal();
-  toast('✓ Payment receipt submitted — awaiting admin approval');
-}
-
-/* ── ADMIN: RENDER WORKFLOW QUEUE ── */
-function renderAdminWorkflowQueue(workflows) {
-  var container = document.getElementById('adminWfQueue');
+function renderKYTForm() {
+  var container = document.getElementById('kytFormArea');
   if (!container) return;
-  if (!workflows.length) {
-    container.innerHTML = '<div style="text-align:center;color:var(--dim);padding:30px">No active workflows</div>';
-    return;
-  }
+  var vacants = getVacantUnits ? getVacantUnits() : PROPERTIES;
+  var ft = _ftGet().kyt || {};
+  var req = function(f) { return ft[f] !== false; };
 
-  container.innerHTML = workflows.map(function(wf) {
-    var steps = wf.type === 'new_tenant' ? WF_STEPS_NEW : WF_STEPS_RENEWAL;
-    var curStep = steps.find(function(s){ return s.id === wf.currentStep; });
-    var typeLabel = wf.type === 'new_tenant' ? '🏠 New' : '🔑 Renewal';
-    var statusColour = wf.status==='rejected' ? '#e05c5c' : wf.currentStep==='complete' ? '#4aaf6e' : '#c9960c';
-    var needsAdminAction = curStep && curStep.adminReview;
-    var canIssueSlip = wf.currentStep === 'payment_slip_issued';
+  container.innerHTML = '<form id="kytForm" onsubmit="return false">'
+    + '<div class="kyt-section">'
+    + '<div class="kyt-sec-title">🏠 Property Selection</div>'
+    + '<div class="fg"><label>Select Property *</label>'
+    + '<select id="kytUnit" required><option value="">— Choose a vacant unit —</option>'
+    + vacants.map(function(p) { return '<option value="' + p.id + '">' + (p.label||p.id) + ' — ' + (p.location||p.city||'') + '</option>'; }).join('')
+    + '</select></div>'
+    + '</div>'
 
-    var actionBtns = '';
-    if (needsAdminAction) {
-      actionBtns = '<button class="btn btn-sm" style="background:rgba(26,92,46,.12);border:1px solid rgba(26,92,46,.3);color:#4aaf6e" onclick="showAdminActionModal(\'' + wf.id + '\',\'approve\')">\u2713 Approve</button>'
-        + '<button class="btn btn-sm" style="background:rgba(140,31,31,.1);border:1px solid rgba(140,31,31,.3);color:#e05c5c;margin-left:6px" onclick="showAdminActionModal(\'' + wf.id + '\',\'reject\')">\u2717 Reject</button>';
-    } else if (canIssueSlip) {
-      actionBtns = '<button class="btn btn-gold btn-sm" onclick="adminIssuePaymentSlip(\'' + wf.id + '\')">\ud83d\udcc4 Issue Payment Slip</button>';
-    }
+    + '<div class="kyt-section">'
+    + '<div class="kyt-sec-title">👤 Personal Details</div>'
+    + fld('kytFullName', 'Full Name', 'text', req('fullName'))
+    + fld('kytDob', 'Date of Birth', 'date', req('dob'))
+    + fld('kytNin', 'NIN (National ID Number)', 'text', req('nin'))
+    + fld('kytPhone', 'Phone Number', 'tel', req('phone'))
+    + fld('kytEmail2', 'Alternate Email', 'email', false)
+    + fld('kytOccupation', 'Occupation / Job Title', 'text', req('occupation'))
+    + fld('kytEmployer', 'Employer / Business Name', 'text', req('employer'))
+    + '</div>'
 
-    return '<div class="wf-queue-card">'
-      + '<div class="wfq-head">'
-        + '<div><div class="wfq-unit">' + (wf.unitLabel||wf.unitId||'—') + ' <span style="font-size:.7rem;color:#9a8a6a">' + typeLabel + '</span></div>'
-        + '<div class="wfq-tenant">' + (wf.tenantName||'') + ' · ' + (wf.tenantEmail||'') + '</div></div>'
-        + '<span style="font-size:.76rem;font-weight:700;color:' + statusColour + '">' + (curStep ? curStep.label : wf.currentStep||'—') + '</span>'
-      + '</div>'
-      + '<div class="wfq-body">'
-        + '<div class="wfq-step-row"><span class="wfq-step-label">Current Step</span><span class="wfq-step-status">' + (curStep ? curStep.desc : '—') + '</span></div>'
-        + '<div class="wfq-step-row"><span class="wfq-step-label">Submitted</span><span class="wfq-step-status">' + (wf.createdAt ? new Date(wf.createdAt).toLocaleDateString('en-NG') : '—') + '</span></div>'
-        + '<div class="wfq-step-row"><span class="wfq-step-label">Type</span><span class="wfq-step-status">' + (wf.type||'—').replace('_',' ') + '</span></div>'
-        + (wf.guarantors && wf.guarantors.length ? '<div class="wfq-step-row"><span class="wfq-step-label">Guarantors</span><span class="wfq-step-status">' + wf.guarantors.map(function(g){return g.name+'('+g.consentStatus+')';}).join(', ') + '</span></div>' : '')
-        + (wf.paymentReceipt ? '<div class="wfq-step-row"><span class="wfq-step-label">Payment</span><span class="wfq-step-status">₦'+Number(wf.paymentReceipt.amtPaid||0).toLocaleString()+' · '+wf.paymentReceipt.txRef+'</span></div>' : '')
-        + '<div class="wfq-actions">' + actionBtns + '</div>'
-      + '</div>'
-    + '</div>';
-  }).join('');
+    + '<div class="kyt-section">'
+    + '<div class="kyt-sec-title">📍 Current Address</div>'
+    + '<div class="fg"><label>Current Residential Address *</label><textarea id="kytAddress" rows="2" ' + (req('address')?'required':'') + '></textarea></div>'
+    + '</div>'
+
+    + '<div class="kyt-section">'
+    + '<div class="kyt-sec-title">🆘 Next of Kin</div>'
+    + fld('kytNokName', 'Next of Kin Full Name', 'text', req('nextOfKin'))
+    + fld('kytNokPhone', 'Next of Kin Phone', 'tel', req('nextOfKin'))
+    + fld('kytNokRelation', 'Relationship', 'text', req('nextOfKin'))
+    + '</div>'
+
+    + '<div class="kyt-section">'
+    + '<div class="kyt-sec-title">🤝 Guarantor / Referee</div>'
+    + '<div style="font-size:.74rem;color:var(--dim);margin-bottom:10px">Your guarantor will receive an automatic consent email after submission.</div>'
+    + fld('kytGtrName', 'Guarantor Full Name', 'text', req('guarantorName'))
+    + fld('kytGtrPhone', 'Guarantor Phone', 'tel', req('guarantorPhone'))
+    + fld('kytGtrEmail', 'Guarantor Email', 'email', req('guarantorEmail'))
+    + '<div class="fg"><label>Guarantor Address ' + (req('guarantorAddress')?'*':'') + '</label><textarea id="kytGtrAddress" rows="2" ' + (req('guarantorAddress')?'required':'') + '></textarea></div>'
+    + fld('kytGtrRole', 'Guarantor Role', 'text', false, 'Guarantor')
+    + '</div>'
+
+    + '<div class="kyt-section">'
+    + '<div class="kyt-sec-title">📎 Documents</div>'
+    + '<div style="font-size:.74rem;color:var(--dim);margin-bottom:10px">⚠️ All attachments must be under 100KB. Compress images before uploading.</div>'
+    + fileField('kytIdDoc', 'Government-issued ID (Passport / NIN slip)', req('idDocument'))
+    + fileField('kytPhoto', 'Passport Photograph (white background)', req('photo'))
+    + fileField('kytBankStmt', 'Bank Statement (last 3 months)', req('bankStatement'))
+    + '</div>'
+
+    + '<div class="kyt-section" style="background:rgba(201,150,12,.05);border:1px solid rgba(201,150,12,.2);border-radius:8px;padding:16px">'
+    + '<label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">'
+    + '<input type="checkbox" id="kytDeclaration" required style="margin-top:3px;accent-color:var(--gold)"/>'
+    + '<span style="font-size:.8rem;line-height:1.65">I confirm that all information provided is true and accurate. I consent to Crestville Properties using this information for tenancy screening purposes.</span>'
+    + '</label></div>'
+
+    + '<div style="margin-top:20px;text-align:center">'
+    + '<button type="button" class="btn btn-gold" onclick="submitKYTFromForm()" style="padding:12px 40px;font-size:.88rem">Submit KYT Application →</button>'
+    + '</div>'
+    + '</form>';
 }
 
-/* ── ADMIN ACTION MODAL ── */
-function showAdminActionModal(wfId, action) {
-  var modal = document.getElementById('adminActionModal');
-  if (!modal) return;
-  document.getElementById('aaWfId').value = wfId;
-  document.getElementById('aaAction').value = action;
-  document.getElementById('aaTitle').textContent = action === 'approve' ? '✓ Approve Step' : '✗ Reject Step';
-  document.getElementById('aaNotesLabel').textContent = action === 'approve' ? 'Notes (optional)' : 'Reason for rejection *';
-  document.getElementById('aaNotes').value = '';
-  modal.classList.add('on');
+function fld(id, label, type, required, placeholder) {
+  return '<div class="fg"><label>' + label + (required ? ' *' : '') + '</label>'
+    + '<input type="' + type + '" id="' + id + '" placeholder="' + (placeholder||'') + '" ' + (required ? 'required' : '') + '/></div>';
 }
-function closeAdminActionModal() {
-  document.getElementById('adminActionModal').classList.remove('on');
-}
-async function confirmAdminAction() {
-  var wfId   = document.getElementById('aaWfId').value;
-  var action = document.getElementById('aaAction').value;
-  var notes  = document.getElementById('aaNotes').value.trim();
-  if (action === 'reject' && !notes) { toast('⚠ Please provide a reason for rejection'); return; }
-  closeAdminActionModal();
-  await adminAdvanceWorkflow(wfId, action, notes);
+function fileField(id, label, required) {
+  return '<div class="fg"><label>' + label + (required ? ' *' : '') + '</label>'
+    + '<input type="file" id="' + id + '" accept=".pdf,.jpg,.jpeg,.png" ' + (required ? 'required' : '')
+    + ' onchange="checkFileSize(this,100)" style="font-size:.8rem"/></div>';
 }
 
-async function adminIssuePaymentSlip(wfId) {
-  // Open the payment advice form in admin mode, pre-filled
-  var doc = await window._db.collection('workflows').doc(wfId).get();
-  if (!doc.exists) return;
-  var wf = doc.data();
-  // Open payment advice with tenant pre-filled
-  var url = PORTAL_BASE + '/CRS_Rent_Payment_Advice.html';
-  window.open(url, '_blank');
-  toast('→ Fill in the payment slip and send the link to the tenant, then click Issue Payment Slip below');
-  // Mark as issued after 3s
-  setTimeout(async function() {
-    await adminAdvanceWorkflow(wfId, 'issue_payment_slip', '');
-  }, 3000);
-}
+async function submitKYTFromForm() {
+  var form = document.getElementById('kytForm');
+  if (!form) return;
+  var unit = document.getElementById('kytUnit')?.value;
+  var name = document.getElementById('kytFullName')?.value.trim();
+  var decl = document.getElementById('kytDeclaration')?.checked;
+  if (!unit) { notify('error', 'Select Property', 'Please choose a property.'); return; }
+  if (!name) { notify('error', 'Name Required', 'Enter your full name.'); return; }
+  if (!decl) { notify('error', 'Declaration Required', 'Please tick the declaration checkbox.'); return; }
+  if (!form.checkValidity()) { form.reportValidity(); return; }
 
-/* openRenewalModal now directly includes the workflow check (no override needed) */
-
-
-function submitRenewalViaWorkflow() {
-  var g1Name  = document.getElementById('g1Name')  ? document.getElementById('g1Name').value.trim()  : '';
-  var g1Email = document.getElementById('g1Email') ? document.getElementById('g1Email').value.trim() : '';
-  var dur     = document.getElementById('renewDuration') ? document.getElementById('renewDuration').value : '';
-  var msg     = document.getElementById('renewMessage')  ? document.getElementById('renewMessage').value.trim() : '';
-
-  if (!g1Name || !g1Email) { toast('⚠ Please enter at least Guarantor 1 name and email'); return; }
-
-  var rec = window._myRecord;
-  var guarantors = [{name:g1Name, email:g1Email, consentStatus:'pending'}];
-  var g2Name  = document.getElementById('g2Name')  ? document.getElementById('g2Name').value.trim()  : '';
-  var g2Email = document.getElementById('g2Email') ? document.getElementById('g2Email').value.trim() : '';
-  if (g2Name && g2Email) guarantors.push({name:g2Name, email:g2Email, consentStatus:'pending'});
+  var gtrEmail = document.getElementById('kytGtrEmail')?.value.trim();
+  var gtrName  = document.getElementById('kytGtrName')?.value.trim();
+  var unitProp = PROPERTIES.find(function(p){ return p.id === unit; }) || {};
 
   var formData = {
-    tenantName: currentUser.displayName || currentUser.email,
-    tenantEmail: currentUser.email,
-    unitId: rec ? (rec.unitId||rec.unit) : '',
-    unitLabel: rec ? getPropertyLabel(rec.unitId||rec.unit) : '',
-    currentExpiry: rec ? rec.expiry : '',
-    renewalDuration: dur,
-    message: msg,
-    guarantors: guarantors,
+    tenantName: name, unitId: unit, unitLabel: unitProp.label || unit,
+    dob:        document.getElementById('kytDob')?.value || '',
+    nin:        document.getElementById('kytNin')?.value || '',
+    phone:      document.getElementById('kytPhone')?.value || '',
+    occupation: document.getElementById('kytOccupation')?.value || '',
+    employer:   document.getElementById('kytEmployer')?.value || '',
+    address:    document.getElementById('kytAddress')?.value || '',
+    nokName:    document.getElementById('kytNokName')?.value || '',
+    nokPhone:   document.getElementById('kytNokPhone')?.value || '',
+    nokRelation:document.getElementById('kytNokRelation')?.value || '',
+    guarantorName:    gtrName || '',
+    guarantorPhone:   document.getElementById('kytGtrPhone')?.value || '',
+    guarantorEmail:   gtrEmail || '',
+    guarantorAddress: document.getElementById('kytGtrAddress')?.value || '',
+    guarantorRole:    document.getElementById('kytGtrRole')?.value || 'Guarantor',
   };
-  submitRenewalWithWorkflow(formData);
+
+  var wf = await submitKYTApplication(formData);
+  if (!wf) return;
+
+  // Auto-send guarantor consent email if email provided
+  if (gtrEmail && gtrName) {
+    await sendGuarantorConsentEmails(wf, [{
+      name: gtrName, email: gtrEmail,
+      role: formData.guarantorRole || 'Guarantor',
+    }]);
+  }
+
+  // Send confirmation to tenant
+  var confirmHtml = _wfEmailTemplate('KYT Application Received',
+    'Dear ' + name + ','
+    + '<p>Your Know Your Tenant questionnaire for <strong>' + (unitProp.label||unit) + '</strong> has been received.</p>'
+    + '<div style="background:#1a1612;border:1px solid rgba(201,150,12,.3);border-radius:8px;padding:14px;margin:14px 0">'
+    + '<p style="color:#c9960c;font-weight:700;margin:0">Application Reference: ' + wf.approvalId + '</p>'
+    + '</div>'
+    + '<p>The admin will screen your application and send you a payment advice slip if approved. This usually takes 24–48 hours.</p>'
+    + _wfPortalBtn());
+  await sendCRSEmail(currentUser.email, '[Crestville] KYT Application Received — ' + wf.approvalId, confirmHtml);
+
+  showPage('pgMyApplications', document.getElementById('navMyApplications'));
+  notify('success', '✅ Application Submitted!', 'You will receive a confirmation email shortly.');
 }
 
-
-/* ════════════════════════════════════════════════════════════
-   APPLICATION STATUS SYSTEM
-════════════════════════════════════════════════════════════ */
-
-var _allWorkflows  = [];   // cache for admin
-var _adminFilter   = 'all';
-var _tenantFilter  = 'all';
-
-var WF_TYPE_LABELS = {
-  new_tenant:       {icon:'🏠', label:'New Tenant Application'},
-  existing_tenant:  {icon:'🔑', label:'Tenancy Renewal Request'},
-};
-
-var WF_STATUS_CONFIG = {
-  active:          {pill:'ssp-pending',  label:'In Progress',    icon:'⏳'},
-  pending_admin:   {pill:'ssp-pending',  label:'Awaiting Admin', icon:'⏳'},
-  rejected:        {pill:'ssp-rejected', label:'Rejected',       icon:'❌'},
-  amendment:       {pill:'ssp-amendment',label:'Amendment Required', icon:'✏️'},
-  complete:        {pill:'ssp-complete', label:'Complete',        icon:'✅'},
-  approved:        {pill:'ssp-approved', label:'Approved',        icon:'✅'},
-};
-
-function getWfStatusKey(wf) {
-  if (wf.status === 'complete')    return 'complete';
-  if (wf.status === 'rejected')    return 'rejected';
-  if (wf.status === 'amendment')   return 'amendment';
-  // Derive from current step
-  var steps = wf.type === 'new_tenant' ? WF_STEPS_NEW : WF_STEPS_RENEWAL;
-  var step  = steps.find(function(s){ return s.id === wf.currentStep; });
-  if (step && step.adminReview)    return 'pending_admin';
-  return 'active';
+/* ── 4. Inline Renewal Application Form ── */
+function openRenewalFlow() {
+  if (!window._myRecord) {
+    notify('error', 'No Tenancy Found', 'Your tenancy record must be loaded first.');
+    return;
+  }
+  showPage('pgRenewalApplication', document.getElementById('navRenew'));
+  setTimeout(renderRenewalForm, 100);
 }
 
-function getFilterKey(wf) {
-  var k = getWfStatusKey(wf);
-  if (k === 'complete' || k === 'approved') return 'complete';
-  if (k === 'rejected')   return 'rejected';
-  if (k === 'amendment')  return 'amendment';
-  return 'pending';
+function renderRenewalForm() {
+  var container = document.getElementById('renewalFormArea');
+  if (!container || !window._myRecord) return;
+  var rec = window._myRecord;
+  var fmtD = function(d) { try { return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}); } catch(e) { return d||'—'; } };
+
+  container.innerHTML = '<div style="background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px;margin-bottom:16px">'
+    + '<div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin-bottom:10px">Current Tenancy</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">'
+    + mkCard('Unit', rec.unit||rec.unitId||'—')
+    + mkCard('Current Expiry', fmtD(rec.expiry))
+    + mkCard('Annual Rent', '₦' + Number(rec.amount||0).toLocaleString())
+    + '</div></div>'
+
+    + '<form id="renewalForm" onsubmit="return false">'
+    + '<div class="kyt-section">'
+    + '<div class="kyt-sec-title">🔄 Renewal Details</div>'
+    + '<div class="fg"><label>Requested Renewal Term *</label>'
+    + '<select id="rnwTerm" required>'
+    + '<option value="">— Select duration —</option>'
+    + '<option value="12">12 months (1 year)</option>'
+    + '<option value="24">24 months (2 years)</option>'
+    + '<option value="6">6 months</option>'
+    + '<option value="other">Other — specify in notes</option>'
+    + '</select></div>'
+    + '<div class="fg"><label>Additional Notes</label><textarea id="rnwNotes" rows="3" placeholder="Any special requests or comments..."></textarea></div>'
+    + '</div>'
+
+    + '<div class="kyt-section">'
+    + '<div class="kyt-sec-title">📎 Attachments</div>'
+    + '<div style="font-size:.74rem;color:var(--dim);margin-bottom:10px">⚠️ Attachments must be under 100KB each.</div>'
+    + fileField('rnwPrevContract', 'Previous Tenancy Agreement (optional)', false)
+    + fileField('rnwIdDoc', 'Updated ID Document (if changed)', false)
+    + '</div>'
+
+    + '<div class="kyt-section" style="background:rgba(201,150,12,.05);border:1px solid rgba(201,150,12,.2);border-radius:8px;padding:16px">'
+    + '<label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">'
+    + '<input type="checkbox" id="rnwDeclaration" required style="margin-top:3px;accent-color:var(--gold)"/>'
+    + '<span style="font-size:.8rem;line-height:1.65">I confirm my intention to renew this tenancy and that all information is correct.</span>'
+    + '</label></div>'
+
+    + '<div style="margin-top:20px;text-align:center">'
+    + '<button type="button" class="btn btn-gold" onclick="submitRenewalFromForm()" style="padding:12px 40px;font-size:.88rem">Submit Renewal Request →</button>'
+    + '</div></form>';
 }
 
-/* ── BUILD ONE STATUS CARD ── */
-function buildStatusCard(wf, isAdmin) {
-  var typeInfo   = WF_TYPE_LABELS[wf.type] || {icon:'📋', label:'Application'};
-  var statusKey  = getWfStatusKey(wf);
-  var statusConf = WF_STATUS_CONFIG[statusKey] || WF_STATUS_CONFIG.active;
-  var steps      = wf.type === 'new_tenant' ? WF_STEPS_NEW : WF_STEPS_RENEWAL;
-  var curIdx     = steps.findIndex(function(s){ return s.id === wf.currentStep; });
+function mkCard(label, value) {
+  return '<div style="background:var(--cream);border:1px solid var(--rule);border-radius:6px;padding:10px">'
+    + '<div style="font-size:.62rem;text-transform:uppercase;color:var(--dim);font-weight:700;margin-bottom:4px">' + label + '</div>'
+    + '<div style="font-size:.84rem;font-weight:700">' + value + '</div></div>';
+}
 
-  var createdStr = wf.createdAt
-    ? new Date(wf.createdAt).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})
-    : '—';
-  var updatedStr = wf.updatedAt
-    ? new Date(wf.updatedAt).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})
-    : '—';
+async function submitRenewalFromForm() {
+  var form = document.getElementById('renewalForm');
+  if (!form || !form.checkValidity()) { if(form) form.reportValidity(); return; }
+  var decl = document.getElementById('rnwDeclaration')?.checked;
+  if (!decl) { notify('error', 'Declaration Required', 'Please tick the declaration.'); return; }
 
-  // Timeline dots
-  var timelineHtml = steps.map(function(step, i) {
-    var isDone     = i < curIdx;
-    var isActive   = i === curIdx && wf.status !== 'rejected';
-    var isRejected = wf.status === 'rejected' && i === curIdx;
-    var state      = isDone ? 'done' : isRejected ? 'rejected' : isActive ? 'active' : 'pending';
-    var dot        = isDone ? '✓' : isRejected ? '✗' : (i+1);
-    return '<div class="sct-step ' + state + '">'
-      + '<div class="sct-dot">' + dot + '</div>'
-      + '<div class="sct-label">' + step.label.replace(' &amp; ','/').split(' ').slice(0,3).join(' ') + '</div>'
+  var formData = {
+    term:  document.getElementById('rnwTerm')?.value || '12',
+    notes: document.getElementById('rnwNotes')?.value || '',
+  };
+  var wf = await submitRenewalApplication(formData);
+  if (!wf) return;
+
+  // Confirmation email
+  var html = _wfEmailTemplate('Renewal Request Received',
+    'Dear ' + wf.tenantName + ','
+    + '<p>Your renewal request for <strong>' + wf.unitLabel + '</strong> has been received.</p>'
+    + '<div style="background:#1a1612;border:1px solid rgba(201,150,12,.3);border-radius:8px;padding:14px;margin:14px 0">'
+    + '<p style="color:#c9960c;font-weight:700;margin:0">Reference: ' + wf.approvalId + '</p>'
+    + '<p style="color:#9a8a6a;font-size:13px;margin-top:6px">Current expiry: ' + (wf.currentExpiry||'—') + '</p>'
+    + '</div>'
+    + '<p>Admin will review and send a payment advice slip if approved.</p>'
+    + _wfPortalBtn());
+  await sendCRSEmail(currentUser.email, '[Crestville] Renewal Request — ' + wf.approvalId, html);
+
+  showPage('pgMyApplications', document.getElementById('navMyApplications'));
+  notify('success', '✅ Renewal Submitted!', 'Confirmation email sent.');
+}
+
+/* ── 5. Tenant Payment Submission Form ── */
+function openTenantPaymentForm(wfId) {
+  var mo = document.getElementById('tenantPaymentModal');
+  if (!mo) {
+    var d = document.createElement('div');
+    d.className = 'modal-overlay'; d.id = 'tenantPaymentModal';
+    d.innerHTML = '<div class="modal" style="max-width:500px">'
+      + '<div class="modal-head"><h3>💳 Submit Payment Receipt</h3>'
+      + '<button class="modal-close" onclick="document.getElementById(\'tenantPaymentModal\').classList.remove(\'on\')">✕</button></div>'
+      + '<div class="modal-body">'
+      + '<div style="font-size:.78rem;color:var(--dim);margin-bottom:14px">Enter the Payment Advisor ID from your approval email, the amount paid, and attach your receipt.</div>'
+      + '<input type="hidden" id="tpfWfId"/>'
+      + '<div class="fg"><label>Payment Advisor ID (PAD-...) *</label><input type="text" id="tpfPadId" placeholder="PAD-XXX-XXXX" style="font-family:monospace;font-size:.9rem;letter-spacing:.05em"/></div>'
+      + '<div class="fg"><label>Amount Paid (₦) *</label><input type="number" id="tpfAmount" placeholder="850000"/></div>'
+      + '<div class="fg"><label>Bank Name *</label><input type="text" id="tpfBank" placeholder="e.g. Zenith Bank"/></div>'
+      + '<div class="fg"><label>Payment Date *</label><input type="date" id="tpfDate"/></div>'
+      + '<div class="fg"><label>Transaction Reference / Teller Number</label><input type="text" id="tpfRef" placeholder="Bank reference or teller no."/></div>'
+      + '<div class="fg"><label>Payment Receipt (PDF/JPG, max 100KB)</label>'
+      + '<input type="file" id="tpfReceipt" accept=".pdf,.jpg,.jpeg,.png" onchange="checkFileSize(this,100)" style="font-size:.8rem"/></div>'
+      + '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">'
+      + '<button class="btn btn-outline" onclick="document.getElementById(\'tenantPaymentModal\').classList.remove(\'on\')">Cancel</button>'
+      + '<button class="btn btn-gold" onclick="tenantSubmitPayment()">Submit Payment →</button>'
+      + '</div></div></div>';
+    document.body.appendChild(d); mo = d;
+  }
+  document.getElementById('tpfWfId').value = wfId || '';
+  mo.classList.add('on');
+}
+
+async function tenantSubmitPayment() {
+  var wfId  = document.getElementById('tpfWfId')?.value;
+  var padId = document.getElementById('tpfPadId')?.value.trim();
+  var amt   = document.getElementById('tpfAmount')?.value;
+  var bank  = document.getElementById('tpfBank')?.value.trim();
+  var date  = document.getElementById('tpfDate')?.value;
+  if (!padId || !amt || !bank || !date) { notify('error', 'Missing Fields', 'Fill in all required fields.'); return; }
+
+  await submitPaymentConfirmation({
+    padId, amountPaid: amt, bank, paymentDate: date,
+    ref: document.getElementById('tpfRef')?.value || '',
+  });
+  document.getElementById('tenantPaymentModal').classList.remove('on');
+}
+
+/* ── 6. Tenant eForm Launcher with key code ── */
+function openTenantEForm(wfId) {
+  getWorkflow(wfId).then(function(wf) {
+    if (!wf) { notify('error', 'Not Found', 'Application not found.'); return; }
+    var mo = document.getElementById('tenantEFormModal');
+    if (!mo) {
+      var d = document.createElement('div');
+      d.className = 'modal-overlay'; d.id = 'tenantEFormModal';
+      d.innerHTML = '<div class="modal" style="max-width:520px">'
+        + '<div class="modal-head"><h3>📝 Open Tenancy Agreement</h3>'
+        + '<button class="modal-close" onclick="document.getElementById(\'tenantEFormModal\').classList.remove(\'on\')">✕</button></div>'
+        + '<div class="modal-body" id="tenantEFormBody"></div></div>';
+      document.body.appendChild(d); mo = d;
+    }
+    var body = document.getElementById('tenantEFormBody');
+    body.innerHTML = '<div style="background:#0f0e0c;border-radius:8px;padding:16px;margin-bottom:16px;text-align:center">'
+      + '<div style="font-size:.65rem;color:#9a8a6a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Payment Confirmation Key Code</div>'
+      + '<div style="font-size:1.4rem;font-weight:700;color:#c9960c;letter-spacing:.15em">' + (wf.paymentKeyCode||'—') + '</div>'
+      + '<div style="font-size:.7rem;color:#9a8a6a;margin-top:4px">KYT Ref: ' + (wf.approvalId||'—') + '</div>'
+      + '</div>'
+      + '<div style="font-size:.8rem;color:var(--dim);margin-bottom:14px;line-height:1.65">'
+      + 'Your key code has been pre-filled. The Tenancy Agreement form will open with your details. '
+      + 'Review all sections carefully before submitting.</div>'
+      + '<div style="display:flex;gap:10px">'
+      + '<button class="btn btn-outline" onclick="document.getElementById(\'tenantEFormModal\').classList.remove(\'on\')">Cancel</button>'
+      + '<button class="btn btn-gold" onclick="launchEFormWithCodes(\'' + wf.id + '\')" style="flex:1">Open Tenancy Agreement →</button>'
       + '</div>';
-  }).join('');
-
-  // Rejection / amendment note
-  var noteHtml = '';
-  if (wf.status === 'rejected' && wf.rejectionReason) {
-    noteHtml = '<div class="sc-rejection-note">❌ <strong>Rejection reason:</strong> ' + wf.rejectionReason + '</div>';
-  } else if (wf.status === 'amendment' && wf.amendmentNote) {
-    noteHtml = '<div class="sc-amendment-note">✏️ <strong>Amendment required:</strong> ' + wf.amendmentNote + '</div>';
-  }
-
-  // Current step description
-  var curStep = steps[curIdx] || {};
-  var stepDesc = wf.status === 'complete' ? 'All steps completed successfully'
-    : wf.status === 'rejected' ? 'Request has been declined'
-    : curStep.desc || '—';
-
-  // Action buttons
-  var actionsHtml = '';
-  if (isAdmin) {
-    var canApprove = curStep.adminReview;
-    var canIssue   = wf.currentStep === 'payment_slip_issued';
-    if (canApprove) {
-      actionsHtml += '<button class="btn btn-sm" style="background:rgba(26,92,46,.1);border:1px solid rgba(26,92,46,.25);color:#15803d" onclick="showAdminActionModal(\'' + wf.id + '\',\'approve\')">\u2713 Approve</button>'
-        + '<button class="btn btn-sm" style="background:rgba(140,31,31,.08);border:1px solid rgba(140,31,31,.2);color:#b91c1c;margin-left:6px" onclick="showAdminActionModal(\'' + wf.id + '\',\'reject\')">\u2717 Reject</button>'
-        + '<button class="btn btn-sm btn-outline" style="margin-left:6px" onclick="showAmendmentModal(\'' + wf.id + '\')">\u270f\ufe0f Request Amendment</button>';
-    }
-    if (canIssue) {
-      actionsHtml += '<button class="btn btn-gold btn-sm" onclick="adminIssuePaymentSlip(\'' + wf.id + '\')">\ud83d\udcc4 Issue Payment Slip</button>';
-    }
-    if (wf.status === 'rejected' || wf.status === 'amendment') {
-      actionsHtml += '<button class="btn btn-sm btn-outline" onclick="showAdminActionModal(\'' + wf.id + '\',\'reopen\')">\u21a9 Re-open</button>';
-    }
-    if (wf.status === 'complete') {
-      actionsHtml += '<span style="font-size:.76rem;color:var(--green);font-weight:600">✅ Process complete</span>';
-    }
-  } else {
-    // Tenant actions
-    if (wf.currentStep === 'payment_submitted' && wf.status !== 'rejected') {
-      actionsHtml += '<button class="btn btn-gold btn-sm" onclick="openPaymentSubmitModal()">💳 Submit Payment Receipt</button>';
-    }
-    if (wf.currentStep === 'eform_sent' && wf.status !== 'rejected') {
-      actionsHtml += '<a href="https://enjanih-stack.github.io/crestville-portal/CRS_Tenancy_EForm_v3.html" target="_blank" class="btn btn-gold btn-sm">📝 Complete eForm</a>';
-    }
-    if (wf.status === 'rejected') {
-      actionsHtml += '<button class="btn btn-outline btn-sm" onclick="openRenewalModal()">↩ Submit New Request</button>';
-    }
-    if (wf.status === 'amendment') {
-      actionsHtml += '<button class="btn btn-gold btn-sm" onclick="openRenewalModal()">✏️ Resubmit with Amendments</button>';
-    }
-    if (wf.status === 'complete') {
-      actionsHtml += '<button class="btn btn-gold btn-sm" onclick="downloadApprovedEForm()">⬇ Download Approved eForm</button>';
-    }
-  }
-
-  return '<div class="status-card" data-filter="' + getFilterKey(wf) + '">'
-    + '<div class="sc-head">'
-      + '<div class="sc-left">'
-        + '<div class="sc-icon" style="background:rgba(201,150,12,.1)">' + typeInfo.icon + '</div>'
-        + '<div>'
-          + '<div class="sc-title">' + typeInfo.label + (isAdmin ? ' — ' + (wf.tenantName||wf.tenantEmail||'') : '') + '</div>'
-          + '<div class="sc-ref">' + (wf.unitLabel||wf.unitId||'') + (wf.id ? ' · ' + wf.id.split('_').pop() : '') + '</div>'
-        + '</div>'
-      + '</div>'
-      + '<span class="sc-status-pill ' + statusConf.pill + '">' + statusConf.icon + ' ' + statusConf.label + '</span>'
-    + '</div>'
-    + '<div class="sc-body">'
-      + '<div class="sc-meta">'
-        + '<div class="sc-meta-item">Submitted: <strong>' + createdStr + '</strong></div>'
-        + '<div class="sc-meta-item">Updated: <strong>' + updatedStr + '</strong></div>'
-        + '<div class="sc-meta-item">Current: <strong>' + (curStep.label || (wf.status==='complete'?'Complete':'—')) + '</strong></div>'
-        + (wf.guarantors && wf.guarantors.length ? '<div class="sc-meta-item">Guarantors: <strong>' + wf.guarantors.length + '</strong></div>' : '')
-      + '</div>'
-      + '<div style="font-size:.76rem;color:var(--dim);margin-bottom:8px">' + stepDesc + '</div>'
-      + '<div class="sc-timeline">' + timelineHtml + '</div>'
-      + noteHtml
-      + (actionsHtml ? '<div class="sc-actions">' + actionsHtml + '</div>' : '')
-    + '</div>'
-  + '</div>';
-}
-
-/* ── ADMIN: LOAD ALL STATUS CARDS ── */
-async function loadAllStatusCards() {
-  var container = document.getElementById('adminStatusList');
-  if (!container) return;
-  container.innerHTML = '<div class="status-empty"><div class="se-icon">⏳</div><div class="se-msg">Loading…</div></div>';
-
-  try {
-    var snap = await window._db.collection('workflows').orderBy('updatedAt','desc').limit(100).get();
-    _allWorkflows = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
-    renderAdminStatusCards(_adminFilter);
-  } catch(e) {
-    container.innerHTML = '<div class="status-empty"><div class="se-icon">⚠️</div><div class="se-msg">Could not load — check connection</div></div>';
-  }
-}
-
-function renderAdminStatusCards(filter) {
-  _adminFilter = filter;
-  var container = document.getElementById('adminStatusList');
-  if (!container) return;
-
-  var filtered = filter === 'all' ? _allWorkflows
-    : _allWorkflows.filter(function(wf){ return getFilterKey(wf) === filter; });
-
-  // Update badge counts
-  var counts = {all:_allWorkflows.length, pending:0, approved:0, rejected:0, amendment:0, complete:0};
-  _allWorkflows.forEach(function(wf){
-    var k = getFilterKey(wf);
-    if (counts[k] !== undefined) counts[k]++;
-    if (k === 'complete') counts.approved++;
+    mo.classList.add('on');
   });
-  Object.keys(counts).forEach(function(k){
-    var el = document.getElementById('sCount' + k.charAt(0).toUpperCase() + k.slice(1));
-    if (el) el.textContent = counts[k];
+}
+
+function launchEFormWithCodes(wfId) {
+  document.getElementById('tenantEFormModal')?.classList.remove('on');
+  getWorkflow(wfId).then(function(wf) {
+    if (!wf) return;
+    // Store codes for the eform to read
+    sessionStorage.setItem('crs_eform_codes', JSON.stringify({
+      wfId: wf.id, pck: wf.paymentKeyCode||'', kytRef: wf.approvalId||'',
+      tenantName: wf.tenantName||'', unitId: wf.unitId||'', unitLabel: wf.unitLabel||'',
+      commencementDate: wf.commencementDate||'', type: wf.type||'',
+    }));
+    var url = 'https://enjanih-stack.github.io/crestville-portal/CRS_Tenancy_EForm_v3.html?wfId=' + wfId;
+    window.open(url, '_blank');
+    notify('success', 'eForm Opened', 'Your key code is pre-loaded. Complete and submit the form.');
   });
-
-  if (!filtered.length) {
-    container.innerHTML = '<div class="status-empty"><div class="se-icon">📋</div><div class="se-msg">No ' + (filter === 'all' ? '' : filter + ' ') + 'applications</div></div>';
-    return;
-  }
-
-  container.innerHTML = filtered.map(function(wf){ return buildStatusCard(wf, true); }).join('');
 }
 
-function filterStatusCards(filter, btn) {
-  _adminFilter = filter;
-  document.querySelectorAll('#adminStatusList').forEach(function(){});
-  var tabs = document.querySelectorAll('.sec-card.admin-only .st-tab');
-  tabs.forEach(function(t){ t.classList.remove('on'); });
-  if (btn) btn.classList.add('on');
-  renderAdminStatusCards(filter);
+/* ── 7. Admin Field Toggle Page ── */
+function renderAdminFieldTogglePage() {
+  var container = document.getElementById('adminFieldToggles');
+  if (container) renderAdminFieldToggles();
 }
 
-/* ── TENANT: LOAD STATUS CARDS ── */
-async function loadTenantStatusCards() {
-  var container = document.getElementById('tenantStatusList');
-  if (!container || !currentUser) return;
-  container.innerHTML = '<div class="status-empty"><div class="se-icon">⏳</div><div class="se-msg">Loading…</div></div>';
+/* ── 8. Auto-vacate with email — enhanced ── */
+async function checkAndAutoVacate() {
+  if (!isAdmin) return;
+  var today = new Date(); today.setHours(0,0,0,0);
+  var threshold = new Date(today); threshold.setDate(threshold.getDate() + 60);
+  var vacated = 0;
+  for (var i = 0; i < rentLogs.length; i++) {
+    var r = rentLogs[i];
+    if (!r.expiry || r.vacancy === 'vacant') continue;
+    var exp = new Date(r.expiry); exp.setHours(0,0,0,0);
+    if (exp > threshold || exp < today) continue;
 
-  try {
-    var snap = await window._db.collection('workflows')
-      .where('tenantEmail','==', currentUser.email)
-      .orderBy('updatedAt','desc').get();
-    var workflows = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
-
-    if (!workflows.length) {
-      container.innerHTML = '<div class="status-empty"><div class="se-icon">📋</div><div class="se-msg">No applications or requests yet.<br>Use the buttons above to submit a renewal or KYT application.</div></div>';
-      return;
-    }
-    renderTenantStatusCards(workflows, 'all');
-    window._tenantWorkflows = workflows;
-  } catch(e) {
-    // Fallback: try without orderBy (no composite index needed)
+    // Check for active renewal workflow
+    var hasRenewal = false;
     try {
-      var snap2 = await window._db.collection('workflows').get();
-      var wfs = snap2.docs.map(function(d){ return Object.assign({id:d.id},d.data()); })
-        .filter(function(w){ return w.tenantEmail === currentUser.email; });
-      wfs.sort(function(a,b){ return (b.updatedAt||'') > (a.updatedAt||'') ? 1:-1; });
-      window._tenantWorkflows = wfs;
-      renderTenantStatusCards(wfs, 'all');
-    } catch(e2){
-      container.innerHTML = '<div class="status-empty"><div class="se-icon">⚠️</div><div class="se-msg">Could not load — check connection</div></div>';
-    }
-  }
-}
-
-function renderTenantStatusCards(workflows, filter) {
-  var container = document.getElementById('tenantStatusList');
-  if (!container) return;
-  var filtered = filter === 'all' ? workflows
-    : workflows.filter(function(wf){ return getFilterKey(wf) === filter; });
-  if (!filtered.length) {
-    container.innerHTML = '<div class="status-empty"><div class="se-icon">📋</div><div class="se-msg">No ' + filter + ' applications</div></div>';
-    return;
-  }
-  container.innerHTML = filtered.map(function(wf){ return buildStatusCard(wf, false); }).join('');
-}
-
-function filterTenantStatus(filter, btn) {
-  _tenantFilter = filter;
-  var tabs = document.querySelectorAll('.sec-card.tenant-only .st-tab');
-  tabs.forEach(function(t){ t.classList.remove('on'); });
-  if (btn) btn.classList.add('on');
-  renderTenantStatusCards(window._tenantWorkflows || [], filter);
-}
-
-/* ── AMENDMENT MODAL (admin) ── */
-function showAmendmentModal(wfId) {
-  var modal = document.getElementById('adminActionModal');
-  if (!modal) return;
-  document.getElementById('aaWfId').value   = wfId;
-  document.getElementById('aaAction').value = 'amendment';
-  document.getElementById('aaTitle').textContent       = '✏️ Request Amendment';
-  document.getElementById('aaNotesLabel').textContent  = 'What needs to be amended? *';
-  document.getElementById('aaNotes').value = '';
-  modal.classList.add('on');
-}
-
-/* ── HOOK INTO BOOT ── */
-var _origLoadAdminWorkflows = typeof loadAdminWorkflows === 'function' ? loadAdminWorkflows : null;
-window.loadAdminWorkflows = async function() {
-  if (_origLoadAdminWorkflows) await _origLoadAdminWorkflows();
-  if (typeof loadAllStatusCards === 'function') loadAllStatusCards();
-};
-
-/* ── EXTEND adminAdvanceWorkflow to handle amendment ── */
-var _origAdminAdvance = typeof adminAdvanceWorkflow === 'function' ? adminAdvanceWorkflow : null;
-window.adminAdvanceWorkflow = async function(wfId, action, notes) {
-  if (action === 'amendment') {
-    try {
-      var doc = await window._db.collection('workflows').doc(wfId).get();
-      if (!doc.exists) { toast('⚠ Workflow not found'); return; }
-      var wf = Object.assign({id:wfId}, doc.data());
-      wf.status = 'amendment';
-      wf.amendmentNote = notes;
-      wf.steps = (wf.steps||[]).concat([{id:wf.currentStep, completedAt:new Date().toISOString(), by:'admin', action:'amendment_requested', notes}]);
-      await saveWorkflow(wf);
-      // Notify tenant
-      if (wf.tenantEmail) {
-        await window._db.collection('mail').add({
-          to:[wf.tenantEmail],
-          message:{
-            subject:'[CRS] Amendment Required — ' + wf.unitLabel,
-            html:'<div style="font-family:Arial;max-width:600px;background:#0f0e0c;padding:20px">'
-              +'<div style="font-family:Georgia;font-size:18px;color:#c9960c">Amendment Required</div>'
-              +'<p style="color:#9a8a6a;font-size:14px;margin-top:14px">Dear '+wf.tenantName+',</p>'
-              +'<p style="color:#9a8a6a;font-size:14px;line-height:1.75">Your application for <strong style="color:#e8dfc8">'+wf.unitLabel+'</strong> requires the following amendment:</p>'
-              +'<div style="background:#1a1612;border-left:3px solid #3b82f6;padding:12px 16px;margin:14px 0;color:#93c5fd;font-size:14px">'+notes+'</div>'
-              +'<p style="color:#9a8a6a;font-size:13px">Please sign in to your tenant portal, review the note and resubmit.</p>'
-              +'<a href="https://enjanih-stack.github.io/crestville-portal/index.html" style="display:inline-block;margin-top:14px;background:#c9960c;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:700">Open Tenant Portal →</a>'
-              +'</div>'
-          }
-        }).catch(function(){});
-      }
-      toast('✏️ Amendment request sent to tenant');
-      await loadAllStatusCards();
-    } catch(e) { toast('✗ Error: ' + e.message); }
-    return;
-  }
-  if (_origAdminAdvance) await _origAdminAdvance(wfId, action, notes);
-  await loadAllStatusCards();
-}
-
-/* ── AUTO LOAD on boot ── */
-setTimeout(function() {
-  if (isAdmin) {
-    loadAllStatusCards();
-  } else if (currentUser) {
-    loadTenantStatusCards();
-  }
-}, 2500);
-
-
-function closePendingWfModal() {
-  var el = document.getElementById('pendingWfOverlay');
-  if (el) el.classList.remove('on');
-}
-
-/* ════════════════════════════════════════════════════════════
-   IDLE TIMEOUT SYSTEM — 2 min inactivity → 30s warning → sign out
-════════════════════════════════════════════════════════════ */
-var IDLE_TIMEOUT_MS  = 2 * 60 * 1000;  // 2 minutes inactivity
-var IDLE_WARNING_MS  = 30 * 1000;       // 30 second countdown warning
-var _idleTimer       = null;
-var _idleCountdown   = null;
-var _idleActive      = false;
-var _lastActivity    = Date.now();
-var SESSION_STATE_KEY = 'crs_session_state';
-
-/* ── SAVE SESSION STATE ── */
-function saveSessionState() {
-  if (!currentUser) return;
-  var state = {
-    page:       _pageHistory[_historyIndex] || 'pgDashboard',
-    history:    _pageHistory.slice(-10),    // last 10 pages
-    histIdx:    Math.min(_historyIndex, 9),
-    isAdmin:    isAdmin,
-    role:       isAdmin ? 'admin' : 'tenant',
-    unitId:     window._myRecord ? (window._myRecord.unitId||window._myRecord.unit) : null,
-    timestamp:  Date.now(),
-    userEmail:  currentUser.email
-  };
-  try {
-    localStorage.setItem(SESSION_STATE_KEY, JSON.stringify(state));
-  } catch(e) {}
-}
-
-/* ── RESTORE SESSION STATE ── */
-function restoreSessionState() {
-  try {
-    var raw = localStorage.getItem(SESSION_STATE_KEY);
-    if (!raw) return null;
-    var state = JSON.parse(raw);
-    // Only restore if saved within last 30 minutes and same user
-    if (!state || !state.timestamp) return null;
-    if (Date.now() - state.timestamp > 30 * 60 * 1000) {
-      localStorage.removeItem(SESSION_STATE_KEY);
-      return null;
-    }
-    if (currentUser && state.userEmail && state.userEmail !== currentUser.email) {
-      localStorage.removeItem(SESSION_STATE_KEY);
-      return null;
-    }
-    return state;
-  } catch(e) { return null; }
-}
-
-function applySessionState(state) {
-  if (!state || !state.page) return;
-  // Restore page history
-  if (state.history && state.history.length) {
-    _pageHistory   = state.history;
-    _historyIndex  = Math.min(state.histIdx || state.history.length-1, _pageHistory.length-1);
-  }
-  // Navigate to last page
-  var pgEl = document.getElementById(state.page);
-  if (pgEl) {
-    document.querySelectorAll('.pg').forEach(function(p){ p.classList.remove('on'); });
-    pgEl.classList.add('on');
-    _updateNavBtns();
-    // Trigger renders
-    if (state.page === 'pgProperties')  renderProperties();
-    if (state.page === 'pgRentManager') renderRentManager();
-    if (state.page === 'pgVacant')      renderVacant();
-  }
-  // Clean up
-  localStorage.removeItem(SESSION_STATE_KEY);
-  toast('✓ Welcome back — restored to where you left off', 3000);
-}
-
-/* ── START IDLE WATCHER ── */
-function startIdleTimer() {
-  _idleActive = true;
-  _lastActivity = Date.now();
-
-  // Activity events — reset timer on any interaction
-  var events = ['mousemove','mousedown','keypress','touchstart','scroll','click','keydown'];
-  events.forEach(function(ev) {
-    document.addEventListener(ev, onUserActivity, {passive:true});
-  });
-
-  scheduleIdleCheck();
-}
-
-function stopIdleTimer() {
-  _idleActive = false;
-  clearTimeout(_idleTimer);
-  clearInterval(_idleCountdown);
-  var events = ['mousemove','mousedown','keypress','touchstart','scroll','click','keydown'];
-  events.forEach(function(ev) {
-    document.removeEventListener(ev, onUserActivity);
-  });
-  var overlay = document.getElementById('idleOverlay');
-  if (overlay) overlay.classList.remove('on');
-}
-
-function onUserActivity() {
-  _lastActivity = Date.now();
-  // If warning is showing, hide it and reset
-  var overlay = document.getElementById('idleOverlay');
-  if (overlay && overlay.classList.contains('on')) {
-    resetIdleTimer();
-  }
-}
-
-function scheduleIdleCheck() {
-  clearTimeout(_idleTimer);
-  _idleTimer = setTimeout(function() {
-    if (!_idleActive) return;
-    var elapsed = Date.now() - _lastActivity;
-    if (elapsed >= IDLE_TIMEOUT_MS) {
-      showIdleWarning();
-    } else {
-      scheduleIdleCheck();
-    }
-  }, IDLE_TIMEOUT_MS - (Date.now() - _lastActivity) + 100);
-}
-
-function showIdleWarning() {
-  if (!_idleActive) return;
-  // Save session state before warning
-  saveSessionState();
-
-  var overlay = document.getElementById('idleOverlay');
-  var cdEl    = document.getElementById('idleCountdown');
-  if (!overlay || !cdEl) { idleSignOut(); return; }
-
-  overlay.classList.add('on');
-  var secs = Math.ceil(IDLE_WARNING_MS / 1000);
-  cdEl.textContent = secs;
-  cdEl.className   = 'idle-countdown';
-
-  clearInterval(_idleCountdown);
-  _idleCountdown = setInterval(function() {
-    secs--;
-    if (!cdEl) return;
-    cdEl.textContent = secs;
-    if (secs <= 10) cdEl.className = 'idle-countdown urgent';
-    if (secs <= 0) {
-      clearInterval(_idleCountdown);
-      idleSignOut();
-    }
-  }, 1000);
-}
-
-function resetIdleTimer() {
-  clearInterval(_idleCountdown);
-  var overlay = document.getElementById('idleOverlay');
-  if (overlay) overlay.classList.remove('on');
-  _lastActivity = Date.now();
-  scheduleIdleCheck();
-}
-
-function idleSignOut() {
-  stopIdleTimer();
-  sessionStorage.removeItem('crs_from_landing');
-  firebase.auth().signOut().then(function() {
-    window.location.replace((typeof BASE_URL !== 'undefined' ? BASE_URL : 'https://enjanih-stack.github.io/crestville-portal') + '/landing.html');
-  });
-}
-
-/* ── HOOK INTO _bootApp — start timer + restore state ── */
-/* ============================================================
-   NOTICES MANAGER (Admin)
-   ============================================================ */
-const NM_LS_KEY = 'crs_notices_v1';
-const NM_TYPES = {
-  info:  {label:'📢 Information', cls:'nb-info'},
-  urgent:{label:'🚨 Urgent',       cls:'nb-urgent'},
-  gold:  {label:'💰 Payment',      cls:'nb-gold'},
-  green: {label:'📋 Estate Rules', cls:'nb-green'},
-  purple:{label:'🔔 Announcement', cls:'nb-purple'},
-};
-function _nmGetNotices(){ try{ return JSON.parse(localStorage.getItem(NM_LS_KEY)||'[]'); }catch(e){ return []; } }
-function _nmSaveNotices(a){ localStorage.setItem(NM_LS_KEY, JSON.stringify(a)); }
-
-function nmOpenForm(editId) {
-  var form = document.getElementById('nmFormCard');
-  if(!form) return;
-  document.getElementById('nmFormTitle').textContent = editId ? 'Edit Notice' : 'New Notice';
-  document.getElementById('nmEditId').value = editId||'';
-  if(editId) {
-    var n = _nmGetNotices().find(function(x){ return x.id===editId; });
-    if(n){
-      document.getElementById('nmType').value    = n.type||'info';
-      document.getElementById('nmPinned').value  = n.pinned?'1':'';
-      document.getElementById('nmTitle').value   = n.title||'';
-      document.getElementById('nmBody').value    = n.body||'';
-      document.getElementById('nmDate').value    = n.date||'';
-      document.getElementById('nmExpiry').value  = n.expiry||'';
-    }
-  } else {
-    document.getElementById('nmType').value='info';
-    document.getElementById('nmPinned').value='';
-    document.getElementById('nmTitle').value='';
-    document.getElementById('nmBody').value='';
-    document.getElementById('nmDate').value=new Date().toISOString().slice(0,10);
-    document.getElementById('nmExpiry').value='';
-  }
-  nmPreviewBadge();
-  form.style.display='block';
-  form.scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-function nmCloseForm(){ var f=document.getElementById('nmFormCard'); if(f) f.style.display='none'; }
-function nmPreviewBadge(){
-  var type=document.getElementById('nmType')?.value||'info';
-  var el=document.getElementById('nmPreviewBadge'); if(!el) return;
-  var t=NM_TYPES[type]||NM_TYPES.info;
-  el.innerHTML='<span style="font-size:.68rem;color:var(--dim)">Preview:</span><span class="nc-badge '+t.cls+'" style="font-size:.7rem">'+t.label+'</span>';
-}
-function nmSaveNotice(){
-  var title=document.getElementById('nmTitle').value.trim();
-  var body=document.getElementById('nmBody').value.trim();
-  if(!title){ notify('error','Missing Title','Notice title is required.'); return; }
-  if(!body){ notify('error','Missing Body','Notice body cannot be empty.'); return; }
-  var editId=document.getElementById('nmEditId').value;
-  var type=document.getElementById('nmType').value;
-  var notice={
-    id: editId||'n_'+Date.now(), type, badgeClass:(NM_TYPES[type]||NM_TYPES.info).cls,
-    title, body,
-    date: document.getElementById('nmDate').value||new Date().toISOString().slice(0,10),
-    expiry: document.getElementById('nmExpiry').value||'',
-    pinned: document.getElementById('nmPinned').value==='1',
-    paused: false,
-    targets: [],
-    updatedAt: new Date().toISOString(),
-  };
-  var notices=_nmGetNotices();
-  var idx=notices.findIndex(function(x){ return x.id===notice.id; });
-  if(idx>=0) notices[idx]=notice; else notices.unshift(notice);
-  _nmSaveNotices(notices);
-  if(window._db) window._db.collection('notices').doc(notice.id).set(notice).catch(function(e){ console.warn(e); });
-  nmCloseForm(); nmRenderList();
-  notify('success', editId?'Notice Updated':'Notice Published', title);
-}
-function nmDeleteNotice(id){
-  var notices=_nmGetNotices();
-  var n=notices.find(function(x){ return x.id===id; });
-  if(!n||!confirm('Delete notice: "'+n.title+'"?')) return;
-  _nmSaveNotices(notices.filter(function(x){ return x.id!==id; }));
-  if(window._db) window._db.collection('notices').doc(id).delete().catch(function(){});
-  nmRenderList(); notify('success','Notice Deleted',n.title);
-}
-function nmPauseNotice(id){
-  var notices=_nmGetNotices();
-  var idx=notices.findIndex(function(x){ return x.id===id; });
-  if(idx<0) return;
-  notices[idx].paused=!notices[idx].paused;
-  notices[idx].updatedAt=new Date().toISOString();
-  _nmSaveNotices(notices);
-  if(window._db) window._db.collection('notices').doc(id).update({paused:notices[idx].paused}).catch(function(){});
-  nmRenderList();
-  notify('success', notices[idx].paused?'⏸ Notice Paused':'▶ Notice Resumed', notices[idx].title);
-}
-function nmRenderList(){
-  var container=document.getElementById('nmList');
-  var meta=document.getElementById('nmListMeta');
-  if(!container) return;
-  var today=new Date(); today.setHours(0,0,0,0);
-  var filter=document.getElementById('nmFilter')?.value||'';
-  var notices=_nmGetNotices().sort(function(a,b){
-    if(a.pinned&&!b.pinned) return -1; if(!a.pinned&&b.pinned) return 1;
-    return new Date(b.date||0)-new Date(a.date||0);
-  });
-  var isExp=function(n){ return n.expiry&&new Date(n.expiry)<today; };
-  var shown=notices;
-  if(filter==='active')  shown=notices.filter(function(n){ return !isExp(n)&&!n.paused; });
-  if(filter==='expired') shown=notices.filter(isExp);
-  if(filter==='pinned')  shown=notices.filter(function(n){ return n.pinned; });
-  if(filter==='paused')  shown=notices.filter(function(n){ return n.paused; });
-  var pending=notices.filter(function(n){ return !isExp(n)&&!n.paused; }).length;
-  if(meta) meta.textContent=shown.length+' notice(s) · '+pending+' active';
-  if(!shown.length){ container.innerHTML='<div style="text-align:center;padding:40px;color:var(--dim)">No notices match this filter.</div>'; return; }
-  var fmtDate=function(d){ try{ return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); }catch(e){ return d; } };
-  var nmTabStyle=function(type){
-    var base='flex:1;padding:9px 6px;font-size:.74rem;font-weight:600;border:none;cursor:pointer;font-family:\'DM Sans\',sans-serif;border-right:1px solid var(--rule);transition:background .15s;';
-    if(type==='edit')   return base+'background:var(--cream);color:var(--ink);';
-    if(type==='pause')  return base+'background:#fef9e7;color:#7a5c00;';
-    if(type==='play')   return base+'background:#f0fdf4;color:#15803d;';
-    if(type==='delete') return base+'background:#fff0f0;color:var(--red);border-right:none;';
-    return base;
-  };
-  container.innerHTML=shown.map(function(n){
-    var expired=isExp(n); var paused=!!n.paused;
-    var t=NM_TYPES[n.type]||NM_TYPES.info;
-    var tc=n.targets&&n.targets.length;
-    return '<div class="nm-card'+(expired?' nm-expired':'')+(paused?' nm-paused':'')+'" style="'+(paused?'opacity:.65;':'')+'background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:14px">'
-      +'<div class="nm-card-head" style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--cream);border-bottom:1px solid var(--rule);flex-wrap:wrap">'
-        +(n.pinned?'<span>📌</span>':'')
-        +'<span class="nc-badge '+t.cls+'">'+t.label+'</span>'
-        +'<span style="font-size:.84rem;font-weight:600;flex:1">'+n.title+'</span>'
-        +(paused?'<span style="font-size:.67rem;font-weight:700;padding:2px 9px;border-radius:20px;background:rgba(100,100,100,.1);color:#666;border:1px solid #ddd">⏸ Paused</span>':'')
-        +(expired?'<span style="font-size:.67rem;font-weight:700;padding:2px 9px;border-radius:20px;background:rgba(140,31,31,.1);color:var(--red)">Expired</span>':'')
-        +(tc?'<span style="font-size:.68rem;padding:2px 8px;border-radius:20px;background:rgba(201,150,12,.1);color:#7a5c00">👥 '+n.targets.length+' specific</span>':'<span style="font-size:.68rem;padding:2px 8px;border-radius:20px;background:rgba(201,150,12,.1);color:#7a5c00">🌐 All tenants</span>')
-      +'</div>'
-      +'<div style="padding:14px 16px;font-size:.82rem;color:#4a4440;line-height:1.7">'+( n.body||'')+'</div>'
-      +'<div style="padding:0;border-top:1px solid var(--rule)">'
-        +'<div style="padding:8px 16px;font-size:.7rem;color:var(--dim)">Published: '+(n.date?fmtDate(n.date):'--')+(n.expiry?' · Expires: '+fmtDate(n.expiry):' · No expiry')+'</div>'
-        +'<div style="display:flex;border-top:1px solid var(--rule)">'
-          +'<button onclick="nmOpenForm(\''+n.id+'\')" style="'+nmTabStyle('edit')+'">✏️ Edit</button>'
-          +'<button onclick="nmPauseNotice(\''+n.id+'\')" style="'+nmTabStyle(paused?'play':'pause')+'">'+(paused?'▶ Resume':'⏸ Pause')+'</button>'
-          +'<button onclick="nmDeleteNotice(\''+n.id+'\')" style="'+nmTabStyle('delete')+'">🗑 Delete</button>'
-        +'</div>'
-      +'</div>'
-    +'</div>';
-  }).join('');
-}
-
-/* ============================================================
-   MODIFICATION REQUESTS (Admin + Tenant)
-   ============================================================ */
-const MR_LS_KEY='crs_mod_requests';
-function _mrGet(){ try{ return JSON.parse(localStorage.getItem(MR_LS_KEY)||'[]'); }catch(e){ return []; } }
-function _mrSave(a){ localStorage.setItem(MR_LS_KEY, JSON.stringify(a)); }
-
-function mrUpdateAdminBadge(){
-  var pending=_mrGet().filter(function(r){ return r.status==='pending'; }).length;
-  var badge=document.getElementById('modReqBadge');
-  if(badge){ badge.textContent=pending; badge.style.display=pending>0?'':'none'; }
-}
-
-async function mrAdminRender(){
-  var container=document.getElementById('mrAdminList');
-  var count=document.getElementById('mrAdminCount');
-  if(!container) return;
-  container.innerHTML='<div style="padding:20px;text-align:center;color:var(--dim)">Loading...</div>';
-  var requests=_mrGet();
-  try{
-    if(window._db){
-      var snap=await window._db.collection('modRequests').get();
-      var lsIds=new Set(requests.map(function(r){ return r.id; }));
-      snap.docs.forEach(function(d){ var data=d.data(); if(!lsIds.has(data.id)) requests.push(data); });
-    }
-  }catch(e){}
-  requests.sort(function(a,b){ return new Date(b.submittedAt||0)-new Date(a.submittedAt||0); });
-  var filter=document.getElementById('mrAdminFilter')?.value||'';
-  var shown=filter?requests.filter(function(r){ return r.status===filter; }):requests;
-  var pending=requests.filter(function(r){ return r.status==='pending'; }).length;
-  if(count) count.textContent=shown.length+' request(s) · '+pending+' pending';
-  if(!shown.length){ container.innerHTML='<div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem">📋</div><div>No requests found.</div></div>'; return; }
-  var fmtDate=function(d){ try{ return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); }catch(e){ return d||''; } };
-  var stCls={pending:'background:#fef9e7;color:#7a5c00',approved:'background:#f0fdf4;color:#15803d',rejected:'background:#fff0f0;color:var(--red)'};
-  container.innerHTML=shown.map(function(r){
-    var isPending=r.status==='pending';
-    var fields=Object.entries(r.changes||{}).map(function(entry){
-      var k=entry[0],newVal=entry[1];
-      var label=(r.labels&&r.labels[k])||k;
-      var rec=rentLogs.find(function(e){ return e.id===r.recordId||(e.tenantEmail||'').toLowerCase()===r.tenantEmail; });
-      var cur=rec?(rec[k]||''):'';
-      return '<div style="display:grid;grid-template-columns:130px 1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--rule);font-size:.8rem">'
-        +'<span style="font-weight:700;color:var(--dim);text-transform:uppercase;font-size:.68rem">'+label+'</span>'
-        +'<span style="color:var(--dim);text-decoration:line-through">'+(cur||'—')+'</span>'
-        +'<span style="color:var(--green);font-weight:600">→ '+newVal+'</span>'
-        +'</div>';
-    }).join('');
-    return '<div style="background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:12px">'
-      +'<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--cream);border-bottom:1px solid var(--rule);flex-wrap:wrap">'
-        +'<span style="font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid currentcolor;'+stCls[r.status||'pending']+'">'+( r.status||'pending')+'</span>'
-        +'<span style="font-weight:700;font-size:.84rem">'+(r.tenantName||r.tenantEmail)+'</span>'
-        +'<span style="font-size:.74rem;color:var(--dim)">· '+(r.unit||r.unitId||'')+'</span>'
-        +'<span style="font-size:.72rem;color:var(--dim);margin-left:auto">'+fmtDate(r.submittedAt)+'</span>'
-      +'</div>'
-      +'<div style="padding:12px 16px">'
-        +'<div style="display:grid;grid-template-columns:130px 1fr 1fr;gap:8px;padding:4px 0 6px;border-bottom:2px solid var(--rule);font-size:.68rem;font-weight:700;color:var(--dim);text-transform:uppercase"><span>Field</span><span>Current</span><span>Requested</span></div>'
-        +fields
-        +(r.reason?'<div style="margin-top:10px;font-size:.78rem;color:var(--dim)">📝 '+r.reason+'</div>':'')
-        +(r.adminNote?'<div style="margin-top:6px;font-size:.78rem;color:#15803d">✅ Admin: '+r.adminNote+'</div>':'')
-      +'</div>'
-      +(isPending?'<div style="display:flex;border-top:1px solid var(--rule)">'
-        +'<button onclick="mrAdminApprove(\''+r.id+'\')" style="flex:1;padding:10px;background:#f0fdf4;color:#15803d;border:none;font-size:.78rem;font-weight:700;cursor:pointer;border-right:1px solid var(--rule)">✅ Approve &amp; Apply</button>'
-        +'<button onclick="mrAdminReject(\''+r.id+'\')" style="flex:1;padding:10px;background:#fff0f0;color:var(--red);border:none;font-size:.78rem;font-weight:700;cursor:pointer">❌ Reject</button>'
-        +'</div>':'')
-    +'</div>';
-  }).join('');
-}
-
-async function mrAdminApprove(id){
-  var requests=_mrGet(); var idx=requests.findIndex(function(r){ return r.id===id; });
-  var req=requests[idx]; if(!req) return;
-  var adminNote=prompt('Optional admin note (leave blank to skip):')||'';
-  var recIdx=rentLogs.findIndex(function(e){ return e.id===req.recordId||(e.tenantEmail||'').toLowerCase()===req.tenantEmail; });
-  if(recIdx>=0){
-    Object.entries(req.changes||{}).forEach(function(entry){ rentLogs[recIdx][entry[0]]=entry[1]; });
-    rentLogs[recIdx].updatedAt=new Date().toISOString();
-    try{ localStorage.setItem('rentData_CRS_v3',JSON.stringify(rentLogs)); }catch(e){}
-    if(typeof renderRentManager==='function') renderRentManager();
-    notify('success','Changes Applied',Object.values(req.labels||{}).join(', '));
-    if(window._db&&rentLogs[recIdx].id) window._db.collection('rentRecords').doc(rentLogs[recIdx].id).set(rentLogs[recIdx],{merge:true}).catch(function(){});
-  }
-  if(idx>=0){ requests[idx].status='approved'; requests[idx].adminNote=adminNote; requests[idx].resolvedAt=new Date().toISOString(); _mrSave(requests); }
-  if(window._db) window._db.collection('modRequests').doc(id).update({status:'approved',adminNote,resolvedAt:new Date().toISOString()}).catch(function(){});
-  mrAdminRender(); mrUpdateAdminBadge();
-}
-
-function mrAdminReject(id){
-  var adminNote=prompt('Reason for rejection:')||'Request rejected by admin.';
-  var requests=_mrGet(); var idx=requests.findIndex(function(r){ return r.id===id; });
-  if(idx>=0){ requests[idx].status='rejected'; requests[idx].adminNote=adminNote; requests[idx].resolvedAt=new Date().toISOString(); _mrSave(requests); }
-  if(window._db) window._db.collection('modRequests').doc(id).update({status:'rejected',adminNote,resolvedAt:new Date().toISOString()}).catch(function(){});
-  mrAdminRender(); mrUpdateAdminBadge();
-  notify('success','Request Rejected','Tenant will see the rejection note.');
-}
-
-/* Pre-warm localStorage with all seed records that have emails.
-   Deduplicates by unitId — never creates double entries. */
-function _prewarmTenantCache() {
-  if (!window._seedData) return;
-
-  // Step 1: Build a map of existing rentLogs by unitId
-  const byUnit = new Map();
-  rentLogs.forEach(function(r) {
-    const key = (r.unitId || r.unit || '').trim().toLowerCase();
-    if (key) byUnit.set(key, r);
-  });
-
-  let changed = false;
-  window._seedData.forEach(function(seedRec) {
-    if (!seedRec.unitId) return;
-    const key = seedRec.unitId.trim().toLowerCase();
-    const existing = byUnit.get(key);
-
-    if (existing) {
-      // Patch missing fields only — never overwrite admin edits
-      var patched = false;
-      ['tenantEmail','tenant','contractName','tenantPhone','amount','newRent',
-       'start','expiry','lastPayment','location','city','type','id'].forEach(function(f) {
-        if (!existing[f] && seedRec[f]) { existing[f] = seedRec[f]; patched = true; }
+      var snap = await window._db.collection('workflows')
+        .where('unitId','==',r.unitId||r.unit||'')
+        .where('type','==','renewal').get();
+      snap.docs.forEach(function(d) {
+        var wd = d.data();
+        if (wd.status !== 'rejected' && wd.status !== 'complete') hasRenewal = true;
       });
-      if (patched) changed = true;
-    } else if (seedRec.tenantEmail) {
-      // Only add seed records that have emails (others not needed for tenant lookup)
-      rentLogs.push(seedRec);
-      byUnit.set(key, seedRec);
-      changed = true;
+    } catch(e) {
+      var lws = JSON.parse(localStorage.getItem('crs_workflows')||'[]');
+      hasRenewal = lws.some(function(w) {
+        return (w.unitId||'') === (r.unitId||'') && w.type==='renewal'
+          && w.status!=='rejected' && w.status!=='complete';
+      });
     }
-  });
 
-  // Step 2: Final dedup pass — remove any remaining duplicate unitIds
-  const seen = new Map();
-  const deduped = [];
-  rentLogs.forEach(function(r) {
-    const key = (r.unitId || r.unit || '').trim().toLowerCase();
-    if (!key) { deduped.push(r); return; }
-    if (!seen.has(key)) {
-      seen.set(key, r);
-      deduped.push(r);
-    } else {
-      // Keep the one with more data
-      const prev = seen.get(key);
-      const score = function(x){ return (x.tenantEmail?2:0)+(x.expiry?2:0)+(x.amount?1:0)+(x.tenant?1:0); };
-      if (score(r) > score(prev)) {
-        const idx = deduped.indexOf(prev);
-        if (idx >= 0) deduped[idx] = r;
-        seen.set(key, r);
-        changed = true;
-      } else {
-        changed = true; // mark changed so we save the cleaned version
+    if (!hasRenewal) {
+      var daysLeft = Math.round((exp - today) / 864e5);
+      // Auto-mark as vacant in 7 days or less
+      if (daysLeft <= 7 && !r._autoVacated) {
+        rentLogs[i].vacancy = 'vacant';
+        rentLogs[i]._autoVacated = true;
+        rentLogs[i].updatedAt = new Date().toISOString();
+        vacated++;
+        if (window._db && r.id)
+          window._db.collection('rentRecords').doc(r.id)
+            .update({ vacancy:'vacant', _autoVacated:true, updatedAt:rentLogs[i].updatedAt })
+            .catch(function(){});
+      }
+      // Send email notice if not already sent
+      if (!r._vacancyNoticeSent && r.tenantEmail) {
+        rentLogs[i]._vacancyNoticeSent = true;
+        var html = _wfEmailTemplate('⚠️ Tenancy Expiry — Action Required',
+          'Dear ' + (r.tenant||'Tenant') + ','
+          + '<p>Your tenancy for <strong>' + (r.unit||r.unitId) + '</strong> expires in <strong>'
+          + daysLeft + ' day' + (daysLeft!==1?'s':'') + '</strong> on <strong>'
+          + (r.expiry||'') + '</strong>.</p>'
+          + '<p>We have not found any active renewal application in our records. '
+          + 'If you wish to continue your tenancy, please start the renewal process immediately.</p>'
+          + '<div style="background:#1a1612;border:1px solid rgba(201,150,12,.3);border-radius:8px;padding:14px;margin:14px 0">'
+          + '<p style="color:#c9960c;font-weight:700;margin:0">⏰ ' + daysLeft + ' days remaining</p>'
+          + '<p style="color:#9a8a6a;font-size:13px;margin-top:6px">Without a renewal, your unit will be listed as available for new tenants.</p>'
+          + '</div>'
+          + '<p>Log in to the portal to begin your renewal.</p>'
+          + _wfPortalBtn());
+        sendCRSEmail(r.tenantEmail, '[Crestville] ⚠️ Tenancy Expiry Notice — ' + (r.unit||r.unitId), html)
+          .catch(function(){});
+        if (window._db && r.id)
+          window._db.collection('rentRecords').doc(r.id)
+            .update({ _vacancyNoticeSent:true }).catch(function(){});
       }
     }
-  });
-
-  if (deduped.length !== rentLogs.length || changed) {
-    rentLogs.length = 0;
-    deduped.forEach(function(r){ rentLogs.push(r); });
+  }
+  if (vacated > 0) {
     try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {}
-    console.log('_prewarmTenantCache: rentLogs cleaned to', rentLogs.length, 'records');
+    if (typeof renderAll === 'function') renderAll();
+    if (typeof renderProperties === 'function') renderProperties();
+    logActivity('System', 'admin', 'edit', 'Auto-vacated ' + vacated + ' unit(s)', '60-day expiry trigger');
+    notify('warning', vacated + ' Unit(s) Auto-Vacated', 'Tenants notified by email.');
   }
 }
 
-/* Admin: Push ALL rentLogs records to Firestore so tenants can access their portals */
-async function adminSyncTenantsToFirestore() {
-  if (!window._db) { notify('error','Firestore Not Ready','Connect to the internet and try again.'); return; }
+/* ── 9. Old tenant previous contract upload ── */
+function renderPrevContractUpload() {
+  var container = document.getElementById('prevContractUploadArea');
+  if (!container || !window._myRecord) return;
+  var rec = window._myRecord;
+  container.innerHTML = '<div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:14px">'
+    + '<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin-bottom:10px">📎 Previous Tenancy Contract</div>'
+    + '<div style="font-size:.78rem;color:var(--dim);margin-bottom:10px">Upload your previous signed agreement for record-keeping and faster renewal processing. Max 100KB.</div>'
+    + (rec._prevContract ? '<div style="font-size:.78rem;color:#15803d;margin-bottom:8px">✅ Contract on file: uploaded ' + (rec._prevContractDate||'') + '</div>' : '')
+    + '<input type="file" id="prevContractFile" accept=".pdf,.jpg,.jpeg,.png" onchange="checkFileSize(this,100)" style="font-size:.8rem"/>'
+    + '<button class="btn btn-outline btn-sm" onclick="savePrevContract()" style="margin-top:8px;font-size:.76rem">Upload Contract</button>'
+    + '</div>';
+}
 
-  const toSync = rentLogs.filter(function(r){ return r.tenantEmail && r.unitId; });
-  if (!toSync.length) { notify('warning','No Records','No records with email addresses found.'); return; }
+async function savePrevContract() {
+  var input = document.getElementById('prevContractFile');
+  if (!input || !input.files || !input.files[0]) { notify('error', 'No File', 'Select a file first.'); return; }
+  var file = input.files[0];
+  if (file.size > 102400) { notify('error', 'Too Large', 'File must be under 100KB.'); return; }
+  var reader = new FileReader();
+  reader.onload = async function(e) {
+    var rec = window._myRecord; if (!rec) return;
+    var ri = rentLogs.findIndex(function(r){ return (r.unitId||r.unit||'') === (rec.unitId||rec.unit||''); });
+    if (ri < 0) return;
+    rentLogs[ri]._prevContract = e.target.result.slice(0, 200) + '…'; // store indicator, not full data
+    rentLogs[ri]._prevContractDate = new Date().toLocaleDateString('en-NG');
+    try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(ex) {}
+    notify('success', 'Contract Uploaded', 'Saved to your tenancy record.');
+    renderPrevContractUpload();
+  };
+  reader.readAsDataURL(file);
+}
 
-  notify('info', 'Syncing...', 'Pushing ' + toSync.length + ' tenant records to cloud.');
-
-  try {
-    const batch = window._db.batch();
-    let count = 0;
-    toSync.forEach(function(r) {
-      if (!r.id || count >= 499) return;
-      batch.set(window._db.collection('rentRecords').doc(r.id), r, { merge: true });
-      count++;
-    });
-
-    // Also sync any seed records not in rentLogs
-    if (window._seedData) {
-      const syncedIds = new Set(toSync.map(function(r){ return r.id; }));
-      window._seedData.forEach(function(r) {
-        if (r.tenantEmail && r.id && !syncedIds.has(r.id) && count < 499) {
-          batch.set(window._db.collection('rentRecords').doc(r.id), r, { merge: true });
-          count++;
-        }
-      });
+/* ── 10. Admin eForm Document Viewer — enhanced ── */
+function openEFormDocViewer(wfId) {
+  getWorkflow(wfId).then(function(wf) {
+    if (!wf) return;
+    var mo = document.getElementById('docViewerModal');
+    if (!mo) {
+      var d = document.createElement('div');
+      d.className = 'modal-overlay'; d.id = 'docViewerModal';
+      d.innerHTML = '<div class="modal" style="max-width:700px;max-height:90vh;overflow-y:auto">'
+        + '<div class="modal-head"><h3>📄 Application Document Viewer</h3>'
+        + '<button class="modal-close" onclick="document.getElementById(\'docViewerModal\').classList.remove(\'on\')">✕</button></div>'
+        + '<div class="modal-body" id="docViewerBody"></div></div>';
+      document.body.appendChild(d); mo = d;
     }
+    var body = document.getElementById('docViewerBody');
+    var kyt  = wf.kytData || wf.renewalData || {};
+    var fmtD = function(d) { try { return new Date(d).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); } catch(e) { return d||'—'; } };
+    var row  = function(l, v) { return '<div class="tp-row"><div class="tp-label">' + l + '</div><div class="tp-value">' + (v||'—') + '</div></div>'; };
 
-    await batch.commit();
-    notify('success', '✅ Tenants Linked!',
-      count + ' records synced to Firestore.',
-      [
-        'Tenants can now see their property portal',
-        'They must log in with their registered email',
-        'Emails must match exactly what is in the records',
-      ]
-    );
-  } catch(e) {
-    notify('error', 'Sync Failed', e.message);
-    console.error('adminSyncTenantsToFirestore:', e);
-  }
+    body.innerHTML = '<div class="tp-section"><div class="tp-section-title">Application Overview</div>'
+      + row('Type', wf.type === 'new_tenant' ? '🏠 New Tenant' : '🔄 Renewal')
+      + row('Tenant', wf.tenantName||'—')
+      + row('Email', wf.tenantEmail||'—')
+      + row('Unit', wf.unitLabel||'—')
+      + row('Submitted', fmtD(wf.submittedAt))
+      + row('KYT Ref', wf.approvalId||'—')
+      + row('Status', wf.status||'—')
+      + row('Current Step', wf.currentStep||'—')
+      + '</div>'
+      + (Object.keys(kyt).length ? '<div class="tp-section"><div class="tp-section-title">KYT / Application Data</div>'
+        + Object.entries(kyt).filter(function(e){ return typeof e[1]==='string'&&e[1]; })
+          .map(function(e){ return row(e[0].replace(/([A-Z])/g,' $1'), e[1]); }).join('')
+        + '</div>' : '')
+      + (wf.paymentSlip ? '<div class="tp-section"><div class="tp-section-title">Payment Advice</div>'
+        + row('PAD ID', wf.paymentSlip.padId||'—')
+        + row('Total Fee', wf.paymentSlip.totalFee ? '₦'+Number(wf.paymentSlip.totalFee).toLocaleString() : '—')
+        + row('Bank', wf.paymentSlip.bankName||'—')
+        + row('Account', wf.paymentSlip.accountNo||'—')
+        + row('Expires', fmtD(wf.paymentSlip.expiresAt))
+        + '</div>' : '')
+      + (wf.paymentData ? '<div class="tp-section"><div class="tp-section-title">Payment Submission</div>'
+        + row('PAD Claimed', wf.paymentData.padId||'—')
+        + row('Amount Paid', wf.paymentData.amountPaid ? '₦'+Number(wf.paymentData.amountPaid).toLocaleString() : '—')
+        + row('Bank', wf.paymentData.bank||'—')
+        + row('Payment Date', fmtD(wf.paymentData.paymentDate))
+        + row('Ref / Teller', wf.paymentData.ref||'—')
+        + '</div>' : '')
+      + (wf.paymentKeyCode ? '<div class="tp-section"><div class="tp-section-title">Approval Codes</div>'
+        + row('Payment Key Code (PCK)', '<span style="color:var(--gold);font-weight:700;font-size:1rem">' + wf.paymentKeyCode + '</span>')
+        + row('Commencement Date', fmtD(wf.commencementDate))
+        + '</div>' : '')
+      + (wf.guarantors && wf.guarantors.length ? '<div class="tp-section"><div class="tp-section-title">Guarantors / Referees</div>'
+        + wf.guarantors.map(function(g){ return row(g.role||'Guarantor', g.name + ' &lt;' + g.email + '&gt; — ' + ((wf.guarantorStatus&&wf.guarantorStatus[g.email])||'pending')); }).join('')
+        + '</div>' : '')
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">'
+      + '<a href="https://enjanih-stack.github.io/crestville-portal/CRS_Tenancy_EForm_v3.html?wfId=' + wf.id + '&view=1" target="_blank" class="btn btn-outline" style="font-size:.78rem">📄 View Full eForm</a>'
+      + '<button class="btn btn-outline" onclick="resendGuarantorEmails(\'' + wf.id + '\')" style="font-size:.78rem">📧 Resend Consent Emails</button>'
+      + '<button class="btn btn-outline" onclick="document.getElementById(\'docViewerModal\').classList.remove(\'on\')" style="font-size:.78rem">Close</button>'
+      + '</div>';
+    mo.classList.add('on');
+  });
 }
 
-/* Push seed data to Firestore so all tenants can access their records */
-async function _pushSeedToFirestore() {
-  if (!window._db || !window._seedData) return;
-  // Only push records that have a tenant email (so tenants can be linked)
-  const toSync = window._seedData.filter(function(r){ return r.tenantEmail; });
-  if (!toSync.length) return;
+async function resendGuarantorEmails(wfId) {
+  var wf = await getWorkflow(wfId);
+  if (!wf || !wf.guarantors || !wf.guarantors.length) {
+    notify('warning', 'No Guarantors', 'No guarantors on record for this application.');
+    return;
+  }
+  await sendGuarantorConsentEmails(wf, wf.guarantors);
+}
 
-  try {
-    // Check if Firestore already has data
-    const snap = await window._db.collection('rentRecords').limit(1).get();
-    const hasData = !snap.empty;
+/* ── 11. Nav: New Application page ── */
+function _addNewAppPage() {
+  if (document.getElementById('pgNewApplication')) return;
+  var pg = document.createElement('div');
+  pg.className = 'pg'; pg.id = 'pgNewApplication';
+  pg.innerHTML = '<div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()">&#8592;</button><button class="pnb-btn" onclick="historyFwd()">&#8594;</button><div class="pnb-crumb"></div></div>'
+    + '<div class="page-header"><div><h1>New Tenancy Application</h1><div class="ph-sub">Know Your Tenant (KYT) Questionnaire</div></div></div>'
+    + '<div class="page-body"><div id="kytFormArea"><div style="text-align:center;padding:30px;color:var(--dim)">Loading form...</div></div></div>';
+  // Insert before closing content-area
+  var ca = document.querySelector('.content-area');
+  if (ca) ca.appendChild(pg);
+}
 
-    const batch = window._db.batch();
-    let count = 0;
-    toSync.forEach(function(r) {
-      if (!r.id || count >= 499) return;
-      // Only write if it doesn't already exist (preserve admin edits)
-      const ref = window._db.collection('rentRecords').doc(r.id);
-      if (!hasData) {
-        // Fresh Firestore — write everything
-        batch.set(ref, r);
-        count++;
-      } else {
-        // Firestore has data — only merge (don't overwrite)
-        batch.set(ref, r, { merge: true });
-        count++;
-      }
-    });
+function _addRenewalAppPage() {
+  if (document.getElementById('pgRenewalApplication')) return;
+  var pg = document.createElement('div');
+  pg.className = 'pg'; pg.id = 'pgRenewalApplication';
+  pg.innerHTML = '<div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()">&#8592;</button><button class="pnb-btn" onclick="historyFwd()">&#8594;</button><div class="pnb-crumb"></div></div>'
+    + '<div class="page-header"><div><h1>Renewal Application</h1><div class="ph-sub">Submit your tenancy renewal request</div></div></div>'
+    + '<div class="page-body"><div id="renewalFormArea"><div style="text-align:center;padding:30px;color:var(--dim)">Loading form...</div></div></div>';
+  var ca = document.querySelector('.content-area');
+  if (ca) ca.appendChild(pg);
+}
 
-    if (count > 0) {
-      await batch.commit();
-      console.log('_pushSeedToFirestore: synced', count, 'records');
+function _addAdminFieldTogglePage() {
+  if (document.getElementById('pgFieldToggles')) return;
+  var pg = document.createElement('div');
+  pg.className = 'pg admin-only'; pg.id = 'pgFieldToggles';
+  pg.innerHTML = '<div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()">&#8592;</button><button class="pnb-btn" onclick="historyFwd()">&#8594;</button><div class="pnb-crumb"></div></div>'
+    + '<div class="page-header"><div><h1>Form Field Settings</h1><div class="ph-sub">Toggle required/optional fields for each application form</div></div>'
+    + '<button class="btn btn-outline" onclick="renderAdminFieldToggles()" style="font-size:.78rem">🔄 Refresh</button></div>'
+    + '<div class="page-body"><div id="adminFieldToggles"></div></div>';
+  var ca = document.querySelector('.content-area');
+  if (ca) ca.appendChild(pg);
+}
+
+// Initialise dynamic pages after DOM ready
+(function() {
+  var _init = function() {
+    _addNewAppPage();
+    _addRenewalAppPage();
+    _addAdminFieldTogglePage();
+    // Register new pages in page map
+    if (window._pageMap) {
+      window._pageMap['pgNewApplication']    = 'navMyApplications';
+      window._pageMap['pgRenewalApplication']= 'navRenew';
+      window._pageMap['pgFieldToggles']      = 'navFieldToggles';
     }
-  } catch(e) {
-    console.warn('_pushSeedToFirestore failed:', e.message);
-  }
-}
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _init);
+  else _init();
+})();
 
-var _origBootApp = typeof _bootApp === 'function' ? _bootApp : null;
+/* ── 12. Wire showPage for new pages ── */
+(function() {
+  var _origShowPage = typeof showPage === 'function' ? showPage : null;
+  if (!_origShowPage) return;
+  window.showPage = function(pgId, btn) {
+    _origShowPage(pgId, btn);
+    if (pgId === 'pgNewApplication')     { _addNewAppPage(); setTimeout(renderKYTForm, 50); }
+    if (pgId === 'pgRenewalApplication') { _addRenewalAppPage(); setTimeout(renderRenewalForm, 50); }
+    if (pgId === 'pgFieldToggles')       { _addAdminFieldTogglePage(); setTimeout(renderAdminFieldToggles, 50); }
+  };
+})();
 
 </script>
 
