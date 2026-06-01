@@ -1326,6 +1326,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
         <span class="ni-icon">📋</span> Notices
         <span class="nav-badge green" id="noticesBadge" style="display:none">!</span>
       </button>
+      <button class="nav-item" onclick="showPage('pgProperties',this);renderProperties();" id="navPropsTenant">
+        <span class="ni-icon">🏘️</span> Properties
+      </button>
 
       <!-- FORMS -->
       <div class="nav-section">E-Forms</div>
@@ -1827,13 +1830,16 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       <!-- ── PROPERTIES ── -->
         <div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()" title="Go back">&#8592;</button><button class="pnb-btn" onclick="historyFwd()" title="Go forward">&#8594;</button><div class="pnb-crumb" id="navCrumb"></div></div>
         <div class="page-header">
-          <div><h1>Properties</h1><div class="ph-sub">Master property list · Tenant documents · Mass import</div></div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div id="propPageTitle">
+            <h1>Properties</h1>
+            <div class="ph-sub" id="propPageSub">Master property list · Tenant documents · Mass import</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="propAdminButtons">
             <button class="btn btn-gold" onclick="showPropTab('tabUnits',this)">🗂️ All Units</button>
             <button class="btn btn-outline" onclick="showPropTab('tabAmenities',this)">🏷️ Amenities</button>
-            <button class="btn btn-outline" onclick="showPropTab('tabImport',this)">⬆ Import CSV</button>
-            <button class="btn btn-outline" onclick="downloadCSVTemplate()">⬇ CSV Template</button>
-            <button class="btn btn-outline" onclick="exportAllCSV()" style="background:rgba(26,92,46,.08);border-color:rgba(26,92,46,.3);color:var(--green)">⬇ Export CSV</button>
+            <button class="btn btn-outline admin-only" onclick="showPropTab('tabImport',this)">⬆ Import CSV</button>
+            <button class="btn btn-outline admin-only" onclick="downloadCSVTemplate()">⬇ CSV Template</button>
+            <button class="btn btn-outline admin-only" onclick="exportAllCSV()" style="background:rgba(26,92,46,.08);border-color:rgba(26,92,46,.3);color:var(--green)">⬇ Export CSV</button>
           </div>
         </div>
         <div class="page-body">
@@ -1841,12 +1847,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
           <!-- TAB: ALL UNITS -->
           <div class="prop-sub-page on" id="tabUnits">
             <div class="search-row">
-              <input class="search-input" placeholder="🔍 Search property, tenant…" id="propSearch" oninput="renderProperties()"/>
+              <input class="search-input" placeholder="🔍 Search property…" id="propSearch" oninput="renderProperties()"/>
               <select class="filter-select" id="propCityFilter" onchange="renderProperties()">
                 <option value="">All Cities</option>
                 <option>Ojodu</option><option>Ibadan</option><option>Enugu</option>
               </select>
-              <select class="filter-select" id="propStatusFilter" onchange="renderProperties()">
+              <select class="filter-select admin-only" id="propStatusFilter" onchange="renderProperties()">
                 <option value="">All Status</option>
                 <option value="occupied">Occupied</option>
                 <option value="vacant">Vacant</option>
@@ -2679,6 +2685,18 @@ async function _bootApp(user, userData, adminMode) {
   _logSession(user.email, adminMode ? 'admin' : 'tenant', 'login');
   logActivity(user.email, adminMode ? 'admin' : 'tenant', 'login',
     'Signed in', adminMode ? 'Admin login' : 'Tenant login');
+
+  // ── Update Properties page title based on role ──
+  var propSub = document.getElementById('propPageSub');
+  if (propSub) {
+    propSub.textContent = adminMode
+      ? 'Master property list · Tenant documents · Mass import'
+      : 'Your unit and available properties';
+  }
+  var propTitle = document.getElementById('propPageTitle');
+  if (propTitle) {
+    propTitle.querySelector('h1').textContent = adminMode ? 'Properties' : 'My Property & Available Units';
+  }
 
   // Pull cloud data in background — does NOT block the UI
   pullFromCloud(true).catch(e => console.warn('pullFromCloud:', e));
@@ -4306,13 +4324,29 @@ function renderProperties() {
   const status = document.getElementById('propStatusFilter')?.value||'';
   const occupiedIds = new Set(rentLogs.filter(e => e.vacancy !== 'vacant').map(e => e.unitId));
 
+  // ── TENANT MODE: only show their own unit(s) + vacant units ──
+  const myEmail = currentUser ? (currentUser.email||'').toLowerCase() : '';
+  const myUnitIds = new Set(
+    (window._myAllRecs || (window._myRecord ? [window._myRecord] : []))
+      .map(r => r.unitId || r.unit || '')
+      .filter(Boolean)
+  );
+
   let props = PROPERTIES.filter(p => {
     const rec = rentLogs.find(e => e.unitId === p.id);
-    const searchStr = (p.label+p.location+p.type+(rec?rec.tenant:'')).toLowerCase();
+    const searchStr = (p.label+p.location+p.type+(isAdmin&&rec?rec.tenant:'')).toLowerCase();
     const matchSearch = !search || searchStr.includes(search);
     const matchCity = !city || p.city === city;
     const occupied = occupiedIds.has(p.id);
     const matchStatus = !status || (status === 'occupied' && occupied) || (status === 'vacant' && !occupied);
+
+    // Tenant filter: only their unit(s) or vacant units
+    if (!isAdmin) {
+      const isMyUnit   = myUnitIds.has(p.id);
+      const isVacant   = !occupied;
+      if (!isMyUnit && !isVacant) return false;
+    }
+
     return matchSearch && matchCity && matchStatus;
   });
 
@@ -4330,6 +4364,10 @@ function renderProperties() {
     const isOverdue = daysLeft !== null && daysLeft < 0;
     const docCount = _docCounts[p.id] || 0;
 
+    // For tenants: hide other tenant details, only show their own
+    const isMyUnit = !isAdmin && myUnitIds.has(p.id);
+    const showTenantDetails = isAdmin || isMyUnit;
+
     return `<div class="unit-card" style="position:relative;${
       occupied && daysLeft !== null
         ? (daysLeft <= 60 ? 'border-left:4px solid #b91c1c;'
@@ -4340,17 +4378,18 @@ function renderProperties() {
       <div class="uc-top">
         <div class="uc-type-row">
           <span class="uc-icon">${icons[p.type]||'🏠'}</span>
-          <span class="badge ${occupied ? (isOverdue?'badge-overdue':'badge-active') : 'badge-vacant'}">
-            ${occupied ? (isOverdue ? 'Overdue' : 'Occupied') : 'Vacant'}
+          <span class="badge ${occupied ? (isMyUnit ? (isOverdue?'badge-overdue':'badge-active') : 'badge-active') : 'badge-vacant'}">
+            ${occupied ? (isMyUnit && isOverdue ? 'Overdue' : isMyUnit ? 'Your Unit' : 'Occupied') : 'Vacant'}
           </span>
         </div>
         <div class="uc-title">${p.label}</div>
         <div class="uc-loc">📍 ${p.location}</div>
-        <div style="margin-top:4px;font-size:.71rem;color:var(--dim)">${p.type} · <span style="font-family:'DM Mono',monospace">${p.id}</span></div>
-        ${rec ? `
+        <div style="margin-top:4px;font-size:.71rem;color:var(--dim)">${p.type}${isAdmin ? ` · <span style="font-family:'DM Mono',monospace">${p.id}</span>` : ''}</div>
+
+        ${showTenantDetails && rec ? `
           <div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--rule)">
             <div style="font-size:.84rem;font-weight:600;color:var(--ink)">${rec.tenant}</div>
-            <div style="font-size:.72rem;color:var(--dim);margin-top:1px">${rec.tenantEmail||''}</div>
+            ${isAdmin ? `<div style="font-size:.72rem;color:var(--dim);margin-top:1px">${rec.tenantEmail||''}</div>` : ''}
             ${rec.expiry ? `<div style="font-size:.7rem;color:var(--dim);margin-top:2px">Expires: ${new Date(rec.expiry).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})}</div>` : ''}
             ${daysLeft !== null ? `<div style="margin-top:6px"><span class="days-pill ${
   daysLeft < 0          ? 'dp-red'    :
@@ -4365,16 +4404,34 @@ function renderProperties() {
         ? '🟠 ' + daysLeft + ' days left'
         : '🟢 ' + daysLeft + ' days left'
 }</span></div>` : ''}
+          </div>` : (occupied && !isMyUnit ? `
+          <div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--rule);font-size:.78rem;color:var(--dim);font-style:italic">
+            This unit is currently occupied.
+          </div>` : '')}
+
+        ${isAdmin && docCount > 0 ? `<div style="margin-top:6px"><span class="doc-count-pill">📁 ${docCount} doc${docCount>1?'s':''}</span></div>` : ''}
+
+        ${!occupied && (p.amenities||[]).length ? `
+          <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px">
+            ${(p.amenities||[]).slice(0,4).map(a=>`<span style="font-size:.64rem;padding:2px 7px;border-radius:12px;background:rgba(201,150,12,.1);border:1px solid rgba(201,150,12,.25);color:#7a5c00">${a}</span>`).join('')}
+            ${(p.amenities||[]).length > 4 ? `<span style="font-size:.64rem;padding:2px 7px;border-radius:12px;background:var(--cream);color:var(--dim)">+${(p.amenities||[]).length-4} more</span>` : ''}
           </div>` : ''}
-        ${docCount > 0 ? `<div style="margin-top:6px"><span class="doc-count-pill">📁 ${docCount} doc${docCount>1?'s':''}</span></div>` : ''}
       </div>
+
       <div class="uc-bottom">
-        <div class="uc-rent">${rec ? '₦'+Number(rec.amount).toLocaleString() : '—'}</div>
+        <div class="uc-rent">${isAdmin && rec ? '₦'+Number(rec.amount||0).toLocaleString() : (occupied && !isMyUnit ? '' : (rec ? '₦'+Number(rec.amount||0).toLocaleString() : '—'))}</div>
         <div style="display:flex;gap:6px">
-          <button class="btn btn-sm btn-outline" onclick="openPropEdit('${p.id}')" title="Edit property details, amenities, images">🏠 Edit</button>
-          ${occupied ? `<button class="btn btn-sm btn-outline" onclick="openTenantDrawer('${p.id}')">📁 Docs</button>
-          <button class="btn btn-sm btn-outline" onclick="editRentByUnit('${p.id}')">✏️</button>` :
-          `<button class="btn btn-sm btn-gold" onclick="addRecordForUnit('${p.id}')">+ Add</button>`}
+          ${isAdmin ? `
+            <button class="btn btn-sm btn-outline" onclick="openPropEdit('${p.id}')" title="Edit property details, amenities, images">🏠 Edit</button>
+            ${occupied
+              ? `<button class="btn btn-sm btn-outline" onclick="openTenantDrawer('${p.id}')">📁 Docs</button>
+                 <button class="btn btn-sm btn-outline" onclick="editRentByUnit('${p.id}')">✏️</button>`
+              : `<button class="btn btn-sm btn-gold" onclick="addRecordForUnit('${p.id}')">+ Add</button>`}
+          ` : `
+            ${isMyUnit
+              ? `<button class="btn btn-sm btn-outline" onclick="showPage('pgMyProperty',document.getElementById('navMyProp'))">🔑 My Tenancy</button>`
+              : `<button class="btn btn-sm btn-gold" onclick="openRenewalFlow ? openRenewalFlow() : openForm('')" style="font-size:.74rem">📋 Enquire</button>`}
+          `}
         </div>
       </div>
     </div>`;

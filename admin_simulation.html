@@ -118,6 +118,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .tl-item.active-tl::before{background:#C9960C}
 .tl-title{font-size:.8rem;font-weight:700;color:var(--ink);margin-bottom:2px}
 .tl-desc{font-size:.74rem;color:var(--dim)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 /* responsive */
 @media(max-width:800px){.shell{grid-template-columns:1fr}.sidebar{display:none}.fg-row{grid-template-columns:1fr}}
 </style>
@@ -224,15 +225,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
           </div>
         </div>
         <div class="fg-row">
-          <div class="fg"><label>Annual Rent (₦)</label><input type="number" id="n-rent" value="3500000"/></div>
-          <div class="fg"><label>Agreement Fee (₦)</label><input type="number" id="n-fee" value="50000"/></div>
+          <div class="fg"><label>Annual Rent (₦)</label><input type="number" id="n-rent" value="3500000" oninput="calcSlipTotal()"/></div>
+          <div class="fg"><label>Agreement Fee (₦)</label><input type="number" id="n-fee" value="50000" oninput="calcSlipTotal()"/></div>
         </div>
         <div class="fg-row">
-          <div class="fg"><label>Legal / Admin Fee (₦)</label><input type="number" id="n-legal" value="35000"/></div>
-          <div class="fg"><label>Caution Deposit (₦)</label><input type="number" id="n-caution" value="175000"/></div>
+          <div class="fg"><label>Legal / Admin Fee (₦)</label><input type="number" id="n-legal" value="35000" oninput="calcSlipTotal()"/></div>
+          <div class="fg"><label>Caution Deposit (₦)</label><input type="number" id="n-caution" value="175000" oninput="calcSlipTotal()"/></div>
         </div>
-        <button class="btn btn-gold" onclick="simStep2_PaySlip()">💳 Generate & Send Payment Advice Slip</button>
-      </div>
+
+        <!-- Dynamic extra fee rows -->
+        <div id="n-extra-rows"></div>
+
+        <!-- Add row button + running total -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+          <button type="button" class="btn btn-outline btn-sm" onclick="addSlipRow()"
+            style="font-size:.76rem;border-style:dashed;border-color:var(--gold);color:var(--gold)">
+            ＋ Add Additional Fee Item
+          </button>
+          <div style="font-size:.84rem;font-weight:700;background:var(--cream);border:1px solid var(--rule);border-radius:6px;padding:7px 18px">
+            Grand Total: <span id="n-slip-total" style="color:var(--gold);font-family:'DM Mono',monospace">₦3,760,000</span>
+          </div>
+        </div>
+
+        <button class="btn btn-gold" onclick="simStep2_PaySlip()">💳 Generate &amp; Send Payment Advice Slip</button>   </div>
 
       <!-- STEP 3: Tenant pays & submits confirmation -->
       <div class="sim-section" id="new-step-pay" style="display:none">
@@ -704,18 +719,90 @@ function simStep1_KYT() {
   slip.insertBefore(emailPrev, slip.firstChild);
 }
 
+/* ── Slip row helpers ── */
+var _slipRowCount = 0;
+
+function calcSlipTotal() {
+  var rent    = parseFloat(document.getElementById('n-rent')?.value)    || 0;
+  var fee     = parseFloat(document.getElementById('n-fee')?.value)     || 0;
+  var legal   = parseFloat(document.getElementById('n-legal')?.value)   || 0;
+  var caution = parseFloat(document.getElementById('n-caution')?.value) || 0;
+  var extra   = 0;
+  document.querySelectorAll('.slip-extra-amt').forEach(function(el) {
+    extra += parseFloat(el.value) || 0;
+  });
+  var total = rent + fee + legal + caution + extra;
+  var el = document.getElementById('n-slip-total');
+  if (el) el.textContent = '₦' + total.toLocaleString();
+  return total;
+}
+
+function addSlipRow() {
+  _slipRowCount++;
+  var id   = 'sr-' + _slipRowCount;
+  var wrap = document.getElementById('n-extra-rows');
+  if (!wrap) return;
+  var div = document.createElement('div');
+  div.id  = id;
+  div.className = 'fg-row slip-extra-row';
+  div.style.cssText = 'align-items:flex-end;margin-bottom:4px;animation:fadeIn .2s ease';
+  div.innerHTML =
+    '<div class="fg" style="flex:2">'
+      + '<label>Additional Item Label</label>'
+      + '<input type="text" class="slip-extra-lbl" placeholder="e.g. Service Charge, Agency Fee…"/>'
+    + '</div>'
+    + '<div class="fg" style="flex:1">'
+      + '<label>Amount (₦)</label>'
+      + '<input type="number" class="slip-extra-amt" placeholder="0" oninput="calcSlipTotal()"/>'
+    + '</div>'
+    + '<div style="padding-bottom:14px;flex-shrink:0">'
+      + '<button type="button" onclick="removeSlipRow(\'' + id + '\')" '
+      + 'style="background:none;border:1px solid rgba(140,31,31,.3);color:var(--red);border-radius:5px;'
+      + 'padding:8px 10px;cursor:pointer;font-size:.8rem;line-height:1" title="Remove row">✕</button>'
+    + '</div>';
+  wrap.appendChild(div);
+  div.querySelector('.slip-extra-lbl').focus();
+  calcSlipTotal();
+}
+
+function removeSlipRow(id) {
+  var el = document.getElementById(id);
+  if (el) {
+    el.style.opacity = '0';
+    el.style.transition = 'opacity .2s';
+    setTimeout(function() { el.remove(); calcSlipTotal(); }, 200);
+  }
+}
+
+function getSlipBreakdown() {
+  var items = [
+    { label:'Annual Rent',       amt: parseFloat(document.getElementById('n-rent')?.value)    || 0 },
+    { label:'Agreement Fee',     amt: parseFloat(document.getElementById('n-fee')?.value)     || 0 },
+    { label:'Legal / Admin Fee', amt: parseFloat(document.getElementById('n-legal')?.value)   || 0 },
+    { label:'Caution Deposit',   amt: parseFloat(document.getElementById('n-caution')?.value) || 0 },
+  ];
+  // Collect extra rows
+  var rows = document.querySelectorAll('.slip-extra-row');
+  rows.forEach(function(row) {
+    var lbl = (row.querySelector('.slip-extra-lbl')?.value || '').trim();
+    var amt = parseFloat(row.querySelector('.slip-extra-amt')?.value) || 0;
+    if (lbl && amt) items.push({ label: lbl, amt });
+  });
+  return items.filter(function(i) { return i.amt > 0; });
+}
+
 function simStep2_PaySlip() {
-  var rent    = parseFloat(document.getElementById('n-rent').value) || 3500000;
-  var fee     = parseFloat(document.getElementById('n-fee').value)  || 50000;
-  var legal   = parseFloat(document.getElementById('n-legal').value)|| 35000;
-  var caution = parseFloat(document.getElementById('n-caution').value)||175000;
-  var total   = rent + fee + legal + caution;
+  var breakdown = getSlipBreakdown();
+  var total     = breakdown.reduce(function(s, i) { return s + i.amt; }, 0);
+  if (!total) { toast('Enter at least one fee amount', 'error'); return; }
+
   var padId   = genID('PAD');
   var expDate = new Date(); expDate.setDate(expDate.getDate() + 14);
-  newSim.padId  = padId;
-  newSim.total  = total;
+  newSim.padId   = padId;
+  newSim.total   = total;
   newSim.expDate = expDate.toISOString().slice(0,10);
-  newSim.step   = 2;
+  newSim.breakdown = breakdown;
+  newSim.step    = 2;
 
   stepDone('ns-', 1); stepActive('ns-', 2);
   document.getElementById('new-step-slip').style.display = 'none';
@@ -723,17 +810,72 @@ function simStep2_PaySlip() {
   payStep.style.display = '';
   payStep.scrollIntoView({ behavior:'smooth', block:'nearest' });
 
+  // Build breakdown rows for the PAD display
+  var bRows = breakdown.map(function(i) {
+    return '<div style="display:flex;justify-content:space-between;font-size:.74rem;padding:4px 0;border-bottom:1px solid #2a2620">'
+      + '<span style="color:#9a8a6a">' + i.label + '</span>'
+      + '<span style="color:#e8dfc8;font-weight:600">₦' + i.amt.toLocaleString() + '</span></div>';
+  }).join('');
+
   document.getElementById('new-pad-display').innerHTML =
-    '<div class="code-label">Payment Advisor ID</div><div class="code-val">' + padId + '</div>'
-    + '<div style="font-size:.7rem;color:rgba(201,150,12,.6);margin-top:6px">Total: ' + fmtCurrency(total) + ' · Expires: ' + fmtDate(newSim.expDate) + '</div>';
+    '<div class="code-label">Payment Advisor ID</div>'
+    + '<div class="code-val">' + padId + '</div>'
+    + '<div style="margin-top:12px;text-align:left">' + bRows + '</div>'
+    + '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;'
+    + 'border-top:1px solid rgba(201,150,12,.3)">'
+    + '<span style="color:#c9960c;font-weight:700">Grand Total</span>'
+    + '<span style="color:#c9960c;font-weight:700;font-family:\'DM Mono\',monospace">₦' + total.toLocaleString() + '</span></div>'
+    + '<div style="font-size:.68rem;color:rgba(201,150,12,.5);margin-top:8px;text-align:center">'
+    + 'Expires: ' + fmtDate(newSim.expDate) + '</div>';
+
   document.getElementById('n-padid').value = padId;
   document.getElementById('n-paid').value  = total;
   var dt = new Date(); dt.setDate(dt.getDate() + 2);
   document.getElementById('n-paydate').value = dt.toISOString().slice(0,10);
 
-  addLog('💳','Payment Advice Slip Issued','PAD: ' + padId + ' · Total: ' + fmtCurrency(total), padId);
-  toast('💳 PAD Issued: ' + padId, 'success');
+  // Email preview with full breakdown
+  var emailBRows = breakdown.map(function(i) {
+    return '<tr><td style="padding:5px 10px;color:#9a8a6a">' + i.label + '</td>'
+      + '<td style="padding:5px 10px;text-align:right;font-weight:600;color:#e8dfc8">₦' + i.amt.toLocaleString() + '</td></tr>';
+  }).join('');
+
+  var slip = document.getElementById('new-step-pay');
+  var prev = slip.querySelector('.email-preview');
+  if (prev) prev.remove();
+  var emailDiv = document.createElement('div');
+  emailDiv.className = 'email-preview';
+  emailDiv.style.marginBottom = '14px';
+  emailDiv.innerHTML =
+    '<div class="email-header"><strong>📧 Payment Advice email sent to tenant</strong>'
+    + '<div class="em-row"><span>To: ' + (newSim.email||'tenant@email.com') + '</span>'
+    + '<span>CC: crestechnologies@outlook.com</span></div>'
+    + '<div class="em-row"><span>Subject: [Crestville] Payment Advice — ' + padId + '</span></div></div>'
+    + '<div class="email-body">Dear <strong>' + (newSim.name||'Tenant') + '</strong>,<br/><br/>'
+    + 'Your application for <strong>' + (newSim.unit||'the selected unit') + '</strong> has been reviewed and approved.<br/>'
+    + 'Please make payment within 14 days using the details below.<br/><br/>'
+    + '<div style="background:#0f0e0c;padding:14px;border-radius:8px;margin:12px 0">'
+    + '<div style="color:#c9960c;font-weight:700;margin-bottom:10px;font-size:.9rem">📋 Payment Reference: ' + padId + '</div>'
+    + '<table style="width:100%;border-collapse:collapse">' + emailBRows + '</table>'
+    + '<div style="border-top:1px solid #2a2620;margin-top:8px;padding-top:8px;'
+    + 'display:flex;justify-content:space-between">'
+    + '<span style="color:#c9960c;font-weight:700">Grand Total</span>'
+    + '<span style="color:#c9960c;font-weight:700">₦' + total.toLocaleString() + '</span></div>'
+    + '<div style="margin-top:12px;font-size:.78rem;color:#9a8a6a;line-height:1.6">'
+    + 'Bank: <strong style="color:#e8dfc8">Zenith Bank</strong><br/>'
+    + 'Account: <strong style="color:#e8dfc8">1014619530</strong><br/>'
+    + 'Name: <strong style="color:#e8dfc8">Crestechnologies IS Ltd</strong><br/>'
+    + 'Quote this reference on your transfer: <strong style="color:#c9960c">' + padId + '</strong><br/>'
+    + 'Offer expires: <strong style="color:#e8dfc8">' + fmtDate(newSim.expDate) + '</strong></div>'
+    + '</div>'
+    + 'After payment, log in to the portal and submit your payment confirmation.</div>';
+  slip.insertBefore(emailDiv, slip.querySelector('.fg-row'));
+
+  addLog('💳', 'Payment Advice Slip Issued',
+    breakdown.map(function(i){ return i.label + ': ₦' + i.amt.toLocaleString(); }).join(' · '),
+    'PAD: ' + padId + ' · Total: ₦' + total.toLocaleString());
+  toast('💳 PAD Issued: ' + padId + ' · Total: ₦' + total.toLocaleString(), 'success');
 }
+
 
 function simStep3_Payment() {
   var padId  = document.getElementById('n-padid').value;
@@ -1163,6 +1305,7 @@ function simSaveToggles() {
 /* Init */
 buildAvTable();
 document.getElementById('n-paydate').value = today;
+calcSlipTotal();
 </script>
 </body>
 </html>
