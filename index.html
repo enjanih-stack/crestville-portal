@@ -6653,6 +6653,7 @@ function _navTo(pgId) {
   setTimeout(function() { _navInProgress = false; }, 50);
 }
 
+}  /* closes historyFwd / navigation section */
 
 /* ════════════════════════════════════════════════
    TENANT DASHBOARD — status card + app tracker
@@ -7787,9 +7788,10 @@ function _addAdminFieldTogglePage() {
   if (!_origShowPage) return;
   window.showPage = function(pgId, btn) {
     _origShowPage(pgId, btn);
-    if (pgId === 'pgNewApplication')     { _addNewAppPage(); setTimeout(renderKYTForm, 50); }
-    if (pgId === 'pgRenewalApplication') { _addRenewalAppPage(); setTimeout(renderRenewalForm, 50); }
+    if (pgId === 'pgNewApplication')     { _addNewAppPage();         setTimeout(renderKYTForm,           50); }
+    if (pgId === 'pgRenewalApplication') { _addRenewalAppPage();     setTimeout(renderRenewalForm,       50); }
     if (pgId === 'pgFieldToggles')       { _addAdminFieldTogglePage(); setTimeout(renderAdminFieldToggles, 50); }
+    if (pgId === 'pgAgent')              { setTimeout(loadAgentDashboard, 100); }
   };
 })();
 
