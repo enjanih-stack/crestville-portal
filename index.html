@@ -2458,7 +2458,24 @@ async function doGoogle() {
   try {
     var provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    var result = await firebase.auth().signInWithPopup(provider);
+
+    var result;
+    try {
+      // Try popup first (works in most desktop browsers)
+      result = await firebase.auth().signInWithPopup(provider);
+    } catch(popupErr) {
+      // Popup blocked or not supported — fall back to redirect
+      if (popupErr.code === 'auth/operation-not-supported-in-this-environment'
+          || popupErr.code === 'auth/popup-blocked'
+          || popupErr.code === 'auth/popup-closed-by-user') {
+        if (errEl) { errEl.textContent = 'Redirecting to Google…'; errEl.style.color='var(--dim)'; }
+        // Store intent so we return to login after redirect
+        sessionStorage.setItem('crs_from_landing', '1');
+        await firebase.auth().signInWithRedirect(provider);
+        return; // page will redirect
+      }
+      throw popupErr; // re-throw other errors
+    }
     var googleEmail = (result.user.email || '').toLowerCase().trim();
     var googleName  = result.user.displayName || '';
 
@@ -2524,19 +2541,20 @@ async function doLogout() {
 }
 function friendlyAuthError(code) {
   const m = {
-    'auth/invalid-email':               'Invalid email address.',
-    'auth/user-not-found':              'No account found. Register first or check email.',
-    'auth/wrong-password':              'Incorrect password. Try again or reset below.',
-    'auth/email-already-in-use':        'Email already registered — use Sign In tab.',
-    'auth/weak-password':               'Password must be at least 6 characters.',
-    'auth/invalid-credential':          'Incorrect email or password.',
-    'auth/too-many-requests':           'Too many attempts — wait a few minutes.',
-    'auth/email-not-verified':          'Please verify your email — check your inbox.',
-    'auth/popup-closed-by-user':        'Google sign-in was closed. Try again.',
-    'auth/popup-blocked':               'Popup blocked — allow popups for this site.',
-    'auth/network-request-failed':      'Network error — check your connection.',
-    'auth/operation-not-allowed':       'This sign-in method is not enabled.',
-    'auth/cancelled-popup-request':     'Only one sign-in at a time — try again.',
+    'auth/invalid-email':                             'Invalid email address.',
+    'auth/user-not-found':                            'No account found. Register first or check email.',
+    'auth/wrong-password':                            'Incorrect password. Try again or reset below.',
+    'auth/email-already-in-use':                      'Email already registered — use Sign In tab.',
+    'auth/weak-password':                             'Password must be at least 6 characters.',
+    'auth/invalid-credential':                        'Incorrect email or password.',
+    'auth/too-many-requests':                         'Too many attempts — wait a few minutes.',
+    'auth/email-not-verified':                        'Please verify your email — check your inbox.',
+    'auth/popup-closed-by-user':                      'Google sign-in was closed. Try again.',
+    'auth/popup-blocked':                             'Popup blocked — trying redirect instead…',
+    'auth/network-request-failed':                    'Network error — check your connection.',
+    'auth/operation-not-allowed':                     'This sign-in method is not enabled.',
+    'auth/cancelled-popup-request':                   'Only one sign-in at a time — try again.',
+    'auth/operation-not-supported-in-this-environment': 'Switching to redirect sign-in — please wait…',
   };
   console.error('Firebase auth error:', code);
   return m[code] || ('Error (' + code + ') — please try again.');
@@ -3202,6 +3220,24 @@ function _normaliseRecord(r) {
 }
 
 function initAuth() {
+  // Handle redirect result first (Google sign-in via redirect)
+  firebase.auth().getRedirectResult().then(function(result) {
+    if (result && result.user) {
+      // Redirect sign-in succeeded — onAuthStateChanged will handle it
+      console.log('Redirect sign-in succeeded:', result.user.email);
+    }
+  }).catch(function(e) {
+    console.error('Redirect result error:', e.code);
+    if (e.code !== 'auth/no-auth-event') {
+      var errEl = document.getElementById('loginErr');
+      if (errEl) {
+        errEl.textContent = friendlyAuthError(e.code);
+        errEl.style.color = 'var(--red)';
+        errEl.style.display = 'block';
+      }
+    }
+  });
+
   firebase.auth().onAuthStateChanged(async user => {
     try { document.getElementById('globalLoader').classList.add('out'); } catch(e){}
     if (user) {
@@ -3229,11 +3265,24 @@ function initAuth() {
 
       isAdmin = adminMode || userData.role === 'admin';
 
-      // Boot the app directly — show role selector only if admin
+      // Route by role
       if (isAdmin) {
+        // Admin always sees role selector
         showRoleSelector(user, userData);
+      } else if (userData.role === 'agent') {
+        // Agent — check status
+        if (userData.agentStatus === 'approved') {
+          // Approved agent sees role selector (Agent Portal + New Tenant options)
+          showRoleSelector(user, userData);
+        } else if (userData.agentStatus === 'pending' || userData.agentStatus === 'rejected') {
+          // Pending/rejected agent — show waiting screen via role selector
+          showRoleSelector(user, userData);
+        } else {
+          // Unknown agent state — fall back to tenant flow
+          await _bootApp(user, userData, false);
+        }
       } else {
-        // Regular tenant — boot directly as existing tenant
+        // Regular tenant — boot directly without role selector
         await _bootApp(user, userData, false);
       }
     } else {
