@@ -1053,11 +1053,6 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
   .sec-card { margin-bottom: 12px !important; }
   .sec-head { padding: 10px 14px !important; }
   .sec-head h2 { font-size: .88rem !important; }
-  .sec-body { padding: 12px 14px !important; }
-
-  /* Tenant dashboard hero card */
-  .tenancy-status-card { padding: 16px 14px !important; border-radius: 10px !important; }
-  .tsc-unit { font-size: 1.1rem !important; }
   .tsc-stats { grid-template-columns: repeat(2,1fr) !important; gap: 8px !important; }
   .tsc-stat { padding: 9px 10px !important; border-radius: 6px !important; }
   .tsc-stat-value { font-size: .92rem !important; }
@@ -1129,6 +1124,53 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
   /* Idle overlay */
   .idle-card { padding: 24px 20px !important; }
   .idle-countdown { font-size: 2rem !important; }
+
+  /* ── MY TENANCY PAGE ── */
+  /* Particulars 2-col grid → single column */
+  .tp-parts-grid { grid-template-columns: 1fr !important; }
+  /* Hero stat tiles → 2 across */
+  .tp-hero-stats { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  /* Hero card text */
+  .tp-hero-title { font-size: 1.1rem !important; }
+  /* Part section rows — stack label above value */
+  .tp-row { flex-direction: column !important; gap: 4px !important; padding: 8px 14px !important; }
+  .tp-label { width: 100% !important; font-size: .6rem !important; }
+  .tp-value { font-size: .82rem !important; }
+  /* Unit switcher */
+  .tp-unit-switcher { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap !important; }
+  /* Reference bar */
+  .tp-ref-bar { flex-direction: column !important; gap: 10px !important; align-items: flex-start !important; }
+  /* Action buttons row */
+  .tp-action-btns { flex-wrap: wrap !important; gap: 8px !important; }
+
+  /* ── FORMS (KYT / Renewal) ── */
+  .fg-row { grid-template-columns: 1fr !important; }
+  .kyt-section { padding: 14px !important; }
+
+  /* ── NOTICES MANAGER ── */
+  .nm-card-head { flex-wrap: wrap !important; gap: 6px !important; }
+
+  /* ── RENT MANAGER ── */
+  #rmBulkBar { flex-wrap: wrap !important; gap: 6px !important; padding: 8px 10px !important; }
+
+  /* ── MOD REQUESTS ── */
+  .mr-card-head { flex-wrap: wrap !important; gap: 6px !important; }
+
+  /* ── PROPERTY CARDS ── */
+  .units-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .uc-bottom { flex-wrap: wrap !important; gap: 8px !important; }
+
+  /* ── OVERFLOW TABLE WIDER ── */
+  .data-table { min-width: 600px; }
+
+  /* ── PAGE HEADER BUTTONS ── */
+  .page-header { flex-wrap: wrap !important; gap: 10px !important; }
+  .page-header > div:last-child { flex-wrap: wrap !important; gap: 6px !important; }
+
+  /* ── MODAL FORM ROWS ── */
+  .modal-body .fg-row { grid-template-columns: 1fr !important; }
+  .modal-body [style*="grid-template-columns: 1fr 1fr"] { display: block !important; }
+  .modal-body [style*="grid-template-columns:1fr 1fr"] { display: block !important; }
 }
 
 @media(max-width:380px){
@@ -1136,6 +1178,8 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
   .metric-card { padding: 9px 10px 8px !important; }
   .mc-value { font-size: 1.15rem !important; }
   .tenant-qa-grid { grid-template-columns: repeat(2,1fr) !important; }
+  /* Hero stats full width on tiny screens */
+  .tp-hero-stats { grid-template-columns: 1fr 1fr !important; }
 }
 
 </style>
@@ -2865,7 +2909,7 @@ async function loadMyProperty(userData) {
   if (allMyRecords.length > 1) {
     switcherHtml = '<div style="margin-bottom:18px">'
       + '<div style="font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:8px">Your Properties (' + allMyRecords.length + ')</div>'
-      + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+      + '<div class="tp-unit-switcher" style="display:flex;gap:8px;flex-wrap:wrap">'
       + allMyRecords.map(r => {
           const isAct = (r.unitId||r.unit) === (rec.unitId||rec.unit);
           const exp2  = r.expiry ? new Date(r.expiry) : null;
@@ -2892,10 +2936,10 @@ async function loadMyProperty(userData) {
   // ── Property hero card ──
   const heroCard = '<div style="background:linear-gradient(135deg,#1A1612 60%,#2a2116);border-radius:14px;padding:24px 26px;margin-bottom:20px;color:#e8dfc8">'
     + '<div style="font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#9a8a6a;margin-bottom:10px">Your Property</div>'
-    + '<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.45rem;font-weight:700;line-height:1.2;margin-bottom:6px">'
+    + '<div class="tp-hero-title" style="font-family:\'Cormorant Garamond\',serif;font-size:1.45rem;font-weight:700;line-height:1.2;margin-bottom:6px">'
     + (rec.unit||rec.unitId) + ' — ' + (rec.location||rec.city||'') + '</div>'
     + '<div style="font-size:.76rem;color:#9a8a6a;margin-bottom:18px">📍 ' + (rec.location||rec.city||'') + '</div>'
-    + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px">'
+    + '<div class="tp-hero-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:18px">'
     + _heroStat('💰 Annual Rent', fmtAmt(rec.amount), '')
     + (rec.newRent ? _heroStat('📈 New/Revised Rent', fmtAmt(rec.newRent), 'var(--gold)') : '')
     + _heroStat('📅 Start Date',  rec.start  ? fmtD(rec.start)  : '—', '')
@@ -2903,7 +2947,6 @@ async function loadMyProperty(userData) {
     + _heroStat('📊 Status', rec.vacancy||'Occupied', isOverdue?'#f87171':isExpiring?'#fb923c':'#86efac')
     + (rec.lastPayment ? _heroStat('💳 Last Payment', fmtD(rec.lastPayment), '') : '')
     + '</div>'
-    // Progress bar
     + (totalDays ? '<div>'
       + '<div style="display:flex;justify-content:space-between;font-size:.66rem;color:#9a8a6a;margin-bottom:5px">'
       + '<span>START ' + (startD ? startD.toLocaleDateString('en-NG',{month:'short',year:'numeric'}) : '') + '</span>'
@@ -2915,8 +2958,7 @@ async function loadMyProperty(userData) {
     + '</div>';
 
   // ── Particulars sections ──
-  const partHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'
-    // Personal info
+  const partHtml = '<div class="tp-parts-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'
     + _partSection('👤 Personal Information', [
         ['Full Name',        rec.tenant||'—'],
         ['Name on Contract', rec.contractName !== rec.tenant ? (rec.contractName||'—') : '(same as above)'],
@@ -2924,7 +2966,6 @@ async function loadMyProperty(userData) {
         ['Phone',            rec.tenantPhone||'—'],
         ['NIN',              rec.tenantNIN ? rec.tenantNIN.slice(0,4)+'*****'+rec.tenantNIN.slice(-2) : '—'],
       ])
-    // Property details
     + _partSection('🏠 Property Details', [
         ['Unit',             rec.unit||rec.unitId||'—'],
         ['Type',             rec.type||'Residential'],
@@ -2933,16 +2974,14 @@ async function loadMyProperty(userData) {
         ['Occupancy',        rec.vacancy||'Occupied'],
       ])
     + '</div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'
-    // Tenancy terms
+    + '<div class="tp-parts-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'
     + _partSection('📋 Tenancy Terms', [
         ['Tenancy Type',     'Term Certain'],
         ['Start Date',       rec.start  ? fmtD(rec.start)  : '—'],
         ['Expiry Date',      rec.expiry ? fmtD(rec.expiry) : '—'],
-        ['Duration',         months ? months + ' months (' + (months>=12?Math.floor(months/12)+'yr '+(months%12)+'mo':months+'mo') + ')' : '—'],
+        ['Duration',         months ? months + ' months' : '—'],
         ['Days Remaining',   daysLeft !== null ? (daysLeft < 0 ? Math.abs(daysLeft)+' days overdue' : daysLeft+' days left') : '—'],
       ])
-    // Rent & financials
     + _partSection('💰 Rent & Financial Details', [
         ['Current Annual Rent', fmtAmt(rec.amount)],
         ['Monthly Equivalent',  rec.amount ? '₦'+Math.round(Number(rec.amount)/12).toLocaleString() : '—'],
@@ -2952,20 +2991,17 @@ async function loadMyProperty(userData) {
         ['Notes from Landlord', rec.notes||'—'],
       ])
     + '</div>'
-    // Reference + actions
-    + '<div style="background:rgba(201,150,12,.06);border:1px solid rgba(201,150,12,.2);border-radius:8px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">'
+    + '<div class="tp-ref-bar" style="background:rgba(201,150,12,.06);border:1px solid rgba(201,150,12,.2);border-radius:8px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">'
     + '<div><div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:4px">Tenancy Reference</div>'
-    + '<div style="font-family:\'DM Mono\',monospace;font-size:.88rem;font-weight:600;color:var(--gold)">' + (rec.id||'CRS-'+rec.unitId.replace(/[^A-Z0-9]/gi,'-').toUpperCase()) + '</div></div>'
-    + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
-    + '<button class="btn btn-outline btn-sm" onclick="window.print()" style="font-size:.74rem">🖨️ Print Particulars</button>'
-    + '<button class="btn btn-outline btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(\'' + (rec.id||rec.unitId) + '\').then(()=>notify(\'success\',\'Copied!\',\'\'))" style="font-size:.74rem">📋 Copy Reference</button>'
+    + '<div style="font-family:\'DM Mono\',monospace;font-size:.84rem;font-weight:600;color:var(--gold);word-break:break-all">' + (rec.id||'CRS-'+rec.unitId.replace(/[^A-Z0-9]/gi,'-').toUpperCase()) + '</div></div>'
+    + '<div class="tp-action-btns" style="display:flex;gap:8px;flex-wrap:wrap">'
+    + '<button class="btn btn-outline btn-sm" onclick="window.print()" style="font-size:.74rem">🖨️ Print</button>'
+    + '<button class="btn btn-outline btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(\'' + (rec.id||rec.unitId) + '\').then(()=>notify(\'success\',\'Copied!\',\'\'))" style="font-size:.74rem">📋 Copy Ref</button>'
     + '</div></div>'
-    // Advisory
     + '<div style="margin-top:14px;padding:12px 16px;background:rgba(234,120,20,.06);border:1px solid rgba(234,120,20,.2);border-radius:8px;font-size:.78rem;color:#7c4a00">'
-    + '⚠️ If any of your details are incorrect, please use the <strong>Request Correction</strong> button below to notify the admin.'
+    + '⚠️ If any details are incorrect, use <strong>Request Correction</strong> below.'
     + '</div>'
-    // Request correction + prev contract upload
-    + '<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">'
+    + '<div class="tp-action-btns" style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">'
     + '<button class="btn btn-outline btn-sm" onclick="openRenewalFlow()" style="font-size:.76rem">🔄 Request Renewal</button>'
     + '<button class="btn btn-outline btn-sm" onclick="openModRequestModal()" style="font-size:.76rem">✏️ Request Correction</button>'
     + '</div>'
@@ -6402,7 +6438,7 @@ function renderKYTForm() {
 
     + '<div class="kyt-section">'
     + '<div class="kyt-sec-title">📎 Documents</div>'
-    + '<div style="font-size:.74rem;color:var(--dim);margin-bottom:10px">⚠️ All attachments must be under 100KB. Compress images before uploading.</div>'
+    + '<div style="font-size:.74rem;color:var(--dim);margin-bottom:10px">📸 Images (JPG/PNG) are <strong>automatically compressed</strong> to under 100KB — just upload normally. For PDFs, please compress before uploading.</div>'
     + fileField('kytIdDoc', 'Government-issued ID (Passport / NIN slip)', req('idDocument'))
     + fileField('kytPhoto', 'Passport Photograph (white background)', req('photo'))
     + fileField('kytBankStmt', 'Bank Statement (last 3 months)', req('bankStatement'))
@@ -6442,7 +6478,7 @@ function fileField(id, label, required) {
     + '<div id="ph_' + id + '" style="text-align:center;padding:14px 8px">'
     + '<div style="font-size:1.6rem;margin-bottom:6px">📎</div>'
     + '<div style="font-size:.74rem;font-weight:600;color:var(--ink)">Click to upload or drag & drop</div>'
-    + '<div style="font-size:.68rem;color:var(--dim);margin-top:3px">JPG, PNG or PDF · Max 3MB</div>'
+    + '<div style="font-size:.66rem;color:var(--dim);margin-top:3px">JPG, PNG or PDF · Images auto-compressed to 100KB</div>'
     + '</div>'
     + '<div id="info_' + id + '" style="display:none;padding:6px 10px;font-size:.72rem;border-top:1px solid var(--rule);background:var(--cream);text-align:center"></div>'
     + '</div>'
@@ -6451,15 +6487,91 @@ function fileField(id, label, required) {
     + '</div>';
 }
 
-function kytHandleDrop(event, id) {
-  var input = document.getElementById(id);
-  if (!input || !event.dataTransfer.files.length) return;
-  input.files = event.dataTransfer.files;
-  kytHandleUpload(id, input);
-  document.getElementById('area_' + id).style.borderColor = '';
+/* ── Auto-compress images before upload ── */
+async function _compressImage(file, maxKB) {
+  return new Promise(function(resolve) {
+    // PDFs can't be compressed via canvas — return as-is (will fail size check if too large)
+    if (file.type === 'application/pdf') { resolve(file); return; }
+
+    var maxBytes = maxKB * 1024;
+    // If already small enough, skip compression
+    if (file.size <= maxBytes) { resolve(file); return; }
+
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    img.onload = function() {
+      URL.revokeObjectURL(url);
+      var canvas  = document.createElement('canvas');
+      var ctx     = canvas.getContext('2d');
+      var w = img.naturalWidth;
+      var h = img.naturalHeight;
+
+      // Step 1: Downscale dimensions until estimated size is reasonable
+      // Target: ~80% of maxKB to leave room for base64 overhead
+      var targetBytes = maxBytes * 0.85;
+      var scale = 1;
+      var pixelsNeeded = (targetBytes / 3); // ~3 bytes per pixel in JPEG
+      var currentPixels = w * h;
+      if (currentPixels > pixelsNeeded) {
+        scale = Math.sqrt(pixelsNeeded / currentPixels);
+        w = Math.max(1, Math.round(w * scale));
+        h = Math.max(1, Math.round(h * scale));
+      }
+
+      canvas.width  = w;
+      canvas.height = h;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+
+      // Step 2: Binary search for quality that hits target size
+      var lo = 0.1, hi = 0.92, bestBlob = null, attempts = 0;
+      function tryQuality(q) {
+        return new Promise(function(res) {
+          canvas.toBlob(function(blob) { res(blob); }, 'image/jpeg', q);
+        });
+      }
+
+      async function search() {
+        // First try at hi quality
+        var blob = await tryQuality(hi);
+        if (blob && blob.size <= maxBytes) { resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type:'image/jpeg' })); return; }
+
+        // Binary search
+        while (attempts < 8 && (hi - lo) > 0.03) {
+          var mid = (lo + hi) / 2;
+          blob = await tryQuality(mid);
+          if (!blob) break;
+          if (blob.size <= maxBytes) { bestBlob = blob; lo = mid; }
+          else { hi = mid; }
+          attempts++;
+        }
+
+        // If still over limit, try one more scale-down
+        if (!bestBlob || bestBlob.size > maxBytes) {
+          w = Math.round(w * 0.7); h = Math.round(h * 0.7);
+          canvas.width = w; canvas.height = h;
+          ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
+          ctx.drawImage(img, 0, 0, w, h);
+          blob = await tryQuality(0.6);
+          if (blob && blob.size <= maxBytes) bestBlob = blob;
+        }
+
+        if (bestBlob) {
+          resolve(new File([bestBlob], file.name.replace(/\.[^.]+$/, '.jpg'), { type:'image/jpeg' }));
+        } else {
+          // Compression failed to hit target — return best attempt anyway
+          resolve(bestBlob ? new File([bestBlob], file.name.replace(/\.[^.]+$/, '.jpg'), { type:'image/jpeg' }) : file);
+        }
+      }
+      search();
+    };
+    img.onerror = function() { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
 }
 
-function kytHandleUpload(id, input) {
+async function kytHandleUpload(id, input) {
   var errEl  = document.getElementById('err_' + id);
   var okEl   = document.getElementById('ok_'  + id);
   var area   = document.getElementById('area_' + id);
@@ -6469,43 +6581,70 @@ function kytHandleUpload(id, input) {
   var imgEl  = document.getElementById('img_'  + id);
   var pdfEl  = document.getElementById('pdf_'  + id);
 
-  // Clear state
   if (errEl) errEl.style.display = 'none';
   if (okEl)  okEl.style.display  = 'none';
-
   if (!input || !input.files || !input.files[0]) return;
-  var file = input.files[0];
-  var maxMB = 3;
-  var maxBytes = maxMB * 1024 * 1024;
 
-  // Size check
-  if (file.size > maxBytes) {
-    if (errEl) {
-      errEl.textContent = '✕ File too large: ' + (file.size/1024/1024).toFixed(1) + 'MB. Max is ' + maxMB + 'MB. Please compress and re-upload.';
-      errEl.style.display = 'block';
-    }
-    if (area) { area.style.borderColor = 'var(--red)'; area.style.background = 'rgba(140,31,31,.04)'; }
-    input.value = '';
-    return;
-  }
+  var file   = input.files[0];
+  var maxKB  = 3000; // 3MB hard limit before we even try
+  var targetKB = 100; // target after compression
 
-  // Type check
+  // Type check first
   var allowed = ['image/jpeg','image/png','image/jpg','application/pdf'];
   if (!allowed.includes(file.type)) {
     if (errEl) { errEl.textContent = '✕ Invalid file type. Use JPG, PNG or PDF.'; errEl.style.display = 'block'; }
     if (area) area.style.borderColor = 'var(--red)';
-    input.value = '';
-    return;
+    input.value = ''; return;
+  }
+
+  // Hard upper limit — can't compress PDF or impossibly large images
+  if (file.size > maxKB * 1024) {
+    if (errEl) { errEl.textContent = '✕ File too large (' + (file.size/1024/1024).toFixed(1) + 'MB). Maximum upload size is 3MB.'; errEl.style.display = 'block'; }
+    if (area) { area.style.borderColor = 'var(--red)'; area.style.background = 'rgba(140,31,31,.04)'; }
+    input.value = ''; return;
+  }
+
+  // Show compressing state
+  if (ph) ph.style.display = 'none';
+  if (prev) prev.style.display = 'block';
+  if (imgEl) { imgEl.src = ''; imgEl.style.display = 'none'; }
+  if (pdfEl) { pdfEl.style.display = 'none'; }
+  if (info) {
+    info.innerHTML = '<span style="color:var(--dim)">⏳ Optimising image...</span>';
+    info.style.display = 'block';
+  }
+
+  // Auto-compress images to ≤100KB
+  var processedFile = file;
+  var wasCompressed = false;
+  if (file.type !== 'application/pdf' && file.size > targetKB * 1024) {
+    try {
+      processedFile = await _compressImage(file, targetKB);
+      wasCompressed = processedFile.size < file.size;
+    } catch(e) {
+      console.warn('Compression failed:', e);
+      processedFile = file;
+    }
+  }
+
+  // Check PDF size (can't compress)
+  if (file.type === 'application/pdf' && file.size > targetKB * 1024) {
+    if (errEl) {
+      errEl.textContent = '✕ PDF is ' + Math.round(file.size/1024) + 'KB — over the 100KB limit. Please compress the PDF before uploading (use ilovepdf.com or similar).';
+      errEl.style.display = 'block';
+    }
+    if (area) { area.style.borderColor = 'var(--red)'; area.style.background = 'rgba(140,31,31,.04)'; }
+    if (ph) ph.style.display = 'block';
+    if (prev) prev.style.display = 'none';
+    if (info) info.style.display = 'none';
+    input.value = ''; return;
   }
 
   // Show preview
   var reader = new FileReader();
   reader.onload = function(e) {
     var dataUrl = e.target.result;
-    if (ph)   ph.style.display   = 'none';
-    if (prev) prev.style.display = 'block';
-
-    if (file.type === 'application/pdf') {
+    if (processedFile.type === 'application/pdf') {
       if (imgEl) imgEl.style.display = 'none';
       if (pdfEl) { pdfEl.style.display = 'block'; pdfEl.textContent = '📄'; }
     } else {
@@ -6513,19 +6652,49 @@ function kytHandleUpload(id, input) {
       if (imgEl) { imgEl.src = dataUrl; imgEl.style.display = 'block'; }
     }
 
-    var sizeStr = file.size < 1024*1024
-      ? Math.round(file.size/1024) + ' KB'
-      : (file.size/1024/1024).toFixed(2) + ' MB';
+    var origKB = Math.round(file.size / 1024);
+    var newKB  = Math.round(processedFile.size / 1024);
+    var sizeStr = newKB < 1024 ? newKB + ' KB' : (newKB/1024).toFixed(2) + ' MB';
+    var compressNote = wasCompressed
+      ? ' <span style="color:var(--green);font-size:.68rem">✓ compressed from ' + origKB + 'KB → ' + newKB + 'KB</span>'
+      : '';
+
     if (info) {
-      info.innerHTML = '✓ <strong>' + file.name.slice(0,30) + (file.name.length>30?'…':'') + '</strong> · ' + sizeStr
+      info.innerHTML = '✓ <strong>' + processedFile.name.slice(0,28) + (processedFile.name.length>28?'…':'') + '</strong> · ' + sizeStr
+        + compressNote
         + ' &nbsp;|&nbsp; <span style="cursor:pointer;color:var(--red);text-decoration:underline" onclick="kytClearUpload(\'' + id + '\')">Remove</span>';
       info.style.display = 'block';
     }
     if (area) { area.style.borderColor = 'var(--green)'; area.style.background = 'rgba(21,128,61,.03)'; }
-    if (okEl) okEl.style.display = 'block';
+    if (okEl) { okEl.textContent = '✓ File ready (' + newKB + 'KB)'; okEl.style.display = 'block'; }
+
+    // Store the compressed file back onto the input via DataTransfer
+    try {
+      var dt = new DataTransfer();
+      dt.items.add(processedFile);
+      input.files = dt.files;
+    } catch(e) {
+      // DataTransfer not supported — file is still in memory via reader
+    }
   };
-  reader.readAsDataURL(file);
+  reader.readAsDataURL(processedFile);
 }
+
+function kytHandleDrop(event, id) {
+  var input = document.getElementById(id);
+  if (!input || !event.dataTransfer.files.length) return;
+  // Assign dropped files to input and trigger upload handler
+  try {
+    var dt = new DataTransfer();
+    Array.from(event.dataTransfer.files).forEach(function(f){ dt.items.add(f); });
+    input.files = dt.files;
+  } catch(e) {
+    // Fallback: manually call with the dropped file
+  }
+  kytHandleUpload(id, { files: event.dataTransfer.files, value: '' });
+  document.getElementById('area_' + id).style.borderColor = '';
+}
+
 
 function kytClearUpload(id) {
   var input  = document.getElementById(id);
@@ -6656,7 +6825,7 @@ function renderRenewalForm() {
 
     + '<div class="kyt-section">'
     + '<div class="kyt-sec-title">📎 Attachments</div>'
-    + '<div style="font-size:.74rem;color:var(--dim);margin-bottom:10px">⚠️ Attachments must be under 100KB each.</div>'
+    + '<div style="font-size:.74rem;color:var(--dim);margin-bottom:10px">📸 Images (JPG/PNG) are automatically compressed to under 100KB. For PDFs, please compress before uploading.</div>'
     + fileField('rnwPrevContract', 'Previous Tenancy Agreement (optional)', false)
     + fileField('rnwIdDoc', 'Updated ID Document (if changed)', false)
     + '</div>'
