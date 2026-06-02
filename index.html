@@ -2424,6 +2424,7 @@ async function doLogin() {
   var btn = document.querySelector('.auth-btn');
   if (btn) btn.disabled = true;
   try {
+    await _setFirebasePersistence();
     await firebase.auth().signInWithEmailAndPassword(email, pass);
     if (errEl) errEl.textContent = '';
   } catch(e) {
@@ -2458,56 +2459,39 @@ function _isStorageAvailable() {
     var test = '__crs_storage_test__';
     localStorage.setItem(test, '1');
     localStorage.removeItem(test);
+    sessionStorage.setItem(test, '1');
+    sessionStorage.removeItem(test);
     return true;
   } catch(e) { return false; }
 }
 
-function _showStorageBlockedError(errEl) {
-  var msg = document.createElement('div');
-  msg.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px 16px;margin-top:10px;font-size:.82rem;line-height:1.75;color:#664d03;text-align:left';
-  msg.innerHTML = '<div style="font-weight:700;margin-bottom:6px">⚠️ Browser storage is blocked</div>'
-    + 'This portal requires cookies and local storage to work. Your browser is currently blocking them. To fix:<br/><br/>'
-    + '<strong>Chrome / Edge:</strong> Settings → Privacy & Security → Cookies → Allow all cookies<br/>'
-    + '<strong>Safari:</strong> Settings → Safari → Privacy → uncheck "Block all cookies"<br/>'
-    + '<strong>Firefox:</strong> Settings → Privacy → Custom → uncheck "Cookies"<br/>'
-    + '<strong>Incognito / Private mode:</strong> Open the portal in a normal (non-private) browser window<br/><br/>'
-    + '<span style="font-size:.76rem;color:#856404">After changing settings, refresh this page and try again.</span>';
-  if (errEl) {
-    errEl.textContent = '';
-    // Insert after errEl
-    errEl.parentNode.insertBefore(msg, errEl.nextSibling);
+/* Set Firebase persistence based on storage availability */
+async function _setFirebasePersistence() {
+  try {
+    if (_isStorageAvailable()) {
+      await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+    } else {
+      // Storage blocked — use session-only persistence (no localStorage needed)
+      await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
+    }
+  } catch(e) {
+    // Persistence setting failed — try NONE as last resort
+    try { await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE); } catch(e2) {}
   }
 }
 
 async function doGoogle() {
   var errEl = document.getElementById('loginErr');
-  if (errEl) { errEl.textContent = ''; }
+  if (errEl) { errEl.textContent = 'Connecting to Google…'; errEl.style.color='var(--dim)'; }
 
   // Remove any previous storage error message
   var prev = document.getElementById('storageBlockedMsg');
   if (prev) prev.remove();
 
-  // Pre-check: detect blocked storage BEFORE calling Firebase
-  if (!_isStorageAvailable()) {
-    var hint = document.createElement('div');
-    hint.id = 'storageBlockedMsg';
-    hint.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px 16px;margin-top:10px;font-size:.82rem;line-height:1.75;color:#664d03;text-align:left';
-    hint.innerHTML = '<div style="font-weight:700;margin-bottom:6px">⚠️ Cookies & Storage Blocked</div>'
-      + 'Google sign-in requires browser storage to be enabled. Your current browser settings are blocking it.<br/><br/>'
-      + '<strong>Quick fixes:</strong><br/>'
-      + '• If in <strong>Incognito / Private mode</strong> — open this page in a normal window instead<br/>'
-      + '• <strong>Chrome:</strong> Settings → Privacy → Cookies → "Allow all cookies"<br/>'
-      + '• <strong>Safari:</strong> Settings → Safari → uncheck "Block all cookies"<br/>'
-      + '• <strong>Firefox:</strong> Settings → Privacy → Standard (not Strict/Custom)<br/><br/>'
-      + '<em style="font-size:.76rem">Alternatively, use email & password sign-in above — it has fewer storage requirements.</em>';
-    var loginForm = document.getElementById('loginForm') || document.querySelector('.auth-form') || errEl?.parentElement;
-    if (loginForm) loginForm.appendChild(hint);
-    else if (errEl) errEl.insertAdjacentElement('afterend', hint);
-    return;
-  }
-
-  if (errEl) { errEl.textContent = 'Opening Google sign-in…'; errEl.style.color='var(--dim)'; }
   try {
+    // Set appropriate persistence before sign-in
+    await _setFirebasePersistence();
+
     var provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
@@ -2518,21 +2502,29 @@ async function doGoogle() {
       if (popupErr.code === 'auth/operation-not-supported-in-this-environment'
           || popupErr.code === 'auth/popup-blocked'
           || popupErr.code === 'auth/popup-closed-by-user') {
-        if (errEl) { errEl.textContent = 'Trying redirect sign-in…'; errEl.style.color='var(--dim)'; }
+        if (errEl) { errEl.textContent = 'Trying redirect…'; errEl.style.color='var(--dim)'; }
         try {
           sessionStorage.setItem('crs_from_landing', '1');
           await firebase.auth().signInWithRedirect(provider);
           return;
         } catch(redirErr) {
-          // Both popup and redirect failed — storage is definitely blocked
-          if (errEl) errEl.textContent = '';
-          var hint2 = document.createElement('div');
-          hint2.id = 'storageBlockedMsg';
-          hint2.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px 16px;margin-top:10px;font-size:.82rem;line-height:1.75;color:#664d03';
-          hint2.innerHTML = '<strong>⚠️ Google sign-in blocked by browser settings.</strong><br/>'
-            + 'Please use <strong>email & password</strong> sign-in instead, or enable cookies in your browser settings and refresh.';
-          var parent = errEl?.parentElement || document.querySelector('.auth-form');
-          if (parent) parent.appendChild(hint2);
+          // Both popup and redirect failed
+          if (errEl) {
+            errEl.textContent = '⚠️ Google sign-in unavailable in this browser.';
+            errEl.style.color = 'var(--red)';
+          }
+          var hint = document.createElement('div');
+          hint.id = 'storageBlockedMsg';
+          hint.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px 16px;margin-top:10px;font-size:.82rem;line-height:1.75;color:#664d03';
+          hint.innerHTML = '<strong>⚠️ Google sign-in is blocked by your browser.</strong><br/><br/>'
+            + 'Please <strong>use email & password</strong> to sign in instead.<br/><br/>'
+            + 'Or try these fixes:<br/>'
+            + '• Open this page in a <strong>normal (non-private) browser window</strong><br/>'
+            + '• <strong>Chrome:</strong> Settings → Privacy → Cookies → "Allow all cookies"<br/>'
+            + '• <strong>Safari:</strong> Settings → Safari → uncheck "Block all cookies"<br/>'
+            + '• <strong>Firefox:</strong> Settings → Privacy → change to "Standard"';
+          var loginForm = document.querySelector('.auth-form') || errEl?.parentElement;
+          if (loginForm) loginForm.appendChild(hint);
           return;
         }
       }
@@ -2576,6 +2568,7 @@ async function doRegister() {
   if (!pass || pass.length < 6) { if(errEl) errEl.textContent='Password min 6 chars.'; return; }
   if (errEl) errEl.textContent = 'Creating account…';
   try {
+    await _setFirebasePersistence();
     const cred = await firebase.auth().createUserWithEmailAndPassword(email, pass);
     await cred.user.sendEmailVerification();
     await firebase.firestore().collection('users').doc(cred.user.uid).set({
@@ -3282,23 +3275,6 @@ function _normaliseRecord(r) {
 }
 
 function initAuth() {
-  // Show storage warning immediately if blocked
-  if (!_isStorageAvailable()) {
-    setTimeout(function() {
-      var banner = document.getElementById('storageBlockedMsg');
-      if (!banner) {
-        var b = document.createElement('div');
-        b.id = 'storageBlockedMsg';
-        b.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px 16px;margin:12px 0;font-size:.8rem;line-height:1.7;color:#664d03';
-        b.innerHTML = '<strong>⚠️ Cookies are blocked</strong> — sign-in may not work. '
-          + 'Open this page in a normal (non-private) browser window and ensure cookies are enabled.';
-        var form = document.querySelector('.auth-fields') || document.querySelector('.auth-form')
-                || document.getElementById('loginErr')?.parentElement;
-        if (form) form.insertAdjacentElement('afterbegin', b);
-      }
-    }, 800);
-  }
-
   // Handle redirect result first (Google sign-in via redirect)
   firebase.auth().getRedirectResult().then(function(result) {
     if (result && result.user) {
