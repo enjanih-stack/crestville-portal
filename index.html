@@ -2680,50 +2680,6 @@ function showRoleSelector(user, userData) {
         <div class="ro-body"><div class="ro-title">Register as Agent</div><div class="ro-desc">Apply to become a Crestville Properties agent</div></div>
         <div class="ro-check"></div>
       </div>`;
-  }
-
-  document.getElementById('roleSelectorOverlay').classList.add('on');
-}
-
-  document.getElementById('rcEmail').textContent = user.email;
-  const opts = document.getElementById('roleOptions');
-  const panel = document.getElementById('etVerifyPanel');
-  panel.classList.remove('on');
-
-  if (isAdminUser) {
-    // Admin sees 3 choices
-    document.getElementById('rcTitle').textContent = 'Welcome back! Choose your session';
-    opts.innerHTML = `
-      <div class="role-option" data-role="new_tenant" onclick="selectRole('new_tenant',this)">
-        <div class="ro-icon new">🏠</div>
-        <div class="ro-body"><div class="ro-title">New / Prospective Tenant</div><div class="ro-desc">Browse properties and start a new application</div></div>
-        <div class="ro-check"></div>
-      </div>
-      <div class="role-option" data-role="existing_tenant" onclick="selectRole('existing_tenant',this)">
-        <div class="ro-icon exist">🔑</div>
-        <div class="ro-body"><div class="ro-title">Existing Tenant</div><div class="ro-desc">View your tenancy, renew or raise requests</div></div>
-        <div class="ro-check"></div>
-      </div>
-      <div class="role-option" data-role="admin" onclick="selectRole('admin',this)">
-        <div class="ro-icon admin">🏛️</div>
-        <div class="ro-body"><div class="ro-title">Admin Dashboard</div><div class="ro-desc">Manage all properties, tenants and records</div></div>
-        <div class="ro-check"></div>
-      </div>`;
-  } else {
-    // Regular user sees 2 choices
-    document.getElementById('rcTitle').textContent = 'Welcome! How would you like to continue?';
-    opts.innerHTML = `
-      <div class="role-option" data-role="new_tenant" onclick="selectRole('new_tenant',this)">
-        <div class="ro-icon new">🏠</div>
-        <div class="ro-body"><div class="ro-title">New / Prospective Tenant</div><div class="ro-desc">I am looking for a property to rent</div></div>
-        <div class="ro-check"></div>
-      </div>
-      <div class="role-option" data-role="existing_tenant" onclick="selectRole('existing_tenant',this)">
-        <div class="ro-icon exist">🔑</div>
-        <div class="ro-body"><div class="ro-title">Existing Tenant</div><div class="ro-desc">I already have an active tenancy with Crestville Properties</div></div>
-        <div class="ro-check"></div>
-      </div>`;
-  }
 
   document.getElementById('roleSelectorOverlay').classList.add('on');
 }
@@ -3705,6 +3661,307 @@ function mrAdminReject(id){
 }
 
 /* ── BULK SELECTION (Rent Manager) ── */
+/* ============================================================
+   AGENT TIER — Registration · Approval · Dashboard · Permissions
+   ============================================================ */
+
+const AGENT_PERMISSIONS = {
+  view_applications: { label:'View Applications',  desc:'See all tenant application progress' },
+  view_vacant:       { label:'View Vacant Units',   desc:'See all vacant properties' },
+  view_tenants:      { label:'View Tenant Roster',  desc:'Read-only access to tenant list' },
+  send_reminders:    { label:'Send Reminders',      desc:'Send renewal reminder emails' },
+  add_records:       { label:'Add Tenant Records',  desc:'Create new tenancy records (no delete)' },
+  view_docs:         { label:'View Documents',      desc:'Open and read tenant eForm documents' },
+};
+const AGENT_DEFAULT_PERMS = { view_applications:true, view_vacant:true };
+
+function _agentHasPerm(perm) {
+  if (isAdmin) return true;
+  var perms = window._agentData && window._agentData.permissions;
+  if (!perms) return perm==='view_applications'||perm==='view_vacant';
+  return !!perms[perm];
+}
+
+function openAgentRegistration() {
+  var mo = document.getElementById('agentRegModal');
+  if (!mo) {
+    var d = document.createElement('div');
+    d.className='modal-overlay'; d.id='agentRegModal';
+    d.innerHTML='<div class="modal" style="max-width:500px">'
+      +'<div class="modal-head"><h3>🤝 Register as Agent</h3>'
+        +'<button class="modal-close" onclick="document.getElementById(\'agentRegModal\').classList.remove(\'on\')">✕</button></div>'
+      +'<div class="modal-body">'
+        +'<div style="font-size:.78rem;color:var(--dim);margin-bottom:16px;line-height:1.7">Register to become a Crestville Properties agent. The admin will review and approve your application. Once approved you will receive an email confirmation.</div>'
+        +'<div class="fg"><label>Full Name *</label><input type="text" id="arName" placeholder="Your full legal name"/></div>'
+        +'<div class="fg"><label>Phone Number *</label><input type="tel" id="arPhone" placeholder="+234..."/></div>'
+        +'<div class="fg"><label>Agency / Company (if any)</label><input type="text" id="arAgency" placeholder="e.g. ABC Realtors Nigeria"/></div>'
+        +'<div class="fg"><label>Years in Real Estate</label>'
+          +'<select id="arExp"><option value="0-1">Less than 1 year</option><option value="1-3">1–3 years</option><option value="3-5">3–5 years</option><option value="5+">5+ years</option></select></div>'
+        +'<div class="fg"><label>Why You Want to be an Agent *</label>'
+          +'<textarea id="arBio" rows="3" placeholder="Describe your experience and interest in partnering with Crestville Properties..."></textarea></div>'
+        +'<div style="padding:12px;background:rgba(201,150,12,.07);border:1px solid rgba(201,150,12,.2);border-radius:8px;font-size:.76rem;margin-bottom:14px">By registering you agree to act in accordance with Crestville Properties guidelines and client data protection policies.</div>'
+        +'<div style="display:flex;gap:10px;justify-content:flex-end">'
+          +'<button class="btn btn-outline" onclick="document.getElementById(\'agentRegModal\').classList.remove(\'on\')">Cancel</button>'
+          +'<button class="btn btn-gold" onclick="submitAgentRegistration()">Submit Application →</button>'
+        +'</div></div></div>';
+    document.body.appendChild(d); mo=d;
+  }
+  mo.classList.add('on');
+}
+
+async function submitAgentRegistration() {
+  var name=document.getElementById('arName')?.value.trim();
+  var phone=document.getElementById('arPhone')?.value.trim();
+  var bio=document.getElementById('arBio')?.value.trim();
+  if(!name||!phone||!bio){notify('error','Missing Fields','Please complete all required fields.');return;}
+  if(!currentUser){notify('error','Not Signed In','Please sign in first.');return;}
+  var agentDoc={uid:currentUser.uid,email:currentUser.email.toLowerCase(),name,phone,
+    agency:document.getElementById('arAgency')?.value.trim()||'',
+    experience:document.getElementById('arExp')?.value||'0-1',bio,
+    role:'agent',agentStatus:'pending',permissions:AGENT_DEFAULT_PERMS,
+    appliedAt:new Date().toISOString(),approvedAt:null,approvedBy:null};
+  try{
+    if(window._db){
+      await window._db.collection('users').doc(currentUser.uid).set(agentDoc,{merge:true});
+      await window._db.collection('agentApplications').add(agentDoc);
+    }
+    var html=_wfEmailTemplate('New Agent Application',
+      '<p>A new agent application has been submitted:</p>'
+      +'<table style="width:100%;font-size:.85rem">'
+      +'<tr><td style="color:#9a8a6a">Name:</td><td>'+name+'</td></tr>'
+      +'<tr><td style="color:#9a8a6a">Email:</td><td>'+currentUser.email+'</td></tr>'
+      +'<tr><td style="color:#9a8a6a">Phone:</td><td>'+phone+'</td></tr>'
+      +'<tr><td style="color:#9a8a6a">Agency:</td><td>'+(agentDoc.agency||'—')+'</td></tr>'
+      +'</table><p><em>'+bio+'</em></p><p>Log in to approve or reject.</p>'+_wfPortalBtn());
+    await sendCRSEmail(['enjanih@gmail.com','crestechnologies@outlook.com'],'[CRS] 🤝 New Agent Application — '+name,html);
+    document.getElementById('agentRegModal').classList.remove('on');
+    notify('success','Application Submitted!','Admin will review and email you.');
+    logActivity(currentUser.email,'agent','add','Agent application submitted',name);
+  }catch(e){notify('error','Submission Failed',e.message);}
+}
+
+async function loadAgentsAdmin() {
+  var container=document.getElementById('agentsAdminList');
+  if(!container)return;
+  container.innerHTML='<div style="padding:20px;text-align:center;color:var(--dim)">Loading...</div>';
+  var agents=[];
+  try{
+    if(window._db){
+      var snap=await window._db.collection('users').where('role','==','agent').get();
+      agents=snap.docs.map(function(d){return Object.assign({uid:d.id},d.data());});
+    }
+  }catch(e){container.innerHTML='<div style="padding:20px;color:var(--red)">Error: '+e.message+'</div>';return;}
+  if(!agents.length){
+    container.innerHTML='<div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem;margin-bottom:10px">🤝</div><div style="margin-bottom:12px">No agent applications yet.</div>'
+      +'<button class="btn btn-outline btn-sm" onclick="openAgentInviteModal()" style="font-size:.78rem">+ Invite an Agent by Email</button></div>';
+    return;
+  }
+  var fmtD=function(iso){try{return new Date(iso).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});}catch(e){return iso||'—';}};
+  container.innerHTML=agents.map(function(a){
+    var isPending=a.agentStatus==='pending',isApproved=a.agentStatus==='approved';
+    var stBg=isPending?'#fef9e7':isApproved?'#f0fdf4':'#fff0f0';
+    var stColor=isPending?'#7a5c00':isApproved?'#15803d':'var(--red)';
+    var stLabel=isPending?'⏳ Pending':isApproved?'✅ Approved':'❌ Revoked';
+    var permChips=Object.entries(AGENT_PERMISSIONS).map(function(entry){
+      var key=entry[0],def=entry[1],has=a.permissions&&a.permissions[key];
+      return '<label style="display:inline-flex;align-items:center;gap:4px;font-size:.66rem;padding:3px 8px;border-radius:12px;cursor:pointer;'
+        +(has?'background:rgba(21,128,61,.1);color:#15803d;border:1px solid rgba(21,128,61,.2)':'background:var(--cream);color:var(--dim);border:1px solid var(--rule)')+'">'
+        +'<input type="checkbox" data-uid="'+a.uid+'" data-perm="'+key+'" '+(has?'checked ':'')+' onchange="agentTogglePerm(this)" style="accent-color:var(--gold);cursor:pointer"/>'
+        +def.label+'</label>';
+    }).join(' ');
+    return '<div style="background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:14px">'
+      +'<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--cream);border-bottom:1px solid var(--rule);flex-wrap:wrap">'
+        +'<span style="font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:20px;background:'+stBg+';color:'+stColor+'">'+stLabel+'</span>'
+        +'<span style="font-weight:700;font-size:.86rem">'+(a.name||'—')+'</span>'
+        +'<span style="font-size:.74rem;color:var(--dim)">'+(a.email||'—')+'</span>'
+        +(a.agency?'<span style="font-size:.7rem;color:var(--dim)">· '+a.agency+'</span>':'')
+        +'<span style="font-size:.7rem;color:var(--dim);margin-left:auto">Applied: '+fmtD(a.appliedAt)+'</span>'
+      +'</div>'
+      +'<div style="padding:12px 16px">'
+        +(a.phone?'<div style="font-size:.76rem;margin-bottom:6px">📞 '+a.phone+(a.experience?' · '+a.experience+' yrs exp':'')+'</div>':'')
+        +(a.bio?'<div style="font-size:.76rem;color:var(--dim);margin-bottom:12px;line-height:1.65;font-style:italic">"'+a.bio.slice(0,200)+'"</div>':'')
+        +'<div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin-bottom:8px">Permissions</div>'
+        +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'+permChips+'</div>'
+        +(a.approvedBy?'<div style="font-size:.72rem;color:var(--dim)">Approved by: '+a.approvedBy+' on '+fmtD(a.approvedAt)+'</div>':'')
+      +'</div>'
+      +'<div style="display:flex;border-top:1px solid var(--rule)">'
+        +(isPending
+          ?'<button onclick="agentSetStatus(\''+a.uid+'\',\'approved\')" style="flex:1;padding:10px;background:#f0fdf4;color:#15803d;border:none;font-size:.78rem;font-weight:700;cursor:pointer;border-right:1px solid var(--rule)">✅ Approve</button>'
+           +'<button onclick="agentSetStatus(\''+a.uid+'\',\'rejected\')" style="flex:1;padding:10px;background:#fff0f0;color:var(--red);border:none;font-size:.78rem;font-weight:700;cursor:pointer">❌ Reject</button>'
+          :isApproved
+            ?'<button onclick="agentSetStatus(\''+a.uid+'\',\'revoked\')" style="flex:1;padding:10px;background:#fff0f0;color:var(--red);border:none;font-size:.78rem;font-weight:700;cursor:pointer">🚫 Revoke Access</button>'
+            :'<button onclick="agentSetStatus(\''+a.uid+'\',\'approved\')" style="flex:1;padding:10px;background:#f0fdf4;color:#15803d;border:none;font-size:.78rem;font-weight:700;cursor:pointer">♻️ Re-approve</button>')
+      +'</div></div>';
+  }).join('');
+}
+
+async function agentSetStatus(uid,status){
+  if(!window._db){notify('error','DB Required','');return;}
+  var note=status==='rejected'||status==='revoked'?(prompt('Reason (optional):')||''):'';
+  var upd={agentStatus:status,updatedAt:new Date().toISOString()};
+  if(status==='approved'){upd.approvedAt=new Date().toISOString();upd.approvedBy=currentUser.email;}
+  try{
+    await window._db.collection('users').doc(uid).update(upd);
+    var snap=await window._db.collection('users').doc(uid).get();
+    var agent=snap.data();
+    if(agent&&agent.email){
+      var subj=status==='approved'?'[Crestville] 🎉 Agent Application Approved!':status==='rejected'?'[Crestville] Agent Application — Not Approved':'[Crestville] Agent Access Revoked';
+      var body=status==='approved'
+        ?'<p>Dear <strong>'+(agent.name||'Agent')+'</strong>,</p><p>Your agent application has been <strong>approved</strong>! Log in and select <em>"Agent Portal"</em> from the role selector.</p>'+_wfPortalBtn()
+        :'<p>Dear '+(agent.name||'Agent')+'</p><p>Your application was not approved.'+(note?' Reason: '+note:'')+'</p><p>Contact crestechnologies@outlook.com for more information.</p>';
+      await sendCRSEmail(agent.email,subj,_wfEmailTemplate(subj.replace('[Crestville] ',''),body));
+    }
+    notify('success','Agent '+status.charAt(0).toUpperCase()+status.slice(1),'');
+    logActivity(currentUser.email,'admin','edit','Agent status → '+status,uid);
+    loadAgentsAdmin();
+  }catch(e){notify('error','Update Failed',e.message);}
+}
+
+async function agentTogglePerm(cb){
+  var uid=cb.dataset.uid,perm=cb.dataset.perm;
+  if(!uid||!perm||!window._db)return;
+  var upd={}; upd['permissions.'+perm]=cb.checked;
+  try{
+    await window._db.collection('users').doc(uid).update(upd);
+    var lbl=cb.parentElement;
+    lbl.style.background=cb.checked?'rgba(21,128,61,.1)':'var(--cream)';
+    lbl.style.color=cb.checked?'#15803d':'var(--dim)';
+    lbl.style.borderColor=cb.checked?'rgba(21,128,61,.2)':'var(--rule)';
+    logActivity(currentUser.email,'admin','edit',(cb.checked?'Granted':'Revoked')+' perm: '+perm,uid);
+  }catch(e){notify('error','Permission Error',e.message);cb.checked=!cb.checked;}
+}
+
+function openAgentInviteModal(){
+  var email=prompt('Email address to invite as agent:');
+  if(!email||!email.includes('@'))return;
+  var stub={email:email.toLowerCase(),name:email.split('@')[0],role:'agent',agentStatus:'pending',
+    permissions:AGENT_DEFAULT_PERMS,appliedAt:new Date().toISOString(),invitedBy:currentUser.email};
+  if(!window._db){notify('error','DB Required','');return;}
+  window._db.collection('agentApplications').add(stub).then(function(){
+    sendCRSEmail(email,'[Crestville] You have been invited as a Crestville Agent',
+      _wfEmailTemplate('Agent Invitation',
+        '<p>You have been invited by <strong>Crestville Properties</strong> to register as an agent.</p>'
+        +'<p>Log in or sign up, then select "Register as Agent" from the role selector.</p>'+_wfPortalBtn()));
+    notify('success','Invite Sent',email);
+  });
+}
+
+function agentSwitchTab(tab){
+  ['apps','vacant','stats'].forEach(function(t){
+    var panel=document.getElementById('agentPanel'+t.charAt(0).toUpperCase()+t.slice(1));
+    var btn=document.getElementById('agentTab'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(panel)panel.style.display=t===tab?'':'none';
+    if(btn)btn.classList.toggle('on',t===tab);
+  });
+  if(tab==='apps')renderAgentApplications();
+  if(tab==='vacant')renderAgentVacant();
+  if(tab==='stats')renderAgentStats();
+}
+
+async function loadAgentDashboard(){
+  var agentData=window._agentData||{};
+  var card=document.getElementById('agentInfoCard');
+  if(card){
+    card.style.display='';
+    var dn=document.getElementById('agentDisplayName'),de=document.getElementById('agentDisplayEmail'),pc=document.getElementById('agentPermChips');
+    if(dn)dn.textContent=agentData.name||currentUser?.displayName||'Agent';
+    if(de)de.textContent=agentData.email||currentUser?.email||'—';
+    if(pc){
+      var perms=agentData.permissions||AGENT_DEFAULT_PERMS;
+      pc.innerHTML=Object.entries(AGENT_PERMISSIONS).filter(function(e){return perms[e[0]];})
+        .map(function(e){return '<span style="font-size:.66rem;padding:2px 8px;border-radius:12px;background:rgba(201,150,12,.12);color:#7a5c00;border:1px solid rgba(201,150,12,.25)">'+e[1].label+'</span>';})
+        .join(' ')||'<span style="font-size:.74rem;color:var(--dim)">View-only access</span>';
+    }
+  }
+  if(window._db&&currentUser){
+    try{
+      var doc=await window._db.collection('users').doc(currentUser.uid).get();
+      if(doc.exists){window._agentData=Object.assign({},window._agentData||{},doc.data());}
+    }catch(e){}
+  }
+  document.querySelectorAll('.agent-only').forEach(function(el){el.style.display='';});
+  agentSwitchTab('apps');
+}
+
+async function renderAgentApplications(){
+  var container=document.getElementById('agentAppsList');if(!container)return;
+  if(!_agentHasPerm('view_applications')){container.innerHTML='<div style="text-align:center;padding:40px;color:var(--dim)">🔒 Permission required. Contact admin.</div>';return;}
+  container.innerHTML='<div style="text-align:center;padding:20px;color:var(--dim)">Loading...</div>';
+  var wfs=[];
+  try{
+    if(window._db){var snap=await window._db.collection('workflows').orderBy('updatedAt','desc').limit(50).get();wfs=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});}
+    else wfs=JSON.parse(localStorage.getItem('crs_workflows')||'[]');
+  }catch(e){wfs=JSON.parse(localStorage.getItem('crs_workflows')||'[]');}
+  if(!wfs.length){container.innerHTML='<div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem;margin-bottom:8px">📋</div><div>No applications found.</div></div>';return;}
+  var fmtD=function(iso){try{return new Date(iso).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});}catch(e){return iso||'—';}};
+  container.innerHTML=wfs.map(function(wf){
+    var steps=(wf.type==='new_tenant'?WF_STEPS_NEW:WF_STEPS_RENEWAL)||[];
+    var pct=Math.min(100,Math.round(((wf.steps||[]).length/Math.max(steps.length,1))*100));
+    var isC=wf.status==='complete',isR=wf.status==='rejected';
+    var pills=steps.map(function(s){var done=(wf.steps||[]).some(function(x){return x.id===s.id;});var isc=s.id===wf.currentStep;
+      return '<span style="font-size:.62rem;padding:2px 7px;border-radius:10px;'+(done?'background:var(--green);color:#fff':isc?'background:var(--gold);color:#fff':'background:var(--cream);color:var(--dim)')+'">'+s.label+'</span>';}).join('');
+    return '<div style="background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:12px">'
+      +'<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--cream);border-bottom:1px solid var(--rule);flex-wrap:wrap">'
+        +'<span style="font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:12px;background:rgba(201,150,12,.12);color:#7a5c00">'+(wf.type==='new_tenant'?'🏠 New':'🔄 Renewal')+'</span>'
+        +'<span style="font-weight:700;font-size:.84rem">'+(wf.unitLabel||wf.unitId||'—')+'</span>'
+        +'<span style="font-size:.74rem;color:var(--dim)">'+(wf.tenantName||wf.tenantEmail||'')+'</span>'
+        +'<span style="font-size:.7rem;color:var(--dim);margin-left:auto">'+fmtD(wf.submittedAt)+'</span>'
+      +'</div>'
+      +'<div style="padding:12px 16px">'
+        +'<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--dim);margin-bottom:4px"><span>Progress</span><span>'+pct+'%</span></div>'
+          +'<div style="background:var(--bg);border-radius:6px;height:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+(isC?'var(--green)':isR?'var(--red)':'var(--gold)')+';transition:width .5s"></div></div></div>'
+        +'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">'+pills+'</div>'
+        +'<div style="font-size:.78rem"><strong>Stage:</strong> <span style="color:'+(isR?'var(--red)':isC?'var(--green)':'var(--gold)')+';">'+(isC?'✅ Complete':isR?'❌ Rejected':wf.currentStep||'—')+'</span></div>'
+        +(_agentHasPerm('view_docs')?'<div style="margin-top:10px"><button class="btn btn-outline btn-sm" onclick="openEFormDocViewer(\''+wf.id+'\')" style="font-size:.74rem">📄 View Document</button></div>':'')
+      +'</div></div>';
+  }).join('');
+}
+
+function renderAgentVacant(){
+  var container=document.getElementById('agentVacantList');if(!container)return;
+  if(!_agentHasPerm('view_vacant')){container.innerHTML='<div style="text-align:center;padding:40px;color:var(--dim)">🔒 Permission required.</div>';return;}
+  var vacants=typeof getVacantUnits==='function'?getVacantUnits():[];
+  if(!vacants.length){container.innerHTML='<div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem">🏠</div><div>No vacant units.</div></div>';return;}
+  container.innerHTML=vacants.map(function(p){
+    return '<div style="background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:14px 16px;margin-bottom:10px">'
+      +'<div style="font-weight:700;font-size:.86rem;margin-bottom:4px">'+(p.label||p.id)+'</div>'
+      +'<div style="font-size:.76rem;color:var(--dim);margin-bottom:6px">📍 '+(p.location||p.city||'—')+'</div>'
+      +'<div style="font-size:.72rem;color:var(--dim)">'+(p.type||'Residential')+'</div>'
+      +(p.amenities&&p.amenities.length?'<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">'
+          +p.amenities.slice(0,5).map(function(a){return '<span style="font-size:.62rem;padding:2px 7px;border-radius:12px;background:rgba(201,150,12,.08);border:1px solid rgba(201,150,12,.2);color:#7a5c00">'+a+'</span>';}).join('')
+          +(p.amenities.length>5?'<span style="font-size:.62rem;color:var(--dim)">+'+(p.amenities.length-5)+' more</span>':'')+'</div>':'')
+    +'</div>';
+  }).join('');
+}
+
+function renderAgentStats(){
+  var c=document.getElementById('agentStatsList');if(!c)return;
+  var total=rentLogs.length,active=rentLogs.filter(function(r){var e=r.expiry?new Date(r.expiry):null;return e&&e>new Date();}).length;
+  var vacant=(typeof getVacantUnits==='function'?getVacantUnits():[]).length;
+  c.innerHTML='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">'
+    +['<div>🏢</div><div style="font-family:\'Cormorant Garamond\',serif;font-size:1.6rem;font-weight:700;color:var(--gold)">'+total+'</div><div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin-top:4px">Total Units</div>',
+      '<div>✅</div><div style="font-family:\'Cormorant Garamond\',serif;font-size:1.6rem;font-weight:700;color:var(--gold)">'+active+'</div><div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin-top:4px">Active Tenants</div>',
+      '<div>🏠</div><div style="font-family:\'Cormorant Garamond\',serif;font-size:1.6rem;font-weight:700;color:var(--gold)">'+vacant+'</div><div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin-top:4px">Vacant Units</div>']
+    .map(function(s){return '<div style="background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:18px;text-align:center">'+s+'</div>';}).join('')+'</div>';
+}
+
+/* ── Wire agent tab extension into tenSwitchTab ── */
+(function(){
+  var _orig=typeof tenSwitchTab==='function'?tenSwitchTab:null;
+  window.tenSwitchTab=function(tab){
+    ['roster','sessions','activity','agents'].forEach(function(t){
+      var panel=document.getElementById('tenPanel'+t.charAt(0).toUpperCase()+t.slice(1));
+      var btn=document.getElementById('tenTab'+t.charAt(0).toUpperCase()+t.slice(1));
+      if(panel)panel.style.display=t===tab?'':'none';
+      if(btn)btn.classList.toggle('on',t===tab);
+    });
+    if(tab==='sessions')renderSessionLog();
+    if(tab==='activity')renderActivityLog();
+    if(tab==='agents')loadAgentsAdmin();
+    if(tab==='roster')loadTenantsTable();
+  };
+})();
+
 window._rmSelected=new Set();
 function rmRowCheck(cb){var idx=parseInt(cb.value);if(cb.checked)window._rmSelected.add(idx);else window._rmSelected.delete(idx);var row=document.getElementById('rmRow_'+idx);if(row)row.style.outline=cb.checked?'2px solid var(--gold)':'';var allChk=document.getElementById('rmSelectAllChk');if(allChk){var allBoxes=document.querySelectorAll('#rmBody input[type=checkbox]');var checked=[...allBoxes].filter(b=>b.checked).length;allChk.checked=checked===allBoxes.length;allChk.indeterminate=checked>0&&checked<allBoxes.length;}_rmUpdateBulkBar();}
 function rmToggleAll(checked){document.querySelectorAll('#rmBody input[type=checkbox]').forEach(function(cb){cb.checked=checked;var idx=parseInt(cb.value);if(checked)window._rmSelected.add(idx);else window._rmSelected.delete(idx);var row=document.getElementById('rmRow_'+idx);if(row)row.style.outline=checked?'2px solid var(--gold)':'';});_rmUpdateBulkBar();}
