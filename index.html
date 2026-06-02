@@ -31,9 +31,19 @@ function _post(url, body) {
     body: JSON.stringify(body)
   }).then(function(r) {
     return r.json().then(function(data) {
-      if (!r.ok) throw { code: (data.error && data.error.message) || "unknown" };
+      if (!r.ok) {
+        /* Firebase REST error shape: { error: { code: 400, message: "INVALID_LOGIN_CREDENTIALS", errors: [...] } } */
+        var msg = (data.error && data.error.message) || "UNKNOWN_ERROR";
+        /* Strip extra details after space e.g. "WEAK_PASSWORD : ..." -> "WEAK_PASSWORD" */
+        var code = msg.split(" : ")[0].split("\n")[0].trim();
+        throw { code: code, message: msg, httpStatus: r.status };
+      }
       return data;
     });
+  }).catch(function(e) {
+    /* Re-throw fetch network errors with a recognisable code */
+    if (e.code) throw e; /* already structured */
+    throw { code: "NETWORK_ERROR", message: e.message || "Network request failed" };
   });
 }
 
@@ -136,17 +146,26 @@ function _objToFsDoc(obj) {
 
 /* ── Friendly auth error codes ── */
 function _mapErrCode(code) {
+  if (!code) return "auth/unknown";
+  var c = (code || "").toString().toUpperCase().split(" : ")[0].trim();
   var map = {
-    "EMAIL_NOT_FOUND": "auth/user-not-found",
-    "INVALID_PASSWORD": "auth/wrong-password",
-    "INVALID_EMAIL": "auth/invalid-email",
-    "USER_DISABLED": "auth/user-disabled",
+    "EMAIL_NOT_FOUND":          "auth/user-not-found",
+    "INVALID_PASSWORD":         "auth/wrong-password",
+    "INVALID_EMAIL":            "auth/invalid-email",
+    "USER_DISABLED":            "auth/user-disabled",
     "TOO_MANY_ATTEMPTS_TRY_LATER": "auth/too-many-requests",
-    "WEAK_PASSWORD : Password should be at least 6 characters": "auth/weak-password",
-    "EMAIL_EXISTS": "auth/email-already-in-use",
-    "INVALID_LOGIN_CREDENTIALS": "auth/invalid-credential"
+    "WEAK_PASSWORD":            "auth/weak-password",
+    "EMAIL_EXISTS":             "auth/email-already-in-use",
+    "INVALID_LOGIN_CREDENTIALS":"auth/invalid-credential",
+    "USER_NOT_FOUND":           "auth/user-not-found",
+    "WRONG_PASSWORD":           "auth/wrong-password",
+    "MISSING_PASSWORD":         "auth/wrong-password",
+    "NETWORK_ERROR":            "auth/network-request-failed",
+    "OPERATION_NOT_ALLOWED":    "auth/operation-not-allowed",
+    "TOKEN_EXPIRED":            "auth/user-token-expired",
+    "USER_TOKEN_EXPIRED":       "auth/user-token-expired",
   };
-  return map[code] || ("auth/" + (code || "unknown").toLowerCase().replace(/ /g,"_"));
+  return map[c] || ("auth/" + c.toLowerCase().replace(/ /g, "_"));
 }
 
 /* ══════════════════════════════════════════════════════
@@ -193,7 +212,10 @@ var firebase = {
             _authListeners.forEach(function(cb) { cb(user); });
             return { user: user };
           }).catch(function(e) {
-            throw { code: _mapErrCode(e.code || ""), message: e.code };
+            /* e.code is already the raw Firebase REST code e.g. "INVALID_LOGIN_CREDENTIALS" */
+            var mapped = _mapErrCode(e.code || e.message || "UNKNOWN_ERROR");
+            console.error("signIn REST error:", e.code, "->", mapped);
+            throw { code: mapped, message: e.message || e.code };
           });
       },
       createUserWithEmailAndPassword: function(email, pass) {
@@ -2826,24 +2848,25 @@ async function doLogout() {
   window.location.replace(BASE_URL + '/landing.html');
 }
 function friendlyAuthError(code) {
-  const m = {
-    'auth/invalid-email':                             'Invalid email address.',
-    'auth/user-not-found':                            'No account found. Register first or check email.',
-    'auth/wrong-password':                            'Incorrect password. Try again or reset below.',
-    'auth/email-already-in-use':                      'Email already registered — use Sign In tab.',
-    'auth/weak-password':                             'Password must be at least 6 characters.',
-    'auth/invalid-credential':                        'Incorrect email or password.',
-    'auth/too-many-requests':                         'Too many attempts — wait a few minutes.',
-    'auth/email-not-verified':                        'Please verify your email — check your inbox.',
-    'auth/popup-closed-by-user':                      'Google sign-in was closed. Try again.',
-    'auth/popup-blocked':                             'Popup blocked — trying redirect instead…',
-    'auth/network-request-failed':                    '⚠️ Network error — Firebase servers unreachable. Check your internet connection, disable VPN if active, and try again.',
-    'auth/operation-not-allowed':                     'This sign-in method is not enabled.',
-    'auth/cancelled-popup-request':                   'Only one sign-in at a time — try again.',
-    'auth/operation-not-supported-in-this-environment': 'Switching to redirect sign-in — please wait…',
+  var c = (code || '').toString();
+  var m = {
+    'auth/invalid-email':        'Invalid email address.',
+    'auth/user-not-found':       'No account found with this email. Please register first.',
+    'auth/wrong-password':       'Incorrect password. Try again or reset below.',
+    'auth/invalid-credential':   'Incorrect email or password. Please check and try again.',
+    'auth/email-already-in-use': 'This email is already registered — use Sign In.',
+    'auth/weak-password':        'Password must be at least 6 characters.',
+    'auth/too-many-requests':    'Too many attempts. Please wait a few minutes and try again.',
+    'auth/user-disabled':        'This account has been disabled. Contact admin.',
+    'auth/network-request-failed': 'Network error. Check your internet connection and try again.',
+    'auth/operation-not-allowed': 'This sign-in method is not enabled.',
+    'auth/popup-closed-by-user': 'Sign-in popup was closed. Please try again.',
+    'auth/user-token-expired':   'Your session has expired. Please sign in again.',
+    'auth/operation-not-supported-in-this-environment': 'Google sign-in unavailable. Please use email & password.',
   };
-  console.error('Firebase auth error:', code);
-  return m[code] || ('Error (' + code + ') — please try again.');
+  console.error('Auth error code:', c);
+  if (!c || c === 'undefined' || c === 'null') return 'Sign-in failed. Please check your email and password.';
+  return m[c] || m['auth/' + c.toLowerCase()] || 'Sign-in failed (' + c + '). Please try again.';
 }
 
 /* ═══ AUTH STATE CHANGE ═══════════════════════════════ */
