@@ -2376,64 +2376,28 @@ function _nameMatches(entered, record) {
 }
 
 async function doLogin() {
-  var errEl    = document.getElementById('loginErr');
-  var email    = (document.getElementById('loginEmail')?.value || '').trim().toLowerCase();
-  var pass     = document.getElementById('loginPass')?.value || '';
-  var nameField = document.getElementById('loginNameField');
-  var isNameVisible = nameField && nameField.style.display !== 'none';
-  var contractName = isNameVisible
-    ? (document.getElementById('loginContractName')?.value || '').trim()
-    : '';
+  var errEl = document.getElementById('loginErr');
+  var email = (document.getElementById('loginEmail')?.value || '').trim().toLowerCase();
+  var pass  = document.getElementById('loginPass')?.value || '';
 
-  loginClearVerifyFail();
   if (errEl) { errEl.textContent = ''; errEl.style.color = 'var(--red)'; }
 
-  // ── Basic validation ──
-  if (!email) { if(errEl) errEl.textContent = 'Enter your email address.'; return; }
-  if (!pass)  { if(errEl) errEl.textContent = 'Enter your password.'; return; }
+  if (!email) { if (errEl) errEl.textContent = 'Enter your email address.'; return; }
+  if (!pass)  { if (errEl) errEl.textContent = 'Enter your password.'; return; }
 
-  // ── Tenant verification — email + name must match database ──
-  var isAdminEmail = ADMIN_EMAILS && ADMIN_EMAILS.some(function(a){ return a.toLowerCase() === email; });
-  if (!isAdminEmail) {
-    var allRecs = (window._seedData || []).concat(rentLogs);
-    var matchedRec = allRecs.find(function(r) {
-      return (r.tenantEmail || '').toLowerCase().trim() === email;
-    });
-
-    if (matchedRec) {
-      // Email found — now verify name if field is visible
-      if (isNameVisible && contractName) {
-        if (!_nameMatches(contractName, matchedRec)) {
-          _loginShowVerifyFail();
-          // Log the failed attempt
-          logActivity(email, 'tenant', 'login', 'Failed verification — name mismatch', contractName);
-          return;
-        }
-      } else if (isNameVisible && !contractName) {
-        // Field shown but left empty
-        if (errEl) errEl.textContent = 'Please enter your name as it appears on your tenancy agreement.';
-        return;
-      }
-    }
-    // If email not found in database — let Firebase handle it (wrong password etc.)
-    // But if Firebase succeeds with an unrecognised email, they will see empty portal
-  }
-
-  // ── Proceed with Firebase authentication ──
   if (errEl) { errEl.textContent = 'Signing in…'; errEl.style.color = 'var(--dim)'; }
-  var btn = document.querySelector('.auth-btn');
+  var btn = document.getElementById('loginSignInBtn') || document.querySelector('.auth-btn');
   if (btn) btn.disabled = true;
+
   try {
-    // Mark as coming from auth screen so onAuthStateChanged shows portal not landing
-    sessionStorage.setItem('crs_from_landing', '1');
-    await _setFirebasePersistence();
     await firebase.auth().signInWithEmailAndPassword(email, pass);
     if (errEl) errEl.textContent = '';
   } catch(e) {
     console.error('Login error:', e.code, e.message);
-    if (errEl) { errEl.textContent = friendlyAuthError(e.code); errEl.style.color = 'var(--red)'; }
-    var help = document.getElementById('loginHelp');
-    if (help) help.style.display = 'block';
+    if (errEl) {
+      errEl.textContent = friendlyAuthError(e.code);
+      errEl.style.color = 'var(--red)';
+    }
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -2473,95 +2437,43 @@ async function _setFirebasePersistence() {
     if (_isStorageAvailable()) {
       await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
     } else {
-      // Storage blocked — use session-only persistence (no localStorage needed)
       await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
     }
   } catch(e) {
-    // Persistence setting failed — try NONE as last resort
     try { await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE); } catch(e2) {}
   }
 }
 
 async function doGoogle() {
   var errEl = document.getElementById('loginErr');
-  if (errEl) { errEl.textContent = 'Connecting to Google…'; errEl.style.color='var(--dim)'; }
-
-  // Remove any previous storage error message
+  if (errEl) { errEl.textContent = 'Opening Google sign-in…'; errEl.style.color = 'var(--dim)'; }
   var prev = document.getElementById('storageBlockedMsg');
   if (prev) prev.remove();
-
   try {
-    // Mark as coming from auth screen before any redirect
-    sessionStorage.setItem('crs_from_landing', '1');
-
-    // Set appropriate persistence before sign-in
-    await _setFirebasePersistence();
-
     var provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-
-    var result;
-    try {
-      result = await firebase.auth().signInWithPopup(provider);
-    } catch(popupErr) {
-      if (popupErr.code === 'auth/operation-not-supported-in-this-environment'
-          || popupErr.code === 'auth/popup-blocked'
-          || popupErr.code === 'auth/popup-closed-by-user') {
-        if (errEl) { errEl.textContent = 'Trying redirect…'; errEl.style.color='var(--dim)'; }
-        try {
-          sessionStorage.setItem('crs_from_landing', '1');
-          await firebase.auth().signInWithRedirect(provider);
-          return;
-        } catch(redirErr) {
-          // Both popup and redirect failed
-          if (errEl) {
-            errEl.textContent = '⚠️ Google sign-in unavailable in this browser.';
-            errEl.style.color = 'var(--red)';
-          }
-          var hint = document.createElement('div');
-          hint.id = 'storageBlockedMsg';
-          hint.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px 16px;margin-top:10px;font-size:.82rem;line-height:1.75;color:#664d03';
-          hint.innerHTML = '<strong>⚠️ Google sign-in is blocked by your browser.</strong><br/><br/>'
-            + 'Please <strong>use email & password</strong> to sign in instead.<br/><br/>'
-            + 'Or try these fixes:<br/>'
-            + '• Open this page in a <strong>normal (non-private) browser window</strong><br/>'
-            + '• <strong>Chrome:</strong> Settings → Privacy → Cookies → "Allow all cookies"<br/>'
-            + '• <strong>Safari:</strong> Settings → Safari → uncheck "Block all cookies"<br/>'
-            + '• <strong>Firefox:</strong> Settings → Privacy → change to "Standard"';
-          var loginForm = document.querySelector('.auth-form') || errEl?.parentElement;
-          if (loginForm) loginForm.appendChild(hint);
-          return;
-        }
-      }
-      throw popupErr;
-    }
-    var googleEmail = (result.user.email || '').toLowerCase().trim();
-    var googleName  = result.user.displayName || '';
-
-    // Verify against database for non-admin Google sign-ins
-    var isAdminEmail = ADMIN_EMAILS && ADMIN_EMAILS.some(function(a){ return a.toLowerCase() === googleEmail; });
-    if (!isAdminEmail) {
-      var allRecs = (window._seedData || []).concat(rentLogs);
-      var matchedRec = allRecs.find(function(r) {
-        return (r.tenantEmail || '').toLowerCase().trim() === googleEmail;
-      });
-      if (matchedRec && googleName) {
-        if (!_nameMatches(googleName, matchedRec)) {
-          // Sign them out immediately and show error
-          await firebase.auth().signOut();
-          _loginShowVerifyFail();
-          logActivity(googleEmail, 'tenant', 'login', 'Google sign-in rejected — name mismatch', googleName);
-          if (errEl) errEl.textContent = '';
-          return;
-        }
-      }
-    }
-  if (errEl) errEl.textContent = '';
+    await firebase.auth().signInWithPopup(provider);
+    if (errEl) errEl.textContent = '';
   } catch(e) {
     console.error('Google sign-in error:', e.code, e.message);
-    if (errEl) { errEl.textContent = friendlyAuthError(e.code); errEl.style.color='var(--red)'; }
+    // Popup blocked / not supported — fall back to redirect
+    if (e.code === 'auth/popup-blocked'
+        || e.code === 'auth/popup-closed-by-user'
+        || e.code === 'auth/operation-not-supported-in-this-environment') {
+      if (errEl) { errEl.textContent = 'Redirecting to Google…'; errEl.style.color = 'var(--dim)'; }
+      try {
+        var p2 = new firebase.auth.GoogleAuthProvider();
+        await firebase.auth().signInWithRedirect(p2);
+      } catch(e2) {
+        if (errEl) errEl.textContent = 'Google sign-in blocked. Please use email & password.';
+        errEl.style.color = 'var(--red)';
+      }
+    } else {
+      if (errEl) { errEl.textContent = friendlyAuthError(e.code); errEl.style.color = 'var(--red)'; }
+    }
   }
-}
+
+
 async function doRegister() {
   const errEl = document.getElementById('regErr');
   const name  = document.getElementById('regName').value.trim();
@@ -3280,93 +3192,48 @@ function _normaliseRecord(r) {
 }
 
 function initAuth() {
-  // Handle redirect result first (Google sign-in via redirect)
-  firebase.auth().getRedirectResult().then(function(result) {
-    if (result && result.user) {
-      // Redirect sign-in succeeded — onAuthStateChanged will handle it
-      console.log('Redirect sign-in succeeded:', result.user.email);
-    }
-  }).catch(function(e) {
-    console.error('Redirect result error:', e.code);
-    if (e.code !== 'auth/no-auth-event') {
-      var errEl = document.getElementById('loginErr');
-      if (errEl) {
-        errEl.textContent = friendlyAuthError(e.code);
-        errEl.style.color = 'var(--red)';
-        errEl.style.display = 'block';
-      }
-    }
-  });
+  // Handle Google redirect result
+  firebase.auth().getRedirectResult().catch(function(e){ console.warn('redirect:', e.code); });
 
-  firebase.auth().onAuthStateChanged(async user => {
+  firebase.auth().onAuthStateChanged(async function(user) {
     try { document.getElementById('globalLoader').classList.add('out'); } catch(e){}
-    if (user) {
-      currentUser = user;
-      const email = (user.email||'').toLowerCase();
-      const adminMode = ADMIN_EMAILS.includes(email);
-      
-      // Get user data
-      let userData = {};
-      try {
-        const snap = await firebase.firestore().collection('users').doc(user.uid).get();
-        userData = snap.exists ? snap.data() : {};
-        // Save user if new
-        if (!snap.exists) {
-          await firebase.firestore().collection('users').doc(user.uid).set({
-            name: user.displayName || email.split('@')[0],
-            email: user.email,
-            role: adminMode ? 'admin' : 'tenant',
-            createdAt: new Date().toISOString(),
-            linkedUnit: null,
-            emailVerified: user.emailVerified
-          });
-        }
-      } catch(e) { console.warn('Firestore:', e); }
 
-      isAdmin = adminMode || userData.role === 'admin';
+    if (!user) {
+      // Not logged in — always show login screen if on portal URL
+      showAuthScreen();
+      return;
+    }
 
-      // Route by role
-      if (isAdmin) {
-        // Admin always sees role selector
-        showRoleSelector(user, userData);
-      } else if (userData.role === 'agent') {
-        // Agent — check status
-        if (userData.agentStatus === 'approved') {
-          // Approved agent sees role selector (Agent Portal + New Tenant options)
-          showRoleSelector(user, userData);
-        } else if (userData.agentStatus === 'pending' || userData.agentStatus === 'rejected') {
-          // Pending/rejected agent — show waiting screen via role selector
-          showRoleSelector(user, userData);
-        } else {
-          // Unknown agent state — fall back to tenant flow
-          await _bootApp(user, userData, false);
-        }
+    // Logged in — get or create user doc
+    currentUser = user;
+    const email = (user.email || '').toLowerCase();
+    const adminMode = ADMIN_EMAILS.includes(email);
+    let userData = {};
+    try {
+      const snap = await firebase.firestore().collection('users').doc(user.uid).get();
+      if (snap.exists) {
+        userData = snap.data();
       } else {
-        // Regular tenant — boot directly without role selector
-        await _bootApp(user, userData, false);
+        userData = {
+          name: user.displayName || email.split('@')[0],
+          email: user.email,
+          role: adminMode ? 'admin' : 'tenant',
+          createdAt: new Date().toISOString(),
+          emailVerified: user.emailVerified
+        };
+        await firebase.firestore().collection('users').doc(user.uid).set(userData);
       }
+    } catch(e) { console.warn('Firestore user doc:', e.message); }
+
+    isAdmin = adminMode || userData.role === 'admin';
+
+    // Route by role
+    if (isAdmin) {
+      showRoleSelector(user, userData);
+    } else if (userData.role === 'agent') {
+      showRoleSelector(user, userData);
     } else {
-      currentUser = null; isAdmin = false;
-
-      // Check if we should show the auth screen directly or redirect to landing
-      const isReturningFromAuth = sessionStorage.getItem('crs_from_landing') ||
-                                  document.referrer.includes('landing.html') ||
-                                  window.location.hash === '#login' ||
-                                  window.location.search.includes('auth=1');
-
-      // Also show auth directly if already on the portal URL (not a first-time visitor)
-      const isPortalURL = window.location.href.includes('crestville-portal') ||
-                          window.location.href.includes('index.html');
-
-      if (isReturningFromAuth || isPortalURL) {
-        // Show the login form directly — don't bounce to landing
-        showAuthScreen();
-      } else {
-        // Truly unknown entry point — send to landing
-        var dest = BASE_URL + '/landing.html';
-        if (window.location.hash) dest += window.location.hash;
-        window.location.replace(dest);
-      }
+      await _bootApp(user, userData, false);
     }
   });
 }
@@ -7897,6 +7764,7 @@ function _addAdminFieldTogglePage() {
 })();
 
 /* ── 12. Wire showPage for new pages ── */
+}  /* close gap */
 (function() {
   var _origShowPage = typeof showPage === 'function' ? showPage : null;
   if (!_origShowPage) return;
