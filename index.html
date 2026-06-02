@@ -2424,6 +2424,8 @@ async function doLogin() {
   var btn = document.querySelector('.auth-btn');
   if (btn) btn.disabled = true;
   try {
+    // Mark as coming from auth screen so onAuthStateChanged shows portal not landing
+    sessionStorage.setItem('crs_from_landing', '1');
     await _setFirebasePersistence();
     await firebase.auth().signInWithEmailAndPassword(email, pass);
     if (errEl) errEl.textContent = '';
@@ -2489,6 +2491,9 @@ async function doGoogle() {
   if (prev) prev.remove();
 
   try {
+    // Mark as coming from auth screen before any redirect
+    sessionStorage.setItem('crs_from_landing', '1');
+
     // Set appropriate persistence before sign-in
     await _setFirebasePersistence();
 
@@ -2551,7 +2556,7 @@ async function doGoogle() {
         }
       }
     }
-    if (errEl) errEl.textContent = '';
+  if (errEl) errEl.textContent = '';
   } catch(e) {
     console.error('Google sign-in error:', e.code, e.message);
     if (errEl) { errEl.textContent = friendlyAuthError(e.code); errEl.style.color='var(--red)'; }
@@ -3342,17 +3347,22 @@ function initAuth() {
       }
     } else {
       currentUser = null; isAdmin = false;
-      // Always send unauthenticated visitors to landing.html
-      // landing.html handles New Tenant, Existing Tenant Login, and Admin Login
+
+      // Check if we should show the auth screen directly or redirect to landing
       const isReturningFromAuth = sessionStorage.getItem('crs_from_landing') ||
                                   document.referrer.includes('landing.html') ||
                                   window.location.hash === '#login' ||
                                   window.location.search.includes('auth=1');
-      if (isReturningFromAuth) {
-        // Coming back from landing with intent to auth — show auth screen
+
+      // Also show auth directly if already on the portal URL (not a first-time visitor)
+      const isPortalURL = window.location.href.includes('crestville-portal') ||
+                          window.location.href.includes('index.html');
+
+      if (isReturningFromAuth || isPortalURL) {
+        // Show the login form directly — don't bounce to landing
         showAuthScreen();
       } else {
-        // First visit or direct URL access — send to landing
+        // Truly unknown entry point — send to landing
         var dest = BASE_URL + '/landing.html';
         if (window.location.hash) dest += window.location.hash;
         window.location.replace(dest);
