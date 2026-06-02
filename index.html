@@ -10,25 +10,331 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 <!-- Firebase compat — synchronous, works on all hosts -->
-<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-auth-compat.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-firestore-compat.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-storage-compat.min.js"></script>
+<!-- Firebase SDK — primary from official CDN, fallback to jsdelivr -->
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CRS Firebase REST Shim — No CDN required, works on all browsers
+   Uses Firebase REST API directly — zero external script dependency
+══════════════════════════════════════════════════════════════ */
+var CRS_API_KEY   = "AIzaSyAiQ7q1qbwx1i_qjVFaTSJIeb9yneMT21U";
+var CRS_PROJECT   = "solarappform";
+var CRS_AUTH_URL  = "https://identitytoolkit.googleapis.com/v1/accounts:";
+var CRS_FS_URL    = "https://firestore.googleapis.com/v1/projects/" + CRS_PROJECT + "/databases/(default)/documents/";
+var _idToken = null, _uid = null, _userEmail = null, _authListeners = [];
+var _refreshToken = null, _tokenExpiry = 0;
+
+/* ── Minimal fetch wrapper ── */
+function _post(url, body) {
+  return fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  }).then(function(r) {
+    return r.json().then(function(data) {
+      if (!r.ok) throw { code: (data.error && data.error.message) || "unknown" };
+      return data;
+    });
+  });
+}
+
+function _get(url) {
+  var headers = { "Content-Type": "application/json" };
+  if (_idToken) headers["Authorization"] = "Bearer " + _idToken;
+  return fetch(url, { headers: headers }).then(function(r) { return r.json(); });
+}
+
+function _patchFS(url, body) {
+  var headers = { "Content-Type": "application/json" };
+  if (_idToken) headers["Authorization"] = "Bearer " + _idToken;
+  return fetch(url, { method: "PATCH", headers: headers, body: JSON.stringify(body) }).then(function(r) { return r.json(); });
+}
+
+/* ── Token persistence ── */
+function _saveSession(data) {
+  _idToken = data.idToken;
+  _uid     = data.localId;
+  _userEmail = data.email;
+  _refreshToken = data.refreshToken;
+  _tokenExpiry  = Date.now() + (parseInt(data.expiresIn || 3600) * 1000);
+  try { localStorage.setItem("crs_session", JSON.stringify({ idToken: _idToken, uid: _uid, email: _userEmail, refreshToken: _refreshToken, expiry: _tokenExpiry })); } catch(e) {}
+  try { sessionStorage.setItem("crs_session", JSON.stringify({ idToken: _idToken, uid: _uid, email: _userEmail, refreshToken: _refreshToken, expiry: _tokenExpiry })); } catch(e) {}
+}
+
+function _loadSession() {
+  var raw = null;
+  try { raw = localStorage.getItem("crs_session") || sessionStorage.getItem("crs_session"); } catch(e) {}
+  if (!raw) return null;
+  try {
+    var s = JSON.parse(raw);
+    if (s && s.uid && s.idToken && s.expiry > Date.now()) { _idToken = s.idToken; _uid = s.uid; _userEmail = s.email; _refreshToken = s.refreshToken; _tokenExpiry = s.expiry; return s; }
+    if (s && s.refreshToken) { _refreshToken = s.refreshToken; return s; }
+  } catch(e) {}
+  return null;
+}
+
+function _clearSession() {
+  _idToken = null; _uid = null; _userEmail = null; _refreshToken = null; _tokenExpiry = 0;
+  try { localStorage.removeItem("crs_session"); } catch(e) {}
+  try { sessionStorage.removeItem("crs_session"); } catch(e) {}
+}
+
+/* ── Token refresh ── */
+function _refreshIdToken() {
+  if (!_refreshToken) return Promise.reject({ code: "auth/no-refresh-token" });
+  return fetch("https://securetoken.googleapis.com/v1/token?key=" + CRS_API_KEY, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: "grant_type=refresh_token&refresh_token=" + _refreshToken
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    if (data.id_token) {
+      _idToken = data.id_token;
+      _tokenExpiry = Date.now() + (parseInt(data.expires_in || 3600) * 1000);
+      _saveSession({ idToken: _idToken, localId: _uid, email: _userEmail, refreshToken: _refreshToken || data.refresh_token, expiresIn: data.expires_in });
+      return _idToken;
+    }
+    throw { code: data.error || "refresh_failed" };
+  });
+}
+
+/* ── Firestore value converters ── */
+function _fsToVal(v) {
+  if (!v) return null;
+  if (v.stringValue  !== undefined) return v.stringValue;
+  if (v.integerValue !== undefined) return parseInt(v.integerValue);
+  if (v.doubleValue  !== undefined) return parseFloat(v.doubleValue);
+  if (v.booleanValue !== undefined) return v.booleanValue;
+  if (v.nullValue    !== undefined) return null;
+  if (v.timestampValue !== undefined) return v.timestampValue;
+  if (v.mapValue     !== undefined) return _fsMapToObj(v.mapValue.fields || {});
+  if (v.arrayValue   !== undefined) return (v.arrayValue.values || []).map(_fsToVal);
+  return null;
+}
+function _fsMapToObj(fields) {
+  var obj = {};
+  if (!fields) return obj;
+  Object.keys(fields).forEach(function(k) { obj[k] = _fsToVal(fields[k]); });
+  return obj;
+}
+function _valToFs(v) {
+  if (v === null || v === undefined) return { nullValue: null };
+  if (typeof v === "boolean") return { booleanValue: v };
+  if (typeof v === "number") return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+  if (typeof v === "string") return { stringValue: v };
+  if (Array.isArray(v)) return { arrayValue: { values: v.map(_valToFs) } };
+  if (typeof v === "object") {
+    var fields = {};
+    Object.keys(v).forEach(function(k) { fields[k] = _valToFs(v[k]); });
+    return { mapValue: { fields: fields } };
+  }
+  return { stringValue: String(v) };
+}
+function _objToFsDoc(obj) {
+  var fields = {};
+  Object.keys(obj).forEach(function(k) { fields[k] = _valToFs(obj[k]); });
+  return { fields: fields };
+}
+
+/* ── Friendly auth error codes ── */
+function _mapErrCode(code) {
+  var map = {
+    "EMAIL_NOT_FOUND": "auth/user-not-found",
+    "INVALID_PASSWORD": "auth/wrong-password",
+    "INVALID_EMAIL": "auth/invalid-email",
+    "USER_DISABLED": "auth/user-disabled",
+    "TOO_MANY_ATTEMPTS_TRY_LATER": "auth/too-many-requests",
+    "WEAK_PASSWORD : Password should be at least 6 characters": "auth/weak-password",
+    "EMAIL_EXISTS": "auth/email-already-in-use",
+    "INVALID_LOGIN_CREDENTIALS": "auth/invalid-credential"
+  };
+  return map[code] || ("auth/" + (code || "unknown").toLowerCase().replace(/ /g,"_"));
+}
+
+/* ══════════════════════════════════════════════════════
+   firebase SHIM — mirrors Firebase compat SDK API
+══════════════════════════════════════════════════════ */
+var firebase = {
+  apps: [],
+  initializeApp: function(cfg) {
+    firebase.apps.push(cfg);
+    return firebase;
+  },
+  auth: function() {
+    return {
+      currentUser: null,
+      onAuthStateChanged: function(cb) {
+        _authListeners.push(cb);
+        // Check saved session immediately
+        var sess = _loadSession();
+        if (sess && sess.uid) {
+          if (_tokenExpiry > Date.now()) {
+            var user = { uid: _uid, email: _userEmail, displayName: _userEmail ? _userEmail.split("@")[0] : "", emailVerified: true, getIdToken: function() { return Promise.resolve(_idToken); } };
+            firebase.auth().currentUser = user;
+            setTimeout(function() { cb(user); }, 0);
+          } else if (sess.refreshToken) {
+            // Token expired — refresh it
+            _refreshIdToken().then(function() {
+              var user = { uid: _uid, email: _userEmail, displayName: _userEmail ? _userEmail.split("@")[0] : "", emailVerified: true, getIdToken: function() { return Promise.resolve(_idToken); } };
+              firebase.auth().currentUser = user;
+              cb(user);
+            }).catch(function() { _clearSession(); cb(null); });
+          } else {
+            cb(null);
+          }
+        } else {
+          setTimeout(function() { cb(null); }, 0);
+        }
+      },
+      signInWithEmailAndPassword: function(email, pass) {
+        return _post(CRS_AUTH_URL + "signInWithPassword?key=" + CRS_API_KEY, { email: email, password: pass, returnSecureToken: true })
+          .then(function(data) {
+            _saveSession(data);
+            var user = { uid: data.localId, email: data.email, displayName: data.displayName || data.email.split("@")[0], emailVerified: true, getIdToken: function() { return Promise.resolve(_idToken); } };
+            firebase.auth().currentUser = user;
+            _authListeners.forEach(function(cb) { cb(user); });
+            return { user: user };
+          }).catch(function(e) {
+            throw { code: _mapErrCode(e.code || ""), message: e.code };
+          });
+      },
+      createUserWithEmailAndPassword: function(email, pass) {
+        return _post(CRS_AUTH_URL + "signUp?key=" + CRS_API_KEY, { email: email, password: pass, returnSecureToken: true })
+          .then(function(data) {
+            _saveSession(data);
+            var user = { uid: data.localId, email: data.email, displayName: data.email.split("@")[0], emailVerified: false, getIdToken: function() { return Promise.resolve(_idToken); }, sendEmailVerification: function() { return _post(CRS_AUTH_URL + "sendOobCode?key=" + CRS_API_KEY, { requestType: "VERIFY_EMAIL", idToken: _idToken }); } };
+            firebase.auth().currentUser = user;
+            _authListeners.forEach(function(cb) { cb(user); });
+            return { user: user };
+          }).catch(function(e) {
+            throw { code: _mapErrCode(e.code || ""), message: e.code };
+          });
+      },
+      sendPasswordResetEmail: function(email) {
+        return _post(CRS_AUTH_URL + "sendOobCode?key=" + CRS_API_KEY, { requestType: "PASSWORD_RESET", email: email });
+      },
+      signOut: function() {
+        _clearSession();
+        firebase.auth().currentUser = null;
+        _authListeners.forEach(function(cb) { cb(null); });
+        return Promise.resolve();
+      },
+      signInWithPopup: function() {
+        return Promise.reject({ code: "auth/operation-not-supported-in-this-environment", message: "Google sign-in requires the Firebase SDK. Use email/password instead." });
+      },
+      signInWithRedirect: function() {
+        return Promise.reject({ code: "auth/operation-not-supported-in-this-environment" });
+      },
+      getRedirectResult: function() { return Promise.resolve(null); },
+      setPersistence: function() { return Promise.resolve(); },
+      Auth: { Persistence: { LOCAL: "LOCAL", SESSION: "SESSION", NONE: "NONE" } }
+    };
+  },
+  firestore: function() {
+    return {
+      collection: function(col) {
+        return {
+          doc: function(docId) {
+            var docUrl = CRS_FS_URL + col + "/" + docId;
+            return {
+              get: function() {
+                return _get(docUrl).then(function(data) {
+                  if (data.error) return { exists: false, data: function() { return {}; } };
+                  return { exists: true, id: docId, data: function() { return _fsMapToObj(data.fields || {}); } };
+                });
+              },
+              set: function(obj, opts) {
+                var existing = opts && opts.merge;
+                return _patchFS(docUrl, _objToFsDoc(obj)).then(function() { return {}; });
+              },
+              update: function(obj) {
+                var fields = {};
+                Object.keys(obj).forEach(function(k) { fields[k] = _valToFs(obj[k]); });
+                var mask = Object.keys(obj).map(function(k) { return "updateMask.fieldPaths=" + encodeURIComponent(k); }).join("&");
+                return fetch(docUrl + "?" + mask, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json", "Authorization": "Bearer " + _idToken },
+                  body: JSON.stringify({ fields: fields })
+                }).then(function(r) { return r.json(); });
+              },
+              delete: function() {
+                return fetch(docUrl, { method: "DELETE", headers: { "Authorization": "Bearer " + _idToken } }).then(function() { return {}; });
+              },
+              collection: function(subCol) { return firebase.firestore().collection(col + "/" + docId + "/" + subCol); }
+            };
+          },
+          add: function(obj) {
+            return fetch(CRS_FS_URL + col, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": "Bearer " + _idToken },
+              body: JSON.stringify(_objToFsDoc(obj))
+            }).then(function(r) { return r.json(); }).then(function(data) {
+              var id = (data.name || "").split("/").pop();
+              return { id: id };
+            });
+          },
+          where: function() {
+            var col_ = col; // return chainable with get
+            return {
+              where: function() { return this; },
+              orderBy: function() { return this; },
+              limit: function() { return this; },
+              get: function() {
+                return _get(CRS_FS_URL + col_).then(function(data) {
+                  var docs = (data.documents || []).map(function(d) {
+                    var id = (d.name || "").split("/").pop();
+                    return { id: id, data: function() { return _fsMapToObj(d.fields || {}); }, exists: true };
+                  });
+                  return { docs: docs, empty: docs.length === 0 };
+                });
+              }
+            };
+          },
+          orderBy: function() { return this.where(); },
+          limit: function() { return this.where(); },
+          get: function() {
+            return _get(CRS_FS_URL + col).then(function(data) {
+              var docs = (data.documents || []).map(function(d) {
+                var id = (d.name || "").split("/").pop();
+                return { id: id, data: function() { return _fsMapToObj(d.fields || {}); }, exists: true };
+              });
+              return { docs: docs, empty: docs.length === 0 };
+            });
+          }
+        };
+      }
+    };
+  },
+  storage: function() {
+    return {
+      ref: function() { return { put: function() { return Promise.resolve({}); }, getDownloadURL: function() { return Promise.resolve(""); } }; }
+    };
+  }
+};
+
+/* Expose globals the app expects */
+firebase.initializeApp({
+  apiKey: "AIzaSyAiQ7q1qbwx1i_qjVFaTSJIeb9yneMT21U",
+  authDomain: "enjanih-stack.github.io",
+  projectId: "solarappform"
+});
+window._auth    = firebase.auth();
+window._db      = firebase.firestore();
+window._storage = firebase.storage();
+window._googleProvider = {};
+
+firebase.auth.GoogleAuthProvider = function() { return {}; };
+window._firebaseReady = true;
+</script>
 <script>
 const _cfg = {
   apiKey:            "AIzaSyAiQ7q1qbwx1i_qjVFaTSJIeb9yneMT21U",
-  authDomain:        "solarappform.firebaseapp.com",
+  authDomain:        "enjanih-stack.github.io",
   projectId:         "solarappform",
   storageBucket:     "solarappform.firebasestorage.app",
   messagingSenderId: "298700249528",
   appId:             "1:298700249528:web:85f6a70780da9479f1174d"
 };
-firebase.initializeApp(_cfg);
 
-// Expose as window globals matching what the app expects
-window._auth           = firebase.auth();
-window._db             = firebase.firestore();
-window._storage        = firebase.storage();
+/* Firebase initialised by REST shim above */        = firebase.storage();
 window._googleProvider = new firebase.auth.GoogleAuthProvider();
 
 // Modular-style wrapper so existing code works unchanged
@@ -52,13 +358,6 @@ window._firebase = {
   where: () => null,
 };
 
-window._storageFn = {
-  ref: (st, path) => st.ref(path),
-  uploadBytesResumable: (ref, file) => ref.put(file),
-  getDownloadURL: (ref) => ref.getDownloadURL(),
-  listAll: (ref) => ref.listAll(),
-  deleteObject: (ref) => ref.delete(),
-};
 
 window._firebaseReady = true;
 window.dispatchEvent(new Event('firebaseReady'));
@@ -2377,10 +2676,12 @@ function _nameMatches(entered, record) {
 
 async function doLogin() {
   var errEl = document.getElementById('loginErr');
-  var email = (document.getElementById('loginEmail')?.value || '').trim().toLowerCase();
-  var pass  = document.getElementById('loginPass')?.value || '';
+  var email = ((document.getElementById('loginEmail') ? document.getElementById('loginEmail').value : '') || '').trim().toLowerCase();
+  var pass  = (document.getElementById('loginPass') ? document.getElementById('loginPass').value : '') || '';
 
   if (errEl) { errEl.textContent = ''; errEl.style.color = 'var(--red)'; }
+  // Clear any retry buttons
+  document.querySelectorAll('.login-retry-btn').forEach(function(el){ el.remove(); });
 
   if (!email) { if (errEl) errEl.textContent = 'Enter your email address.'; return; }
   if (!pass)  { if (errEl) errEl.textContent = 'Enter your password.'; return; }
@@ -2394,18 +2695,22 @@ async function doLogin() {
     if (errEl) errEl.textContent = '';
   } catch(e) {
     console.error('Login error:', e.code, e.message);
-    if (errEl) {
-      errEl.textContent = friendlyAuthError(e.code);
-      errEl.style.color = 'var(--red)';
-    }
-    // For network errors, offer a retry button
+    var msg = friendlyAuthError(e.code);
+    if (errEl) { errEl.textContent = msg; errEl.style.color = 'var(--red)'; }
+
+    // Network error — show retry + diagnosis
     if (e.code === 'auth/network-request-failed') {
-      var retryWrap = document.createElement('div');
-      retryWrap.style.cssText = 'margin-top:8px;text-align:center';
-      retryWrap.innerHTML = '<button onclick="this.parentElement.remove();doLogin()" '
-        + 'style="background:var(--gold);color:#fff;border:none;padding:8px 20px;border-radius:5px;'
-        + 'font-family:\'DM Sans\',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer">↺ Retry Sign In</button>';
-      errEl.insertAdjacentElement('afterend', retryWrap);
+      var div = document.createElement('div');
+      div.className = 'login-retry-btn';
+      div.style.cssText = 'margin-top:10px;padding:12px;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;font-size:.78rem;color:#664d03;line-height:1.7';
+      div.innerHTML = '<strong>Network blocked.</strong> Try:<br>'
+        + '• Switch to mobile data (turn off WiFi)<br>'
+        + '• Disable VPN if active<br>'
+        + '• <a href="https://status.firebase.google.com" target="_blank" style="color:#664d03">Check Firebase status</a><br><br>'
+        + '<button onclick="this.closest(\'.login-retry-btn\').remove();doLogin()" '
+        + 'style="background:#C9960C;color:#fff;border:none;padding:8px 20px;border-radius:5px;'
+        + 'font-size:.8rem;font-weight:600;cursor:pointer;width:100%">↺ Try Again</button>';
+      if (errEl) errEl.insertAdjacentElement('afterend', div);
     }
   } finally {
     if (btn) btn.disabled = false;
@@ -3375,7 +3680,7 @@ function updateMetrics() {
 function renderChart() {
   const ctx = document.getElementById('revenueChart');
   if(!ctx) return;
-  const filter = (document.getElementById('chartFilter')?.value||'').toLowerCase();
+  const filter = ((document.getElementById('chartFilter') ? document.getElementById('chartFilter').value : '')||'').toLowerCase();
   const locs = {};
   rentLogs.forEach(e => {
     const loc = (getPropertyLabel(e.unitId||e.unit)||'').split('—').pop().trim().split(',').pop().trim();
@@ -3473,15 +3778,15 @@ function nmOpenForm(editId) {
 }
 function nmCloseForm() { var f=document.getElementById('nmFormCard'); if(f) f.style.display='none'; }
 function nmPreviewBadge() {
-  var type=document.getElementById('nmType')?.value||'info';
+  var type=(document.getElementById('nmType') ? document.getElementById('nmType').value : '')||'info';
   var el=document.getElementById('nmPreviewBadge'); if(!el) return;
   var t=NM_TYPES[type]||NM_TYPES.info;
   el.innerHTML='<span style="font-size:.68rem;color:var(--dim)">Preview:</span>'
     +'<span class="nc-badge '+t.cls+'" style="font-size:.7rem">'+t.label+'</span>';
 }
 function nmSaveNotice() {
-  var title=document.getElementById('nmTitle')?.value.trim();
-  var body=document.getElementById('nmBody')?.value.trim();
+  var title=(document.getElementById('nmTitle') ? document.getElementById('nmTitle').value : '').trim();
+  var body=(document.getElementById('nmBody') ? document.getElementById('nmBody').value : '').trim();
   if(!title){notify('error','Missing Title','Notice title is required.');return;}
   if(!body){notify('error','Missing Body','Notice body cannot be empty.');return;}
   var editId=document.getElementById('nmEditId').value;
@@ -3490,9 +3795,9 @@ function nmSaveNotice() {
     id:editId||('n_'+Date.now()), type,
     badgeClass:(NM_TYPES[type]||NM_TYPES.info).cls,
     title, body,
-    date:document.getElementById('nmDate')?.value||new Date().toISOString().slice(0,10),
-    expiry:document.getElementById('nmExpiry')?.value||'',
-    pinned:document.getElementById('nmPinned')?.value==='1',
+    date:(document.getElementById('nmDate') ? document.getElementById('nmDate').value : '')||new Date().toISOString().slice(0,10),
+    expiry:(document.getElementById('nmExpiry') ? document.getElementById('nmExpiry').value : '')||'',
+    pinned:(document.getElementById('nmPinned') ? document.getElementById('nmPinned').value : '')==='1',
     paused:false, targets:[], updatedAt:new Date().toISOString(),
   };
   var notices=_nmGetNotices();
@@ -3526,7 +3831,7 @@ function nmRenderList() {
   var meta=document.getElementById('nmListMeta');
   if(!container) return;
   var today=new Date(); today.setHours(0,0,0,0);
-  var filter=document.getElementById('nmFilter')?.value||'';
+  var filter=(document.getElementById('nmFilter') ? document.getElementById('nmFilter').value : '')||'';
   var notices=_nmGetNotices().sort(function(a,b){
     if(a.pinned&&!b.pinned) return -1; if(!a.pinned&&b.pinned) return 1;
     return new Date(b.date||0)-new Date(a.date||0);
@@ -3587,7 +3892,7 @@ async function mrAdminRender(){
   var requests=_mrGet();
   try{if(window._db){var snap=await window._db.collection('modRequests').get();var lsIds=new Set(requests.map(function(r){return r.id;}));snap.docs.forEach(function(d){var data=d.data();if(!lsIds.has(data.id))requests.push(data);});}}catch(e){}
   requests.sort(function(a,b){return new Date(b.submittedAt||0)-new Date(a.submittedAt||0);});
-  var filter=document.getElementById('mrAdminFilter')?.value||'';
+  var filter=(document.getElementById('mrAdminFilter') ? document.getElementById('mrAdminFilter').value : '')||'';
   var shown=filter?requests.filter(function(r){return r.status===filter;}):requests;
   var pending=requests.filter(function(r){return r.status==='pending';}).length;
   if(count)count.textContent=shown.length+' request(s) · '+pending+' pending';
@@ -3700,14 +4005,14 @@ function openAgentRegistration() {
 }
 
 async function submitAgentRegistration() {
-  var name=document.getElementById('arName')?.value.trim();
-  var phone=document.getElementById('arPhone')?.value.trim();
-  var bio=document.getElementById('arBio')?.value.trim();
+  var name=(document.getElementById('arName') ? document.getElementById('arName').value : '').trim();
+  var phone=(document.getElementById('arPhone') ? document.getElementById('arPhone').value : '').trim();
+  var bio=(document.getElementById('arBio') ? document.getElementById('arBio').value : '').trim();
   if(!name||!phone||!bio){notify('error','Missing Fields','Please complete all required fields.');return;}
   if(!currentUser){notify('error','Not Signed In','Please sign in first.');return;}
   var agentDoc={uid:currentUser.uid,email:currentUser.email.toLowerCase(),name,phone,
-    agency:document.getElementById('arAgency')?.value.trim()||'',
-    experience:document.getElementById('arExp')?.value||'0-1',bio,
+    agency:(document.getElementById('arAgency') ? document.getElementById('arAgency').value : '').trim()||'',
+    experience:(document.getElementById('arExp') ? document.getElementById('arExp').value : '')||'0-1',bio,
     role:'agent',agentStatus:'pending',permissions:AGENT_DEFAULT_PERMS,
     appliedAt:new Date().toISOString(),approvedAt:null,approvedBy:null};
   try{
@@ -3854,8 +4159,8 @@ async function loadAgentDashboard(){
   if(card){
     card.style.display='';
     var dn=document.getElementById('agentDisplayName'),de=document.getElementById('agentDisplayEmail'),pc=document.getElementById('agentPermChips');
-    if(dn)dn.textContent=agentData.name||currentUser?.displayName||'Agent';
-    if(de)de.textContent=agentData.email||currentUser?.email||'—';
+    if(dn)dn.textContent=agentData.name||(currentUser ? currentUser.displayName : undefined)||'Agent';
+    if(de)de.textContent=agentData.email||(currentUser ? currentUser.email : undefined)||'—';
     if(pc){
       var perms=agentData.permissions||AGENT_DEFAULT_PERMS;
       pc.innerHTML=Object.entries(AGENT_PERMISSIONS).filter(function(e){return perms[e[0]];})
@@ -4060,7 +4365,7 @@ function deleteRentRecord(idx) {
   if (window._db && rec.id) window._db.collection('rentRecords').doc(rec.id).delete().catch(()=>{});
   rentLogs.splice(idx, 1);
   try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) {}
-  logActivity((currentUser?.email)||'Admin','admin','delete','Deleted record',rec.tenant||rec.unitId||'');
+  logActivity(((currentUser ? currentUser.email : undefined))||'Admin','admin','delete','Deleted record',rec.tenant||rec.unitId||'');
   renderRentManager();
   if (typeof renderProperties === 'function') renderProperties();
   if (typeof renderAll === 'function') renderAll();
@@ -4068,14 +4373,14 @@ function deleteRentRecord(idx) {
 }
 
 async function saveRentRecord() {
-  const unitId = document.getElementById('rmUnit')?.value;
-  const tenant = document.getElementById('rmTenant')?.value.trim();
+  const unitId = (document.getElementById('rmUnit') ? document.getElementById('rmUnit').value : '');
+  const tenant = (document.getElementById('rmTenant') ? document.getElementById('rmTenant').value : '').trim();
   if (!unitId || !tenant) { notify('error','Missing Fields','Select a unit and enter tenant name.'); return; }
 
   const getV = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
-  const editIdxRaw = document.getElementById('rmEditId')?.value;
+  const editIdxRaw = (document.getElementById('rmEditId') ? document.getElementById('rmEditId').value : '');
   const editIdx    = editIdxRaw !== '' ? parseInt(editIdxRaw) : null;
-  const existingId = editIdx !== null && !isNaN(editIdx) ? (rentLogs[editIdx]?.id || '') : '';
+  const existingId = editIdx !== null && !isNaN(editIdx) ? ((rentLogs[editIdx] ? rentLogs[editIdx].id : undefined) || '') : '';
   const prop       = PROPERTIES.find(p => p.id === unitId) || {};
 
   const record = {
@@ -4097,7 +4402,7 @@ async function saveRentRecord() {
     vacancy:      getV('rmVacancy') || 'occupied',
     notes:        getV('rmNotes'),
     updatedAt:    new Date().toISOString(),
-    importedAt:   (editIdx !== null && !isNaN(editIdx) ? (rentLogs[editIdx]?.importedAt || '') : '') || new Date().toISOString(),
+    importedAt:   (editIdx !== null && !isNaN(editIdx) ? ((rentLogs[editIdx] ? rentLogs[editIdx].importedAt : undefined) || '') : '') || new Date().toISOString(),
   };
 
   if (editIdx !== null && !isNaN(editIdx) && rentLogs[editIdx]) {
@@ -4111,7 +4416,7 @@ async function saveRentRecord() {
   renderRentManager();
   if (typeof renderProperties === 'function') renderProperties();
   if (typeof renderAll === 'function') renderAll();
-  logActivity((currentUser?.email)||'Admin','admin', editIdx !== null ? 'edit' : 'add',
+  logActivity(((currentUser ? currentUser.email : undefined))||'Admin','admin', editIdx !== null ? 'edit' : 'add',
     (editIdx !== null ? 'Edited' : 'Added') + ' record', tenant + ' — ' + (getPropertyLabel(unitId)||unitId));
   notify('success', editIdx !== null ? 'Record Updated' : 'Record Added', tenant + ' — ' + (getPropertyLabel(unitId)||unitId));
 
@@ -4150,8 +4455,8 @@ function renderRentManager() {
     try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(ex) {}
   }
 
-  const search = (document.getElementById('rmSearch')?.value||'').toLowerCase();
-  const filter = document.getElementById('rmFilter')?.value||'';
+  const search = ((document.getElementById('rmSearch') ? document.getElementById('rmSearch').value : '')||'').toLowerCase();
+  const filter = (document.getElementById('rmFilter') ? document.getElementById('rmFilter').value : '')||'';
   const today = new Date(); today.setHours(0,0,0,0);
 
   const filtered = rentLogs.filter(e => {
@@ -4384,7 +4689,7 @@ function renderActivityLog() {
   var log = [];
   try { log = JSON.parse(localStorage.getItem(TEN_ACTIVITY_KEY) || '[]'); } catch(e) {}
 
-  var filter = document.getElementById('tenActivityFilter')?.value || '';
+  var filter = (document.getElementById('tenActivityFilter') ? document.getElementById('tenActivityFilter').value : '') || '';
   var shown = filter ? log.filter(function(e){ return e.type === filter; }) : log;
 
   if (!shown.length) {
@@ -4430,8 +4735,8 @@ function loadTenantsTable() {
   var countEl = document.getElementById('tenRosterCount');
   if (!tbody) return;
 
-  var search = (document.getElementById('tenSearch')?.value || '').toLowerCase();
-  var filter = document.getElementById('tenFilter')?.value || '';
+  var search = ((document.getElementById('tenSearch') ? document.getElementById('tenSearch').value : '') || '').toLowerCase();
+  var filter = (document.getElementById('tenFilter') ? document.getElementById('tenFilter').value : '') || '';
   var today = new Date(); today.setHours(0,0,0,0);
 
   // Build roster from rentLogs + seed, deduped by unitId
@@ -4573,7 +4878,7 @@ function tenantExportCSV() {
     var tenant = tenEl  ? tenEl.value  : '';
     var who    = (currentUser && currentUser.email) || 'Admin';
     var role   = (typeof isAdmin!=='undefined'&&isAdmin) ? 'admin' : 'tenant';
-    var isEdit = document.getElementById('rmEditId')?.value !== '';
+    var isEdit = (document.getElementById('rmEditId') ? document.getElementById('rmEditId').value : '') !== '';
     if (typeof _origSave==='function') await _origSave.apply(this, arguments);
     logActivity(who, role, isEdit?'edit':'add', (isEdit?'Edited':'Added') + ' record', tenant + ' — ' + unit);
   };
@@ -5032,21 +5337,21 @@ function psmBuildBreakdownRow(label, amount) {
   return d;
 }
 async function savePaymentSlip() {
-  var wi = document.getElementById('psmWfId')?.value;
+  var wi = (document.getElementById('psmWfId') ? document.getElementById('psmWfId').value : '');
   if (!wi) { notify('error','Error','No workflow ID.'); return; }
   var labels = document.querySelectorAll('#psmBreakdownItems .psm-label');
   var amounts = document.querySelectorAll('#psmBreakdownItems .psm-amount');
   var breakdown = [], total = 0;
-  labels.forEach(function(l,i){ var amt=parseFloat(amounts[i]?.value)||0; if(l.value&&amt){breakdown.push({label:l.value,amount:amt});total+=amt;} });
+  labels.forEach(function(l,i){ var amt=parseFloat((amounts[i] ? amounts[i].value : undefined))||0; if(l.value&&amt){breakdown.push({label:l.value,amount:amt});total+=amt;} });
   if (!total) { notify('error','Amount Required','Enter at least one fee amount.'); return; }
   await issuePaymentSlip(wi,{
     totalFee:total, breakdown,
-    bankName:   document.getElementById('psmBank')?.value    ||'Zenith Bank',
-    accountNo:  document.getElementById('psmAccNo')?.value   ||'1014619530',
-    accountName:document.getElementById('psmAccName')?.value ||'Crestechnologies IS Ltd',
-    notes:      document.getElementById('psmNotes')?.value   ||'',
+    bankName:   (document.getElementById('psmBank') ? document.getElementById('psmBank').value : '')    ||'Zenith Bank',
+    accountNo:  (document.getElementById('psmAccNo') ? document.getElementById('psmAccNo').value : '')   ||'1014619530',
+    accountName:(document.getElementById('psmAccName') ? document.getElementById('psmAccName').value : '') ||'Crestechnologies IS Ltd',
+    notes:      (document.getElementById('psmNotes') ? document.getElementById('psmNotes').value : '')   ||'',
   });
-  document.getElementById('paymentSlipModal')?.classList.remove('on');
+  var _psmEl=document.getElementById('paymentSlipModal'); if(_psmEl)_psmEl.classList.remove('on');
 }
 
 function openPaymentSlipModal(elOrId) {
@@ -5378,7 +5683,6 @@ try {
   initAuth();
 } catch(e) {
   console.error('initAuth error:', e);
-  // Show auth screen on any error
   document.getElementById('vAuth').style.display = 'flex';
 }
 // Hide loader after 3s no matter what
@@ -5410,9 +5714,9 @@ function renderProperties() {
     if (ex && ex.availableFrom) p.availableFrom = ex.availableFrom;
   });
 
-  const search = (document.getElementById('propSearch')?.value||'').toLowerCase();
-  const city = document.getElementById('propCityFilter')?.value||'';
-  const status = document.getElementById('propStatusFilter')?.value||'';
+  const search = ((document.getElementById('propSearch') ? document.getElementById('propSearch').value : '')||'').toLowerCase();
+  const city = (document.getElementById('propCityFilter') ? document.getElementById('propCityFilter').value : '')||'';
+  const status = (document.getElementById('propStatusFilter') ? document.getElementById('propStatusFilter').value : '')||'';
   const occupiedIds = new Set(rentLogs.filter(e => e.vacancy !== 'vacant').map(e => e.unitId));
 
   // ── TENANT MODE: only show their own unit(s) + vacant units ──
@@ -5449,7 +5753,7 @@ function renderProperties() {
     const occupied = occupiedIds.has(p.id);
     const rec = rentLogs.find(e => e.unitId === p.id);
     const today = new Date(); today.setHours(0,0,0,0);
-    const exp = rec?.expiry ? new Date(rec.expiry) : null;
+    const exp = (rec ? rec.expiry : undefined) ? new Date(rec.expiry) : null;
     if(exp) exp.setHours(0,0,0,0);
     const daysLeft = exp ? Math.round((exp - today)/(1000*60*60*24)) : null;
     const isOverdue = daysLeft !== null && daysLeft < 0;
@@ -5805,32 +6109,32 @@ function openTenantDrawer(unitId) {
   document.getElementById('drawerOverlay').classList.add('on');
   drawer.classList.add('on');
 
-  document.getElementById('drawerTitle').textContent = (p?.label||unitId) + ' — Documents';
+  document.getElementById('drawerTitle').textContent = ((p ? p.label : undefined)||unitId) + ' — Documents';
 
   // Tenant info
   const ti = document.getElementById('drawerTenantInfo');
   ti.innerHTML = [
-    ['Tenant Name', rec?.tenant||'—'],
-    ['Email', rec?.tenantEmail||'—'],
-    ['Phone', rec?.tenantPhone||'—'],
-    ['NIN', rec?.tenantNIN||'—'],
+    ['Tenant Name', (rec ? rec.tenant : undefined)||'—'],
+    ['Email', (rec ? rec.tenantEmail : undefined)||'—'],
+    ['Phone', (rec ? rec.tenantPhone : undefined)||'—'],
+    ['NIN', (rec ? rec.tenantNIN : undefined)||'—'],
   ].map(([l,v]) => `<div class="ti-item"><label>${l}</label><span>${v}</span></div>`).join('');
 
   // Tenancy info
   const today = new Date(); today.setHours(0,0,0,0);
-  const exp = rec?.expiry ? new Date(rec.expiry) : null;
+  const exp = (rec ? rec.expiry : undefined) ? new Date(rec.expiry) : null;
   if(exp) exp.setHours(0,0,0,0);
   const days = exp ? Math.round((exp-today)/(1000*60*60*24)) : null;
   const tn = document.getElementById('drawerTenancyInfo');
   tn.innerHTML = [
-    ['Unit', p?.label||unitId],
-    ['Location', p?.location||'—'],
-    ['Annual Rent', rec?.amount ? '₦'+Number(rec.amount).toLocaleString() : '—'],
-    ['Start Date', rec?.start||'—'],
-    ['Expiry Date', rec?.expiry||'—'],
+    ['Unit', (p ? p.label : undefined)||unitId],
+    ['Location', (p ? p.location : undefined)||'—'],
+    ['Annual Rent', (rec ? rec.amount : undefined) ? '₦'+Number(rec.amount).toLocaleString() : '—'],
+    ['Start Date', (rec ? rec.start : undefined)||'—'],
+    ['Expiry Date', (rec ? rec.expiry : undefined)||'—'],
     ['Days Left', days !== null ? (days<0?Math.abs(days)+' days overdue':days+' days left') : '—'],
-    ['Status', rec?.vacancy||'occupied'],
-    ['Notes', rec?.notes||'—'],
+    ['Status', (rec ? rec.vacancy : undefined)||'occupied'],
+    ['Notes', (rec ? rec.notes : undefined)||'—'],
   ].map(([l,v]) => `<div class="ti-item"><label>${l}</label><span>${v}</span></div>`).join('');
 
   // Reset category button styles
@@ -5956,14 +6260,14 @@ async function handleDocUpload(input) {
 
 function removeDoc(unitId, category, idx) {
   if(!confirm('Remove this document?')) return;
-  const doc = (_tenantDocs[unitId]||{})[category]?.[idx];
-  if(doc?.url?.startsWith('https://firebasestorage')) {
+  var _catDocs=(_tenantDocs[unitId]||{})[category]; var doc=_catDocs?_catDocs[idx]:undefined;
+  if(doc && doc.url && doc.url.includes('https://firebasestorage')) {
     try {
       const ref = window._storageFn.ref(window._storage, doc.url);
       window._storageFn.deleteObject(ref).catch(()=>{});
     } catch(e){}
   }
-  if(_tenantDocs[unitId]?.[category]) {
+  if(_tenantDocs[unitId] && _tenantDocs[unitId][category]) {
     _tenantDocs[unitId][category].splice(idx, 1);
     _docCounts[unitId] = Object.values(_tenantDocs[unitId]).flat().length;
     // Update Firestore
@@ -7281,9 +7585,9 @@ function kytClearUpload(id) {
 async function submitKYTFromForm() {
   var form = document.getElementById('kytForm');
   if (!form) return;
-  var unit = document.getElementById('kytUnit')?.value;
-  var name = document.getElementById('kytFullName')?.value.trim();
-  var decl = document.getElementById('kytDeclaration')?.checked;
+  var unit = (document.getElementById('kytUnit') ? document.getElementById('kytUnit').value : '');
+  var name = (document.getElementById('kytFullName') ? document.getElementById('kytFullName').value : '').trim();
+  var decl = document.getElementById('kytDeclaration') ? document.getElementById('kytDeclaration').checked : false;
   if (!unit) { notify('error', 'Select Property', 'Please choose a property.'); return; }
   if (!name) { notify('error', 'Name Required', 'Enter your full name.'); return; }
   if (!decl) { notify('error', 'Declaration Required', 'Please tick the declaration checkbox.'); return; }
@@ -7291,9 +7595,9 @@ async function submitKYTFromForm() {
   // Check required file uploads
   var ft = _ftGet().kyt || {};
   var missingFiles = [];
-  if (ft['idDocument'] !== false && !document.getElementById('kytIdDoc')?.files?.[0])
+  if (ft['idDocument'] !== false && !(document.getElementById('kytIdDoc') && document.getElementById('kytIdDoc').files && document.getElementById('kytIdDoc').files[0]))
     missingFiles.push('Government-issued ID');
-  if (ft['photo'] !== false && !document.getElementById('kytPhoto')?.files?.[0])
+  if (ft['photo'] !== false && !(document.getElementById('kytPhoto') && document.getElementById('kytPhoto').files && document.getElementById('kytPhoto').files[0]))
     missingFiles.push('Passport Photograph');
   if (missingFiles.length) {
     notify('error', 'Required Files Missing', missingFiles.join(', ') + ' must be uploaded.');
@@ -7302,26 +7606,26 @@ async function submitKYTFromForm() {
 
   if (!form.checkValidity()) { form.reportValidity(); return; }
 
-  var gtrEmail = document.getElementById('kytGtrEmail')?.value.trim();
-  var gtrName  = document.getElementById('kytGtrName')?.value.trim();
+  var gtrEmail = (document.getElementById('kytGtrEmail') ? document.getElementById('kytGtrEmail').value : '').trim();
+  var gtrName  = (document.getElementById('kytGtrName') ? document.getElementById('kytGtrName').value : '').trim();
   var unitProp = PROPERTIES.find(function(p){ return p.id === unit; }) || {};
 
   var formData = {
     tenantName: name, unitId: unit, unitLabel: unitProp.label || unit,
-    dob:        document.getElementById('kytDob')?.value || '',
-    nin:        document.getElementById('kytNin')?.value || '',
-    phone:      document.getElementById('kytPhone')?.value || '',
-    occupation: document.getElementById('kytOccupation')?.value || '',
-    employer:   document.getElementById('kytEmployer')?.value || '',
-    address:    document.getElementById('kytAddress')?.value || '',
-    nokName:    document.getElementById('kytNokName')?.value || '',
-    nokPhone:   document.getElementById('kytNokPhone')?.value || '',
-    nokRelation:document.getElementById('kytNokRelation')?.value || '',
+    dob:        (document.getElementById('kytDob') ? document.getElementById('kytDob').value : '') || '',
+    nin:        (document.getElementById('kytNin') ? document.getElementById('kytNin').value : '') || '',
+    phone:      (document.getElementById('kytPhone') ? document.getElementById('kytPhone').value : '') || '',
+    occupation: (document.getElementById('kytOccupation') ? document.getElementById('kytOccupation').value : '') || '',
+    employer:   (document.getElementById('kytEmployer') ? document.getElementById('kytEmployer').value : '') || '',
+    address:    (document.getElementById('kytAddress') ? document.getElementById('kytAddress').value : '') || '',
+    nokName:    (document.getElementById('kytNokName') ? document.getElementById('kytNokName').value : '') || '',
+    nokPhone:   (document.getElementById('kytNokPhone') ? document.getElementById('kytNokPhone').value : '') || '',
+    nokRelation:(document.getElementById('kytNokRelation') ? document.getElementById('kytNokRelation').value : '') || '',
     guarantorName:    gtrName || '',
-    guarantorPhone:   document.getElementById('kytGtrPhone')?.value || '',
+    guarantorPhone:   (document.getElementById('kytGtrPhone') ? document.getElementById('kytGtrPhone').value : '') || '',
     guarantorEmail:   gtrEmail || '',
-    guarantorAddress: document.getElementById('kytGtrAddress')?.value || '',
-    guarantorRole:    document.getElementById('kytGtrRole')?.value || 'Guarantor',
+    guarantorAddress: (document.getElementById('kytGtrAddress') ? document.getElementById('kytGtrAddress').value : '') || '',
+    guarantorRole:    (document.getElementById('kytGtrRole') ? document.getElementById('kytGtrRole').value : '') || 'Guarantor',
   };
 
   var wf = await submitKYTApplication(formData);
@@ -7415,12 +7719,12 @@ function mkCard(label, value) {
 async function submitRenewalFromForm() {
   var form = document.getElementById('renewalForm');
   if (!form || !form.checkValidity()) { if(form) form.reportValidity(); return; }
-  var decl = document.getElementById('rnwDeclaration')?.checked;
+  var decl = document.getElementById('rnwDeclaration') ? document.getElementById('rnwDeclaration').checked : false;
   if (!decl) { notify('error', 'Declaration Required', 'Please tick the declaration.'); return; }
 
   var formData = {
-    term:  document.getElementById('rnwTerm')?.value || '12',
-    notes: document.getElementById('rnwNotes')?.value || '',
+    term:  (document.getElementById('rnwTerm') ? document.getElementById('rnwTerm').value : '') || '12',
+    notes: (document.getElementById('rnwNotes') ? document.getElementById('rnwNotes').value : '') || '',
   };
   var wf = await submitRenewalApplication(formData);
   if (!wf) return;
@@ -7471,16 +7775,16 @@ function openTenantPaymentForm(wfId) {
 }
 
 async function tenantSubmitPayment() {
-  var wfId  = document.getElementById('tpfWfId')?.value;
-  var padId = document.getElementById('tpfPadId')?.value.trim();
-  var amt   = document.getElementById('tpfAmount')?.value;
-  var bank  = document.getElementById('tpfBank')?.value.trim();
-  var date  = document.getElementById('tpfDate')?.value;
+  var wfId  = (document.getElementById('tpfWfId') ? document.getElementById('tpfWfId').value : '');
+  var padId = (document.getElementById('tpfPadId') ? document.getElementById('tpfPadId').value : '').trim();
+  var amt   = (document.getElementById('tpfAmount') ? document.getElementById('tpfAmount').value : '');
+  var bank  = (document.getElementById('tpfBank') ? document.getElementById('tpfBank').value : '').trim();
+  var date  = (document.getElementById('tpfDate') ? document.getElementById('tpfDate').value : '');
   if (!padId || !amt || !bank || !date) { notify('error', 'Missing Fields', 'Fill in all required fields.'); return; }
 
   await submitPaymentConfirmation({
     padId, amountPaid: amt, bank, paymentDate: date,
-    ref: document.getElementById('tpfRef')?.value || '',
+    ref: (document.getElementById('tpfRef') ? document.getElementById('tpfRef').value : '') || '',
   });
   document.getElementById('tenantPaymentModal').classList.remove('on');
 }
@@ -7517,7 +7821,7 @@ function openTenantEForm(wfId) {
 }
 
 function launchEFormWithCodes(wfId) {
-  document.getElementById('tenantEFormModal')?.classList.remove('on');
+  var _tefm=document.getElementById('tenantEFormModal'); if(_tefm)_tefm.classList.remove('on');
   getWorkflow(wfId).then(function(wf) {
     if (!wf) return;
     // Store codes for the eform to read
