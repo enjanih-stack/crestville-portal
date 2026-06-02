@@ -3537,7 +3537,13 @@ function initAuth() {
         };
         await firebase.firestore().collection('users').doc(user.uid).set(userData);
       }
-    } catch(e) { console.warn('Firestore user doc:', e.message); }
+    } catch(e) {
+      console.warn('Firestore user doc:', e.message);
+      // If Firestore fails and we have no userData, show error rather than silent fallback
+      if (!userData || !userData.role) {
+        userData = { role: adminMode ? 'admin' : 'tenant', email: user.email };
+      }
+    }
 
     isAdmin = adminMode || userData.role === 'admin';
 
@@ -4370,6 +4376,10 @@ function deleteRentRecord(idx) {
   if (typeof renderProperties === 'function') renderProperties();
   if (typeof renderAll === 'function') renderAll();
   notify('success','Record Deleted', rec.tenant || rec.unitId || 'Record removed.');
+}
+
+function saveLocal() {
+  try { localStorage.setItem('rentData_CRS_v3', JSON.stringify(rentLogs)); } catch(e) { console.warn("saveLocal failed:", e); }
 }
 
 async function saveRentRecord() {
@@ -6947,7 +6957,6 @@ function _navTo(pgId) {
   setTimeout(function() { _navInProgress = false; }, 50);
 }
 
-}  /* closes historyFwd / navigation section */
 
 /* ════════════════════════════════════════════════
    TENANT DASHBOARD — status card + app tracker
@@ -8076,8 +8085,9 @@ function _addAdminFieldTogglePage() {
   else _init();
 })();
 
+}
+}
 /* ── 12. Wire showPage for new pages ── */
-}  /* close gap */
 (function() {
   var _origShowPage = typeof showPage === 'function' ? showPage : null;
   if (!_origShowPage) return;
