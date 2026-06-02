@@ -346,8 +346,9 @@ window._googleProvider = {};
 firebase.auth.GoogleAuthProvider = function() { return {}; };
 window._firebaseReady = true;
 </script>
+
 <script>
-const _cfg = {
+var _cfg = {
   apiKey:            "AIzaSyAiQ7q1qbwx1i_qjVFaTSJIeb9yneMT21U",
   authDomain:        "enjanih-stack.github.io",
   projectId:         "solarappform",
@@ -355,32 +356,6 @@ const _cfg = {
   messagingSenderId: "298700249528",
   appId:             "1:298700249528:web:85f6a70780da9479f1174d"
 };
-
-/* Firebase initialised by REST shim above */        = firebase.storage();
-window._googleProvider = new firebase.auth.GoogleAuthProvider();
-
-// Modular-style wrapper so existing code works unchanged
-window._firebase = {
-  onAuthStateChanged: (a, cb) => a.onAuthStateChanged(cb),
-  signInWithEmailAndPassword: (a, e, p) => a.signInWithEmailAndPassword(e, p),
-  createUserWithEmailAndPassword: (a, e, p) => a.createUserWithEmailAndPassword(e, p),
-  signInWithPopup: (a, prov) => a.signInWithPopup(prov),
-  signOut: (a) => a.signOut(),
-  sendEmailVerification: (u) => u.sendEmailVerification(),
-  collection: (db, name) => db.collection(name),
-  getDocs: (ref) => ref.get(),
-  addDoc: (ref, data) => ref.add(data),
-  doc: (db, col, id) => db.collection(col).doc(id),
-  setDoc: (ref, data, opts) => opts && opts.merge ? ref.set(data, {merge:true}) : ref.set(data),
-  getDoc: (ref) => ref.get(),
-  updateDoc: (ref, data) => ref.update(data),
-  deleteDoc: (ref) => ref.delete(),
-  onSnapshot: (ref, cb) => ref.onSnapshot(cb),
-  query: (ref) => ref,
-  where: () => null,
-};
-
-
 window._firebaseReady = true;
 window.dispatchEvent(new Event('firebaseReady'));
 </script>
@@ -2608,7 +2583,7 @@ function waitForFirebase(cb) {
 
 /* ═══ TOAST ═══════════════════════════════════════════ */
 let _tt;
-function toast(m, d=3400) {
+function toast(m, d) { if(d===undefined) d=3400;
   const t = document.getElementById('toast');
   t.textContent = m; t.classList.add('on');
   clearTimeout(_tt); _tt = setTimeout(() => t.classList.remove('on'), d);
@@ -2897,7 +2872,7 @@ function restoreAutoSave() {
   try {
     const raw = localStorage.getItem('crs_autosave_v1');
     if (!raw) return;
-    const {data, ts} = JSON.parse(raw);
+    var _parsed = JSON.parse(raw); var data = _parsed.data; var ts = _parsed.ts;
     if (Date.now() - ts > 24 * 3600 * 1000) return; // expire after 24h
     Object.entries(data).forEach(([id, val]) => {
       const el = document.getElementById(id);
@@ -3107,7 +3082,7 @@ async function continueWithRole() {
     window._myRecord = match;
     isAdmin = false;
     document.getElementById('roleSelectorOverlay').classList.remove('on');
-    await _bootApp(user, {...userData, role:'tenant'}, false);
+    await _bootApp(user, Object.assign({}, userData, {role:'tenant'}), false);
     return;
   }
 
@@ -3127,7 +3102,7 @@ async function continueWithRole() {
     window._isAgent = true;
     window._agentData = userData;
     document.getElementById('roleSelectorOverlay').classList.remove('on');
-    await _bootApp(user, {...userData, role:'agent'}, false);
+    await _bootApp(user, Object.assign({}, userData, {role:'agent'}), false);
     return;
   }
 
@@ -4321,9 +4296,9 @@ function rmToggleAll(checked){document.querySelectorAll('#rmBody input[type=chec
 function rmSelectAll(){var c=document.getElementById('rmSelectAllChk');if(c)c.checked=true;rmToggleAll(true);}
 function rmClearSelection(){window._rmSelected.clear();document.querySelectorAll('#rmBody input[type=checkbox]').forEach(function(cb){cb.checked=false;var row=document.getElementById('rmRow_'+parseInt(cb.value));if(row)row.style.outline='';});var allChk=document.getElementById('rmSelectAllChk');if(allChk){allChk.checked=false;allChk.indeterminate=false;}_rmUpdateBulkBar();}
 function _rmUpdateBulkBar(){var bar=document.getElementById('rmBulkBar'),countEl=document.getElementById('rmBulkCount'),n=window._rmSelected.size;if(bar)bar.style.display=n>0?'flex':'none';if(countEl)countEl.textContent=n+' record'+(n!==1?'s':'')+' selected';}
-function rmBulkDelete(){var n=window._rmSelected.size;if(!n)return;if(!confirm('Delete '+n+' selected record'+(n!==1?'s':'')+'?'))return;[...window._rmSelected].sort((a,b)=>b-a).forEach(function(idx){var rec=rentLogs[idx];if(rec&&window._db&&rec.id)window._db.collection('rentRecords').doc(rec.id).delete().catch(function(){});rentLogs.splice(idx,1);});try{localStorage.setItem('rentData_CRS_v3',JSON.stringify(rentLogs));}catch(e){}window._rmSelected.clear();renderRentManager();if(typeof renderProperties==='function')renderProperties();notify('success',n+' Record'+(n!==1?'s':'')+' Deleted','Selected records removed.');}
+function rmBulkDelete(){var n=window._rmSelected.size;if(!n)return;if(!confirm('Delete '+n+' selected record'+(n!==1?'s':'')+'?'))return;Array.from(window._rmSelected).sort(function(a,b){return b-a;}).forEach(function(idx){var rec=rentLogs[idx];if(rec&&window._db&&rec.id)window._db.collection('rentRecords').doc(rec.id).delete().catch(function(){});rentLogs.splice(idx,1);});try{localStorage.setItem('rentData_CRS_v3',JSON.stringify(rentLogs));}catch(e){}window._rmSelected.clear();renderRentManager();if(typeof renderProperties==='function')renderProperties();notify('success',n+' Record'+(n!==1?'s':'')+' Deleted','Selected records removed.');}
 function rmBulkExport() {
-  var selected = [...window._rmSelected];
+  var selected = Array.from(window._rmSelected);
   if (!selected.length) return;
   var rows = selected.map(function(idx){ return rentLogs[idx]; }).filter(Boolean);
   var headers = ['#','Unit','Tenant','Email','Phone','Amount','NewRent','Start','Expiry','LastPayment','Status','Notes'];
@@ -4468,7 +4443,7 @@ async function saveRentRecord() {
   };
 
   if (editIdx !== null && !isNaN(editIdx) && rentLogs[editIdx]) {
-    rentLogs[editIdx] = { ...rentLogs[editIdx], ...record };
+    rentLogs[editIdx] = Object.assign({}, rentLogs[editIdx], record);
   } else {
     rentLogs.push(record);
   }
@@ -4976,7 +4951,7 @@ async function saveWorkflow(wf){
 }
 
 async function getWorkflow(wfId){
-  try{var d=await window._db.collection('workflows').doc(wfId).get();if(d.exists)return{id:d.id,...d.data()};}catch(e){}
+  try{var d=await window._db.collection('workflows').doc(wfId).get();if(d.exists){var _dd=d.data();_dd.id=d.id;return _dd;};}catch(e){}
   return (JSON.parse(localStorage.getItem('crs_workflows')||'[]')).find(function(w){return w.id===wfId;})||null;
 }
 
@@ -5968,7 +5943,7 @@ function clearImport() {
   document.getElementById('csvFileInput').value = '';
 }
 
-function logImport(msg, type='ok') {
+function logImport(msg, type) { if(type===undefined) type='ok';
   const el = document.getElementById('importLog');
   const cls = type === 'err' ? 'log-err' : type === 'warn' ? 'log-warn' : type === 'info' ? 'log-info' : '';
   el.innerHTML += `<div class="${cls}">${msg}</div>`;
@@ -6071,7 +6046,7 @@ async function handleCSVImport(input) {
     // Check for existing record with same unitId
     const existIdx = rentLogs.findIndex(e => e.unitId === unitId);
     if(existIdx >= 0) {
-      rentLogs[existIdx] = {...rentLogs[existIdx], ...record, id: rentLogs[existIdx].id};
+      rentLogs[existIdx] = Object.assign({}, rentLogs[existIdx], record, {id: rentLogs[existIdx].id});
       updated++;
       logImport(`↻ Row ${i+2}: Updated — ${unitId} · ${record.tenant||'(vacant)'}`, 'info');
     } else {
@@ -6496,8 +6471,8 @@ const AMENITY_DESCRIPTIONS = {
 function getGlobalAmenities() {
   try {
     const stored = localStorage.getItem('crs_global_amenities');
-    return stored ? JSON.parse(stored) : [...DEFAULT_AMENITIES];
-  } catch(e) { return [...DEFAULT_AMENITIES]; }
+    return stored ? JSON.parse(stored) : DEFAULT_AMENITIES.slice();
+  } catch(e) { return DEFAULT_AMENITIES.slice(); }
 }
 
 function saveGlobalAmenities(list) {
@@ -6520,7 +6495,7 @@ function savePropExtras(extras) {
 function getPropExtra(id) { return getPropExtras()[id] || {}; }
 function setPropExtra(id, data) {
   const extras = getPropExtras();
-  extras[id] = { ...(extras[id]||{}), ...data };
+  extras[id] = Object.assign({}, extras[id]||{}, data);
   savePropExtras(extras);
 }
 
@@ -6566,7 +6541,7 @@ function openPropEdit(propId) {
   setVacancy(_editVacancy);
 
   // Amenities
-  _editAmenities = [...(extra.amenities || p.amenities || [])];
+  _editAmenities = (extra.amenities || p.amenities || []).slice();
   renderAmenityChips();
   renderAmenityPresets();
 
@@ -7227,7 +7202,7 @@ async function loadTenantWorkflow() {
   try {
     var doc = await window._db.collection('workflows').doc(wfId).get();
     if (doc.exists) {
-      _currentWorkflow = {id: wfId, ...doc.data()};
+      _currentWorkflow = Object.assign({id: wfId}, doc.data());
     } else {
       _currentWorkflow = null;
     }
