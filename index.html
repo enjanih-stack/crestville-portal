@@ -1377,6 +1377,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
         <span class="ni-icon">🏘️</span> Properties
       </button>
 
+      <!-- AGENT SECTION (shown only to agents) -->
+      <div class="nav-section agent-only" id="agentNavSection" style="display:none">Agent</div>
+      <button class="nav-item agent-only" id="navAgent" onclick="showPage('pgAgent',this);loadAgentDashboard();" style="display:none">
+        <span class="ni-icon">🤝</span> Agent Portal
+      </button>
+
       <!-- FORMS -->
       <div class="nav-section">E-Forms</div>
       <button class="nav-item" onclick="openNewTenancyFlow()" id="navNewApp">
@@ -1748,6 +1754,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
             <div class="tp-tab on" id="tenTabRoster" onclick="tenSwitchTab('roster')" style="font-size:.8rem">👥 Tenant Roster</div>
             <div class="tp-tab" id="tenTabSessions" onclick="tenSwitchTab('sessions')" style="font-size:.8rem">🔐 Session Log</div>
             <div class="tp-tab" id="tenTabActivity" onclick="tenSwitchTab('activity')" style="font-size:.8rem">📋 Activity Audit</div>
+            <div class="tp-tab admin-only" id="tenTabAgents" onclick="tenSwitchTab('agents')" style="font-size:.8rem">🤝 Agents</div>
           </div>
 
           <!-- PANEL: Roster -->
@@ -1821,6 +1828,17 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
                 <tbody id="tenActivityBody"></tbody>
               </table>
             </div></div>
+          </div>
+
+          <!-- PANEL: Agents (admin only) -->
+          <div id="tenPanelAgents" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+              <div style="font-size:.76rem;color:var(--dim)">Manage agent accounts — approve, assign permissions or revoke access.</div>
+              <button class="btn btn-gold btn-sm" onclick="openAgentInviteModal()" style="font-size:.78rem">+ Invite Agent</button>
+            </div>
+            <div id="agentsAdminList">
+              <div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem;margin-bottom:8px">🤝</div><div>Loading agent accounts...</div></div>
+            </div>
           </div>
 
         </div>
@@ -1953,6 +1971,53 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       </div>
 
     </div>      </div><!-- /pgProperties -->
+
+      <!-- ── AGENT PORTAL ── -->
+      <div class="pg" id="pgAgent">
+        <div class="page-nav-bar"><button class="pnb-btn" onclick="historyBack()">&#8592;</button><button class="pnb-btn" onclick="historyFwd()">&#8594;</button><div class="pnb-crumb"></div></div>
+        <div class="page-header">
+          <div>
+            <h1>Agent Portal</h1>
+            <div class="ph-sub" id="agentWelcomeSub">Your assigned applications and progress tracker</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="loadAgentDashboard()">🔄 Refresh</button>
+          </div>
+        </div>
+        <div class="page-body">
+          <!-- Agent info card -->
+          <div id="agentInfoCard" style="background:linear-gradient(135deg,#1a1612,#2a2116);border-radius:12px;padding:18px 22px;margin-bottom:18px;color:#e8dfc8;display:none">
+            <div style="font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#9a8a6a;margin-bottom:6px">Agent Account</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700" id="agentDisplayName">—</div>
+            <div style="font-size:.76rem;color:#9a8a6a;margin-top:2px" id="agentDisplayEmail">—</div>
+            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap" id="agentPermChips"></div>
+          </div>
+
+          <!-- Sub-tabs -->
+          <div style="display:flex;border-bottom:2px solid var(--rule);margin-bottom:18px;gap:0">
+            <div class="tp-tab on" id="agentTabApps"   onclick="agentSwitchTab('apps')"   style="font-size:.8rem">📋 Applications</div>
+            <div class="tp-tab"   id="agentTabVacant"  onclick="agentSwitchTab('vacant')"  style="font-size:.8rem">🏠 Vacant Units</div>
+            <div class="tp-tab agent-extra" id="agentTabStats"  onclick="agentSwitchTab('stats')"   style="font-size:.8rem;display:none">📊 My Stats</div>
+          </div>
+
+          <!-- Applications panel -->
+          <div id="agentPanelApps">
+            <div style="font-size:.76rem;color:var(--dim);margin-bottom:12px">Applications you are following — status updates in real time.</div>
+            <div id="agentAppsList"><div style="text-align:center;padding:40px;color:var(--dim)"><div style="font-size:2rem;margin-bottom:8px">📋</div><div>Loading applications...</div></div></div>
+          </div>
+
+          <!-- Vacant panel -->
+          <div id="agentPanelVacant" style="display:none">
+            <div style="font-size:.76rem;color:var(--dim);margin-bottom:12px">Currently vacant units available for prospective tenants.</div>
+            <div id="agentVacantList"></div>
+          </div>
+
+          <!-- Stats panel -->
+          <div id="agentPanelStats" style="display:none">
+            <div id="agentStatsList"></div>
+          </div>
+        </div>
+      </div>
 
       <!-- /pages container -->
   </div><!-- /content-area -->
@@ -2528,7 +2593,97 @@ function showRoleSelector(user, userData) {
   _postAuthUser = user;
   _postAuthData = userData;
   const email = (user.email || '').toLowerCase();
-  const isAdminUser = userData.role === 'admin' || ADMIN_EMAILS.includes(email);
+  const isAdminUser  = userData.role === 'admin'  || ADMIN_EMAILS.includes(email);
+  const isAgentUser  = userData.role === 'agent'  && userData.agentStatus === 'approved';
+  const isPendingAgent = userData.role === 'agent' && userData.agentStatus !== 'approved';
+
+  document.getElementById('rcEmail').textContent = user.email;
+  const opts  = document.getElementById('roleOptions');
+  const panel = document.getElementById('etVerifyPanel');
+  panel.classList.remove('on');
+
+  // Pending agent — show waiting screen instead of role options
+  if (isPendingAgent) {
+    document.getElementById('rcTitle').textContent = 'Account Pending Approval';
+    opts.innerHTML = `
+      <div style="text-align:center;padding:30px 20px">
+        <div style="font-size:3rem;margin-bottom:14px">⏳</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;color:var(--ink);margin-bottom:8px">
+          Agent Account Pending
+        </div>
+        <div style="font-size:.82rem;color:var(--dim);line-height:1.75;margin-bottom:16px">
+          Your agent account is awaiting approval by the property admin.<br>
+          You will receive an email at <strong>${user.email}</strong> once approved.
+        </div>
+        <div style="font-size:.76rem;color:var(--dim)">
+          Contact: <a href="mailto:crestechnologies@outlook.com" style="color:var(--gold)">crestechnologies@outlook.com</a>
+        </div>
+      </div>`;
+    document.getElementById('rcContinueBtn').style.display = 'none';
+    document.getElementById('roleSelectorOverlay').classList.add('on');
+    return;
+  }
+
+  document.getElementById('rcContinueBtn').style.display = '';
+
+  if (isAdminUser) {
+    document.getElementById('rcTitle').textContent = 'Welcome back! Choose your session';
+    opts.innerHTML = `
+      <div class="role-option" data-role="new_tenant" onclick="selectRole('new_tenant',this)">
+        <div class="ro-icon new">🏠</div>
+        <div class="ro-body"><div class="ro-title">New / Prospective Tenant</div><div class="ro-desc">Browse properties and start a new application</div></div>
+        <div class="ro-check"></div>
+      </div>
+      <div class="role-option" data-role="existing_tenant" onclick="selectRole('existing_tenant',this)">
+        <div class="ro-icon exist">🔑</div>
+        <div class="ro-body"><div class="ro-title">Existing Tenant</div><div class="ro-desc">View your tenancy, renew or raise requests</div></div>
+        <div class="ro-check"></div>
+      </div>
+      <div class="role-option" data-role="agent" onclick="selectRole('agent',this)">
+        <div class="ro-icon" style="background:rgba(91,33,182,.12);color:#5b21b6">🤝</div>
+        <div class="ro-body"><div class="ro-title">Agent Portal</div><div class="ro-desc">View applications progress and assigned functions</div></div>
+        <div class="ro-check"></div>
+      </div>
+      <div class="role-option" data-role="admin" onclick="selectRole('admin',this)">
+        <div class="ro-icon admin">🏛️</div>
+        <div class="ro-body"><div class="ro-title">Admin Dashboard</div><div class="ro-desc">Manage all properties, tenants and records</div></div>
+        <div class="ro-check"></div>
+      </div>`;
+  } else if (isAgentUser) {
+    document.getElementById('rcTitle').textContent = 'Welcome, Agent! Choose your session';
+    opts.innerHTML = `
+      <div class="role-option" data-role="agent" onclick="selectRole('agent',this)">
+        <div class="ro-icon" style="background:rgba(91,33,182,.12);color:#5b21b6">🤝</div>
+        <div class="ro-body"><div class="ro-title">Agent Portal</div><div class="ro-desc">View applications, track progress and assigned functions</div></div>
+        <div class="ro-check"></div>
+      </div>
+      <div class="role-option" data-role="new_tenant" onclick="selectRole('new_tenant',this)">
+        <div class="ro-icon new">🏠</div>
+        <div class="ro-body"><div class="ro-title">New / Prospective Tenant</div><div class="ro-desc">Browse properties and start a new application</div></div>
+        <div class="ro-check"></div>
+      </div>`;
+  } else {
+    document.getElementById('rcTitle').textContent = 'Welcome! How would you like to continue?';
+    opts.innerHTML = `
+      <div class="role-option" data-role="new_tenant" onclick="selectRole('new_tenant',this)">
+        <div class="ro-icon new">🏠</div>
+        <div class="ro-body"><div class="ro-title">New / Prospective Tenant</div><div class="ro-desc">I am looking for a property to rent</div></div>
+        <div class="ro-check"></div>
+      </div>
+      <div class="role-option" data-role="existing_tenant" onclick="selectRole('existing_tenant',this)">
+        <div class="ro-icon exist">🔑</div>
+        <div class="ro-body"><div class="ro-title">Existing Tenant</div><div class="ro-desc">I already have an active tenancy with Crestville Properties</div></div>
+        <div class="ro-check"></div>
+      </div>
+      <div class="role-option" data-role="register_agent" onclick="selectRole('register_agent',this)">
+        <div class="ro-icon" style="background:rgba(91,33,182,.08);color:#5b21b6">🤝</div>
+        <div class="ro-body"><div class="ro-title">Register as Agent</div><div class="ro-desc">Apply to become a Crestville Properties agent</div></div>
+        <div class="ro-check"></div>
+      </div>`;
+  }
+
+  document.getElementById('roleSelectorOverlay').classList.add('on');
+}
 
   document.getElementById('rcEmail').textContent = user.email;
   const opts = document.getElementById('roleOptions');
@@ -2670,6 +2825,26 @@ async function continueWithRole() {
     isAdmin = false;
     document.getElementById('roleSelectorOverlay').classList.remove('on');
     await _bootApp(user, {...userData, role:'tenant'}, false);
+    return;
+  }
+
+  if (_selectedRole === 'register_agent') {
+    document.getElementById('roleSelectorOverlay').classList.remove('on');
+    openAgentRegistration();
+    return;
+  }
+
+  if (_selectedRole === 'agent') {
+    const isAdminUser = userData.role==='admin' || ADMIN_EMAILS.includes(email);
+    const isAgentApproved = userData.role==='agent' && userData.agentStatus==='approved';
+    if (!isAdminUser && !isAgentApproved) {
+      toast('⛔ Agent account not approved. Contact admin.'); return;
+    }
+    isAdmin = false;
+    window._isAgent = true;
+    window._agentData = userData;
+    document.getElementById('roleSelectorOverlay').classList.remove('on');
+    await _bootApp(user, {...userData, role:'agent'}, false);
     return;
   }
 
@@ -4541,58 +4716,200 @@ function _wfEmailTemplate(title,bodyHtml){return '<div style="font-family:Arial,
 function _wfPortalBtn(){return '<div style="text-align:center;margin:20px 0"><a href="https://enjanih-stack.github.io/crestville-portal/" style="background:#c9960c;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:700">Open Tenant Portal →</a></div>';}
 async function _wfEmailAdmin(wf,subject,msg){var html=_wfEmailTemplate(subject,'<p>'+msg+'</p><p><strong>Type:</strong> '+(wf.type==='new_tenant'?'New Tenant':'Renewal')+'</p><p><strong>Unit:</strong> '+wf.unitLabel+'</p><p><strong>Email:</strong> '+wf.tenantEmail+'</p>'+_wfPortalBtn());await sendCRSEmail(['crestechnologies@outlook.com','enjanih@gmail.com'],'[CRS Admin] '+subject,html);}
 
-function addBreakdownItem(){
-  var c=document.getElementById('psmBreakdownItems');if(!c)return;
-  var d=document.createElement('div');d.style.cssText='display:flex;gap:8px;margin-bottom:6px';
-  d.innerHTML='<input class="psm-label" placeholder="Item" style="flex:2;padding:8px;border:1px solid var(--rule);border-radius:5px"/>'
-    +'<input class="psm-amount" type="number" placeholder="Amount" style="flex:1;padding:8px;border:1px solid var(--rule);border-radius:5px"/>';
+function addBreakdownItem() {
+  var c = document.getElementById('psmBreakdownItems'); if (!c) return;
+  var rowId = 'psmRow_' + Date.now();
+  var d = document.createElement('div');
+  d.id = rowId;
+  d.style.cssText = 'display:grid;grid-template-columns:1fr 120px 36px;gap:6px;margin-bottom:6px;align-items:center';
+  var fStyle = 'padding:9px 10px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-size:.82rem;background:var(--card);outline:none';
+  var li = document.createElement('input');
+  li.className='psm-label'; li.placeholder='e.g. Service Charge';
+  li.style.cssText = fStyle;  li.oninput = psmRecalcTotal;
+  var ai = document.createElement('input');
+  ai.type='number'; ai.className='psm-amount'; ai.placeholder='0';
+  ai.style.cssText = fStyle;  ai.oninput = psmRecalcTotal;
+  var rb = document.createElement('button');
+  rb.textContent='✕'; rb.title='Remove';
+  rb.style.cssText='background:none;border:1px solid rgba(140,31,31,.25);color:var(--red);border-radius:5px;padding:0;width:36px;height:36px;cursor:pointer;font-size:.9rem';
+  rb.onclick = function(){ psmRemoveRow(rowId); };
+  d.appendChild(li); d.appendChild(ai); d.appendChild(rb);
   c.appendChild(d);
 }
+function psmRemoveRow(id) {
+  var el = document.getElementById(id);
+  if (el) { el.style.opacity='0'; el.style.transition='opacity .2s'; setTimeout(function(){ el.remove(); psmRecalcTotal(); }, 200); }
+}
 
-async function savePaymentSlip(){
-  var wi=(document.getElementById('psmWfId')||{}).value;
-  if(!wi){notify('error','Error','No workflow ID.');return;}
-  var tot=parseFloat(document.getElementById('psmTotal')?.value||'0');
-  if(!tot){notify('error','Amount Required','Enter the total fee.');return;}
-  var labels=document.querySelectorAll('.psm-label'),amounts=document.querySelectorAll('.psm-amount');
-  var breakdown=[];
-  labels.forEach(function(l,i){if(l.value&&amounts[i]?.value)breakdown.push({label:l.value,amount:parseFloat(amounts[i].value)||0});});
+function psmRecalcTotal() {
+  var total = 0;
+  document.querySelectorAll('#psmBreakdownItems .psm-amount').forEach(function(inp){ total += parseFloat(inp.value)||0; });
+  var totEl = document.getElementById('psmTotal');
+  if (totEl) totEl.value = total || '';
+  var dispEl = document.getElementById('psmTotalDisplay');
+  if (dispEl) dispEl.textContent = total > 0 ? '₦'+total.toLocaleString() : '₦—';
+}
+
+var PSM_DEFAULTS = {
+  new_tenant: [
+    {label:'Annual Rent',                    amount:0},
+    {label:'Tenancy Agreement Fee',          amount:50000},
+    {label:'Legal / Admin Fee',              amount:35000},
+    {label:'Caution Deposit (Refundable)',   amount:0},
+  ],
+  renewal: [
+    {label:'Annual Rent (Renewal)',          amount:0},
+    {label:'Renewal Processing Fee',         amount:25000},
+    {label:'Legal / Admin Fee',              amount:20000},
+  ],
+};
+
+function psmBuildBreakdownRow(label, amount) {
+  var rowId = 'psmRow_'+Math.random().toString(36).slice(2,8);
+  var d = document.createElement('div');
+  d.id = rowId;
+  d.style.cssText = 'display:grid;grid-template-columns:1fr 120px 36px;gap:6px;margin-bottom:6px;align-items:center';
+  var fBase = 'padding:9px 10px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-size:.82rem;background:var(--card);outline:none';
+  var li = document.createElement('input');
+  li.className = 'psm-label'; li.value = label || ''; li.oninput = psmRecalcTotal;
+  li.style.cssText = fBase;
+  var ai = document.createElement('input');
+  ai.type = 'number'; ai.className = 'psm-amount';
+  if (amount) ai.value = amount; ai.placeholder = '0'; ai.oninput = psmRecalcTotal;
+  ai.style.cssText = fBase;
+  var rb = document.createElement('button');
+  rb.textContent = '✕'; rb.title = 'Remove';
+  rb.style.cssText = 'background:none;border:1px solid rgba(140,31,31,.25);color:var(--red);border-radius:5px;padding:0;width:36px;height:36px;cursor:pointer;font-size:.9rem';
+  rb.onclick = function(){ psmRemoveRow(rowId); };
+  d.appendChild(li); d.appendChild(ai); d.appendChild(rb);
+  return d;
+}
+async function savePaymentSlip() {
+  var wi = document.getElementById('psmWfId')?.value;
+  if (!wi) { notify('error','Error','No workflow ID.'); return; }
+  var labels = document.querySelectorAll('#psmBreakdownItems .psm-label');
+  var amounts = document.querySelectorAll('#psmBreakdownItems .psm-amount');
+  var breakdown = [], total = 0;
+  labels.forEach(function(l,i){ var amt=parseFloat(amounts[i]?.value)||0; if(l.value&&amt){breakdown.push({label:l.value,amount:amt});total+=amt;} });
+  if (!total) { notify('error','Amount Required','Enter at least one fee amount.'); return; }
   await issuePaymentSlip(wi,{
-    totalFee:tot,breakdown,
-    bankName:document.getElementById('psmBank')?.value||'Zenith Bank',
-    accountNo:document.getElementById('psmAccNo')?.value||'1014619530',
-    accountName:document.getElementById('psmAccName')?.value||'Crestechnologies IS Ltd',
-    notes:document.getElementById('psmNotes')?.value||'',
+    totalFee:total, breakdown,
+    bankName:   document.getElementById('psmBank')?.value    ||'Zenith Bank',
+    accountNo:  document.getElementById('psmAccNo')?.value   ||'1014619530',
+    accountName:document.getElementById('psmAccName')?.value ||'Crestechnologies IS Ltd',
+    notes:      document.getElementById('psmNotes')?.value   ||'',
   });
   document.getElementById('paymentSlipModal')?.classList.remove('on');
 }
 
-function openPaymentSlipModal(elOrId){
-  var wfId=typeof elOrId==='string'?elOrId:(elOrId.dataset?elOrId.dataset.wfid:elOrId);
-  var mo=document.getElementById('paymentSlipModal');
-  if(!mo){var d=document.createElement('div');d.className='modal-overlay';d.id='paymentSlipModal';
-    d.innerHTML='<div class="modal" style="max-width:540px"><div class="modal-head"><h3>💳 Issue Payment Advice Slip</h3>'
-      +'<button class="modal-close" onclick="document.getElementById(\'paymentSlipModal\').classList.remove(\'on\')">✕</button></div>'
-      +'<div class="modal-body"><input type="hidden" id="psmWfId"/>'
-      +'<div class="fg"><label>Total Fee (₦) *</label><input type="number" id="psmTotal" placeholder="850000"/></div>'
-      +'<div class="fg"><label>Fee Breakdown</label>'
-        +'<div id="psmBreakdownItems"><div style="display:flex;gap:8px;margin-bottom:6px">'
-          +'<input class="psm-label" placeholder="e.g. Annual Rent" style="flex:2;padding:8px;border:1px solid var(--rule);border-radius:5px"/>'
-          +'<input class="psm-amount" type="number" placeholder="Amount" style="flex:1;padding:8px;border:1px solid var(--rule);border-radius:5px"/>'
-        +'</div></div>'
-        +'<button onclick="addBreakdownItem()" class="btn btn-sm btn-outline" style="font-size:.74rem;margin-top:4px">+ Add Item</button>'
-      +'</div>'
-      +'<div class="fg"><label>Bank</label><input type="text" id="psmBank" value="Zenith Bank"/></div>'
-      +'<div class="fg"><label>Account Number</label><input type="text" id="psmAccNo" value="1014619530"/></div>'
-      +'<div class="fg"><label>Account Name</label><input type="text" id="psmAccName" value="Crestechnologies IS Ltd"/></div>'
-      +'<div class="fg"><label>Notes</label><textarea id="psmNotes" rows="2" style="width:100%"></textarea></div>'
-      +'<div style="display:flex;gap:10px;justify-content:flex-end">'
-        +'<button class="btn btn-outline" onclick="document.getElementById(\'paymentSlipModal\').classList.remove(\'on\')">Cancel</button>'
-        +'<button class="btn btn-gold" onclick="savePaymentSlip()">💾 Issue Slip</button>'
-      +'</div></div></div>';
-    document.body.appendChild(d);mo=d;
+function openPaymentSlipModal(elOrId) {
+  var wfId = typeof elOrId==='string' ? elOrId : (elOrId.dataset ? elOrId.dataset.wfid : String(elOrId));
+
+  // Build modal once using DOM API (avoids quote-escaping issues)
+  var mo = document.getElementById('paymentSlipModal');
+  if (!mo) {
+    mo = document.createElement('div');
+    mo.className = 'modal-overlay'; mo.id = 'paymentSlipModal';
+    var card = document.createElement('div');
+    card.className = 'modal'; card.style.maxWidth = '580px';
+    card.innerHTML = [
+      '<div class="modal-head">',
+        '<div>',
+          '<h3 id="psmTitle">&#x1F4B3; Issue Payment Advice Slip</h3>',
+          '<div id="psmScenarioBadge" style="margin-top:4px"></div>',
+        '</div>',
+        '<button class="modal-close" id="psmClose">&#x2715;</button>',
+      '</div>',
+      '<div class="modal-body">',
+        '<input type="hidden" id="psmWfId"/>',
+        '<div id="psmTenantBar" style="background:var(--cream);border:1px solid var(--rule);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:none">',
+          '<div style="font-size:.84rem;font-weight:700" id="psmTenantName"></div>',
+          '<div style="font-size:.75rem;color:var(--dim)" id="psmUnitLabel"></div>',
+        '</div>',
+        '<div class="fg">',
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">',
+            '<label style="margin:0">Fee Breakdown</label>',
+            '<span style="font-size:.68rem;color:var(--dim)">Amounts in &#8358;</span>',
+          '</div>',
+          '<div style="display:grid;grid-template-columns:1fr 120px 36px;gap:6px;margin-bottom:4px">',
+            '<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--dim)">Description</div>',
+            '<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--dim)">Amount (&#8358;)</div>',
+            '<div></div>',
+          '</div>',
+          '<div id="psmBreakdownItems"></div>',
+          '<button id="psmAddRow" class="btn btn-outline btn-sm" style="font-size:.74rem;margin-top:8px;width:100%;border-style:dashed;border-color:var(--gold);color:var(--gold)">&#xFF0B; Add Row</button>',
+        '</div>',
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--ink);border-radius:8px;margin-bottom:14px">',
+          '<span style="font-size:.78rem;font-weight:700;color:#9a8a6a;letter-spacing:.06em;text-transform:uppercase">Grand Total</span>',
+          '<span id="psmTotalDisplay" style="font-family:monospace;font-size:1.15rem;font-weight:700;color:#c9960c">&#8358;&#8212;</span>',
+        '</div>',
+        '<input type="hidden" id="psmTotal"/>',
+        '<details style="margin-bottom:14px">',
+          '<summary style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);cursor:pointer;padding:6px 0;list-style:none">&#x2699;&#xFE0F; Bank Details &amp; Notes</summary>',
+          '<div style="margin-top:10px">',
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">',
+              '<div class="fg"><label>Bank</label><input type="text" id="psmBank" value="Zenith Bank"/></div>',
+              '<div class="fg"><label>Account Number</label><input type="text" id="psmAccNo" value="1014619530"/></div>',
+            '</div>',
+            '<div class="fg"><label>Account Name</label><input type="text" id="psmAccName" value="Crestechnologies IS Ltd"/></div>',
+            '<div class="fg"><label>Notes to Tenant</label><textarea id="psmNotes" rows="2" style="width:100%"></textarea></div>',
+          '</div>',
+        '</details>',
+        '<div style="display:flex;gap:10px;justify-content:flex-end">',
+          '<button id="psmCancel" class="btn btn-outline">Cancel</button>',
+          '<button id="psmIssue" class="btn btn-gold">&#x1F4BE; Issue Slip</button>',
+        '</div>',
+      '</div>',
+    ].join('');
+    // Wire buttons after setting innerHTML
+    card.querySelector('#psmClose').onclick  = function(){ mo.classList.remove('on'); };
+    card.querySelector('#psmCancel').onclick = function(){ mo.classList.remove('on'); };
+    card.querySelector('#psmIssue').onclick  = savePaymentSlip;
+    card.querySelector('#psmAddRow').onclick = addBreakdownItem;
+    mo.appendChild(card);
+    document.body.appendChild(mo);
   }
-  document.getElementById('psmWfId').value=wfId;
+
+  // Reset state
+  document.getElementById('psmWfId').value = wfId;
+  document.getElementById('psmBreakdownItems').innerHTML = '';
+  document.getElementById('psmTotal').value = '';
+  document.getElementById('psmTotalDisplay').textContent = '₦—';
+  var badge = document.getElementById('psmScenarioBadge');
+  var bar   = document.getElementById('psmTenantBar');
+  if (badge) badge.innerHTML = '';
+  if (bar)   bar.style.display = 'none';
+
+  // Load workflow and pre-fill breakdown
+  getWorkflow(wfId).then(function(wf) {
+    var isRenewal = wf && wf.type === 'renewal';
+    var label = isRenewal ? '🔄 Renewal' : '🏠 New Tenant';
+    var bg    = isRenewal ? 'rgba(29,78,216,.1)'  : 'rgba(21,128,61,.1)';
+    var color = isRenewal ? '#1D4ED8' : '#15803d';
+    if (badge) badge.innerHTML = '<span style="font-size:.68rem;font-weight:700;padding:2px 10px;border-radius:20px;background:'+bg+';color:'+color+'">'+label+'</span>';
+    if (wf) {
+      var nm = document.getElementById('psmTenantName');
+      var ul = document.getElementById('psmUnitLabel');
+      if (bar) bar.style.display = '';
+      if (nm)  nm.textContent = wf.tenantName || wf.tenantEmail || '—';
+      if (ul)  ul.textContent = wf.unitLabel  || wf.unitId      || '—';
+    }
+    var rentRec    = wf ? rentLogs.find(function(r){ return (r.unitId||r.unit||'') === (wf.unitId||''); }) : null;
+    var annualRent = rentRec ? (parseFloat(rentRec.newRent||rentRec.amount||0)) : 0;
+    var defaults   = isRenewal ? PSM_DEFAULTS.renewal : PSM_DEFAULTS.new_tenant;
+    var container  = document.getElementById('psmBreakdownItems');
+    defaults.forEach(function(r) {
+      var amt = r.amount;
+      if (r.label.toLowerCase().includes('rent') && annualRent > 0) amt = annualRent;
+      if (!isRenewal && r.label.toLowerCase().includes('caution') && annualRent > 0) amt = Math.round(annualRent * 0.05);
+      container.appendChild(psmBuildBreakdownRow(r.label, amt));
+    });
+    psmRecalcTotal();
+  }).catch(function() {
+    var container = document.getElementById('psmBreakdownItems');
+    PSM_DEFAULTS.new_tenant.forEach(function(r){ container.appendChild(psmBuildBreakdownRow(r.label, 0)); });
+  });
+
   mo.classList.add('on');
 }
 
