@@ -2530,6 +2530,10 @@ function showRoleSelector(user, userData) {
   const isAgentUser  = userData.role === 'agent'  && userData.agentStatus === 'approved';
   const isPendingAgent = userData.role === 'agent' && userData.agentStatus !== 'approved';
 
+  // Hide the auth screen so the role selector overlay is visible
+  var vAuth = document.getElementById('vAuth');
+  if (vAuth) vAuth.style.display = 'none';
+
   document.getElementById('rcEmail').textContent = user.email;
   const opts  = document.getElementById('roleOptions');
   const panel = document.getElementById('etVerifyPanel');
