@@ -35,24 +35,24 @@ window._googleProvider = new firebase.auth.GoogleAuthProvider();
 <script>
 // ── INTERCEPT FIREBASE ACTION URLs (password reset, email verify) ─────────────
 (function() {
-  const p = new URLSearchParams(window.location.search);
-  const mode = p.get('mode');
-  const oobCode = p.get('oobCode');
+  var p = new URLSearchParams(window.location.search);
+  var mode = p.get('mode');
+  var oobCode = p.get('oobCode');
   if (!mode || !oobCode) return;
 
   if (mode === 'resetPassword') {
     // Show password reset UI immediately — before anything else renders
     document.addEventListener('DOMContentLoaded', function() {
       // Hide loader immediately
-      const loader = document.getElementById('globalLoader');
+      var loader = document.getElementById('globalLoader');
       if (loader) { loader.style.display = 'none'; }
 
       // Show auth screen
-      const vAuth = document.getElementById('vAuth');
+      var vAuth = document.getElementById('vAuth');
       if (vAuth) vAuth.style.display = 'flex';
 
       // Build reset password overlay
-      const overlay = document.createElement('div');
+      var overlay = document.createElement('div');
       overlay.id = 'resetOverlay';
       overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)';
       overlay.innerHTML = `
@@ -98,19 +98,19 @@ window._googleProvider = new firebase.auth.GoogleAuthProvider();
 
     // Attach global functions
     window.roStrength = function() {
-      const pw = document.getElementById('roNewPass').value;
-      const bar = document.getElementById('roBar');
-      const score = (pw.length>=8?1:0)+(/[A-Z]/.test(pw)?1:0)+(/[0-9]/.test(pw)?1:0)+(/[^a-zA-Z0-9]/.test(pw)?1:0);
-      const colors = ['#e57373','#ffb74d','#aed581','#66bb6a'];
+      var pw = document.getElementById('roNewPass').value;
+      var bar = document.getElementById('roBar');
+      var score = (pw.length>=8?1:0)+(/[A-Z]/.test(pw)?1:0)+(/[0-9]/.test(pw)?1:0)+(/[^a-zA-Z0-9]/.test(pw)?1:0);
+      var colors = ['#e57373','#ffb74d','#aed581','#66bb6a'];
       bar.style.width = (score * 25) + '%';
       bar.style.background = colors[score-1] || '#e0d8c8';
     };
 
     window.roSave = async function() {
-      const newPass = document.getElementById('roNewPass').value;
-      const confirm = document.getElementById('roConfirm').value;
-      const msgEl   = document.getElementById('roMsg');
-      const btn     = document.getElementById('roSaveBtn');
+      var newPass = document.getElementById('roNewPass').value;
+      var confirm = document.getElementById('roConfirm').value;
+      var msgEl = document.getElementById('roMsg');
+      var btn = document.getElementById('roSaveBtn');
       msgEl.style.color = '#8c1f1f';
 
       if (newPass.length < 8) { msgEl.textContent = 'Password must be at least 8 characters.'; return; }
@@ -121,7 +121,7 @@ window._googleProvider = new firebase.auth.GoogleAuthProvider();
       try {
         await firebase.auth().confirmPasswordReset(oobCode, newPass);
         // Auto sign in with new password
-        const email = document.getElementById('roEmailLabel').textContent.replace('Setting new password for: ','');
+        var email = document.getElementById('roEmailLabel').textContent.replace('Setting new password for: ','');
         msgEl.style.color = '#1a5c2e';
         msgEl.textContent = '✅ Password saved! Signing you in…';
         btn.textContent = '✅ Done!';
@@ -1227,7 +1227,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       <div class="auth-field">
         <label>Email Address</label>
         <input type="email" id="loginEmail" placeholder="your@email.com"
-          oninput="loginCheckTenant()" onkeydown="if(event.key==='Enter')doLogin()"/>
+           onkeydown="if(event.key==='Enter')doLogin()"/>
       </div>
 
       <!-- Contract name — shown only for tenant emails found in database -->
@@ -2280,6 +2280,7 @@ function authTab(name, btn) {
 
 /* Called oninput on email field — shows contract name field if email is a known tenant */
 function loginCheckTenant() {
+  return; /* email-only login — name check disabled */
   var emailEl = document.getElementById('loginEmail');
   var nameField = document.getElementById('loginNameField');
   if (!emailEl || !nameField) return;
@@ -2347,19 +2348,19 @@ async function doLogin() {
   var errEl = document.getElementById('loginErr');
   var email = document.getElementById('loginEmail').value.trim().toLowerCase();
   var pass  = document.getElementById('loginPass').value;
-
   if (errEl) { errEl.textContent = ''; errEl.style.color = 'var(--red)'; }
   if (!email) { if (errEl) errEl.textContent = 'Enter your email address.'; return; }
-  if (!pass)  { if (errEl) errEl.textContent = 'Enter your password.';      return; }
-
+  if (!pass)  { if (errEl) errEl.textContent = 'Enter your password.'; return; }
   if (errEl) { errEl.textContent = 'Signing in…'; errEl.style.color = 'var(--dim)'; }
   var btn = document.querySelector('.auth-btn') || document.getElementById('loginSignInBtn');
   if (btn) btn.disabled = true;
+  console.log('[CRS Auth] signInWithEmailAndPassword start', email);
   try {
-    await firebase.auth().signInWithEmailAndPassword(email, pass);
+    var result = await firebase.auth().signInWithEmailAndPassword(email, pass);
+    console.log('[CRS Auth] signInWithEmailAndPassword success', result.user.uid);
     if (errEl) errEl.textContent = '';
   } catch(e) {
-    console.error('Login error:', e.code);
+    console.error('[CRS Auth] signInWithEmailAndPassword FAILED', e.code, e.message);
     if (errEl) { errEl.textContent = friendlyAuthError(e.code); errEl.style.color = 'var(--red)'; }
   } finally {
     if (btn) btn.disabled = false;
@@ -2410,50 +2411,36 @@ async function _setFirebasePersistence() {
 async function doGoogle() {
   var errEl = document.getElementById('loginErr');
   if (errEl) { errEl.textContent = 'Opening Google sign-in…'; errEl.style.color = 'var(--dim)'; }
+  console.log('[CRS Auth] signInWithPopup start');
   try {
     var provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    await firebase.auth().signInWithPopup(provider);
+    var result = await firebase.auth().signInWithPopup(provider);
+    console.log('[CRS Auth] signInWithPopup success', result.user.email);
     if (errEl) errEl.textContent = '';
   } catch(e) {
-    console.error('Google error:', e.code);
-    if (errEl) { errEl.textContent = friendlyAuthError(e.code); errEl.style.color = 'var(--red)'; }
-  }
-}async function doGoogle() {
-  var errEl = document.getElementById('loginErr');
-  if (errEl) { errEl.textContent = 'Opening Google sign-in…'; errEl.style.color = 'var(--dim)'; }
-  var prev = document.getElementById('storageBlockedMsg');
-  if (prev) prev.remove();
-  try {
-    var provider = new firebase.auth.GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-    await firebase.auth().signInWithPopup(provider);
-    if (errEl) errEl.textContent = '';
-  } catch(e) {
-    console.error('Google sign-in error:', e.code, e.message);
-    // Popup blocked / not supported — fall back to redirect
-    if (e.code === 'auth/popup-blocked'
-        || e.code === 'auth/popup-closed-by-user'
+    console.error('[CRS Auth] signInWithPopup FAILED', e.code, e.message);
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user'
         || e.code === 'auth/operation-not-supported-in-this-environment') {
       if (errEl) { errEl.textContent = 'Redirecting to Google…'; errEl.style.color = 'var(--dim)'; }
+      console.log('[CRS Auth] falling back to signInWithRedirect');
       try {
-        var p2 = new firebase.auth.GoogleAuthProvider();
-        await firebase.auth().signInWithRedirect(p2);
+        await firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider());
       } catch(e2) {
-        if (errEl) errEl.textContent = 'Google sign-in blocked. Please use email & password.';
-        errEl.style.color = 'var(--red)';
+        console.error('[CRS Auth] signInWithRedirect FAILED', e2.code, e2.message);
+        if (errEl) { errEl.textContent = 'Google sign-in blocked. Use email & password.'; errEl.style.color = 'var(--red)'; }
       }
     } else {
       if (errEl) { errEl.textContent = friendlyAuthError(e.code); errEl.style.color = 'var(--red)'; }
     }
   }
-
+}
 
 async function doRegister() {
-  const errEl = document.getElementById('regErr');
-  const name  = document.getElementById('regName').value.trim();
-  const email = document.getElementById('regEmail').value.trim();
-  const pass  = document.getElementById('regPass').value;
+  var errEl = document.getElementById('regErr');
+  var name  = document.getElementById('regName').value.trim();
+  var email = document.getElementById('regEmail').value.trim();
+  var pass  = document.getElementById('regPass').value;
   if (errEl) errEl.textContent = '';
   if (!name)  { if(errEl) errEl.textContent='Enter your full name.'; return; }
   if (!email) { if(errEl) errEl.textContent='Enter your email.'; return; }
@@ -3168,18 +3155,46 @@ function _normaliseRecord(r) {
 }
 
 function initAuth() {
+  console.log('[CRS Auth] initAuth start — checking Firebase SDK');
+  if (typeof firebase === 'undefined') {
+    console.error('[CRS Auth] FATAL: firebase is not defined — SDK failed to load');
+    document.getElementById('vAuth').style.display = 'flex';
+    return;
+  }
+  if (!firebase.apps || firebase.apps.length === 0) {
+    console.error('[CRS Auth] FATAL: firebase.initializeApp() has not been called');
+    document.getElementById('vAuth').style.display = 'flex';
+    return;
+  }
+  console.log('[CRS Auth] Firebase SDK loaded OK, apps:', firebase.apps.length);
+
+  // Handle Google redirect result
+  firebase.auth().getRedirectResult().then(function(result) {
+    if (result && result.user) {
+      console.log('[CRS Auth] getRedirectResult: user =', result.user.email);
+    }
+  }).catch(function(e) {
+    if (e.code !== 'auth/no-auth-event') {
+      console.error('[CRS Auth] getRedirectResult error:', e.code, e.message);
+    }
+  });
+
+  console.log('[CRS Auth] onAuthStateChanged registered');
   firebase.auth().onAuthStateChanged(async function(user) {
+    console.log('[CRS Auth] onAuthStateChanged fired, user =', user ? user.email : 'null');
     try { document.getElementById('globalLoader').classList.add('out'); } catch(e){}
 
     if (user) {
       currentUser = user;
       var email = (user.email || '').toLowerCase();
       var adminMode = ADMIN_EMAILS.includes(email);
+      console.log('[CRS Auth] user authenticated, admin =', adminMode);
       var userData = {};
       try {
         var snap = await firebase.firestore().collection('users').doc(user.uid).get();
         if (snap.exists) {
           userData = snap.data();
+          console.log('[CRS Auth] Firestore user doc loaded, role =', userData.role);
         } else {
           userData = {
             name: user.displayName || email.split('@')[0],
@@ -3187,14 +3202,21 @@ function initAuth() {
             role: adminMode ? 'admin' : 'tenant',
             createdAt: new Date().toISOString()
           };
-          try { await firebase.firestore().collection('users').doc(user.uid).set(userData); } catch(e2){}
+          try {
+            await firebase.firestore().collection('users').doc(user.uid).set(userData);
+            console.log('[CRS Auth] new user doc created');
+          } catch(e2) {
+            console.warn('[CRS Auth] could not create user doc:', e2.message);
+          }
         }
       } catch(e) {
-        console.warn('Firestore:', e.message);
+        console.warn('[CRS Auth] Firestore error:', e.code, e.message);
         if (!userData.role) userData = { role: adminMode ? 'admin' : 'tenant', email: user.email };
       }
 
       isAdmin = adminMode || userData.role === 'admin';
+      console.log('[CRS Auth] routing: isAdmin =', isAdmin, 'role =', userData.role);
+
       if (isAdmin || userData.role === 'agent') {
         showRoleSelector(user, userData);
       } else {
@@ -3203,6 +3225,7 @@ function initAuth() {
     } else {
       currentUser = null;
       isAdmin = false;
+      console.log('[CRS Auth] no user — showing auth screen');
       showAuthScreen();
     }
   });
@@ -5340,9 +5363,14 @@ function tpSwitch(panelId) {
 }
 
 try {
+  // Guard: verify SDK loaded before calling initAuth
+  if (typeof firebase === 'undefined') {
+    throw new Error('Firebase SDK not loaded — check CDN connection');
+  }
+  console.log('[CRS Auth] Firebase SDK ready, calling initAuth');
   initAuth();
 } catch(e) {
-  console.error('initAuth error:', e);
+  console.error('[CRS Auth] initAuth error:', e.message);
   document.getElementById('vAuth').style.display = 'flex';
 }
 // Hide loader after 3s no matter what
@@ -7735,7 +7763,6 @@ function _addAdminFieldTogglePage() {
   else _init();
 })();
 
-}
 }
 /* ── 12. Wire showPage for new pages ── */
 (function() {
