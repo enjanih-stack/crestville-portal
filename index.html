@@ -88,17 +88,19 @@ function initFirebaseApp() {
     window._storage        = firebase.storage();
     window._googleProvider = new firebase.auth.GoogleAuthProvider();
     console.log('[CRS] Firebase initialised ✓');
-    startAuth();
   } catch(e) {
     console.error('[CRS] Firebase initializeApp failed:', e.message);
+    return;
   }
+  startAuth();
 }
 function startAuth() {
-  if (window._authStarted) return;
-  window._authStarted = true;
+  if (window._authListenerRegistered) return;
+  window._authListenerRegistered = true;
   if (typeof initAuth === 'function') {
     initAuth();
   } else {
+    window._authListenerRegistered = false;
     setTimeout(startAuth, 50);
   }
 }
@@ -3147,7 +3149,7 @@ function _normaliseRecord(r) {
 function initFirebaseApp() {
   if (typeof firebase === 'undefined') { console.error('[CRS] Firebase SDK missing'); return; }
   if (firebase.apps && firebase.apps.length > 0) {
-    if (!window._authStarted) { window._authStarted = true; initAuth(); }
+    startAuth();
     return;
   }
   try {
@@ -3165,7 +3167,7 @@ function initFirebaseApp() {
     window._googleProvider = new firebase.auth.GoogleAuthProvider();
     console.log('[CRS] Firebase initialised via initFirebaseApp ✓');
   } catch(e) { console.error('[CRS] initFirebaseApp error:', e.message); return; }
-  if (!window._authStarted) { window._authStarted = true; initAuth(); }
+  startAuth();
 }
 
 function initAuth() {
@@ -5380,19 +5382,11 @@ function tpSwitch(panelId) {
 
 (function() {
   if (typeof firebase === 'undefined' || !firebase.apps || !firebase.apps.length) {
-    console.log('[CRS Auth] Waiting for Firebase SDK...');
-    window._authStarted = false;
-    return;
+    console.log('[CRS Auth] Firebase not ready at inline check — startAuth will be called by SDK onload');
+    return;  // initFirebaseApp's onload handler will call startAuth() when ready
   }
-  console.log('[CRS Auth] Firebase SDK ready, calling initAuth');
-  window._authStarted = true;
-  try {
-    initAuth();
-  } catch(e) {
-    console.error('[CRS Auth] initAuth error:', e.message);
-    var v = document.getElementById('vAuth');
-    if (v) v.style.display = 'flex';
-  }
+  console.log('[CRS Auth] Firebase already ready at inline check — calling startAuth');
+  startAuth();
 })();
 // Hide loader after 3s no matter what
 setTimeout(() => {
