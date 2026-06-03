@@ -2583,6 +2583,8 @@ function showRoleSelector(user, userData) {
         <div class="ro-body"><div class="ro-title">Admin Dashboard</div><div class="ro-desc">Manage all properties, tenants and records</div></div>
         <div class="ro-check"></div>
       </div>`;
+    document.getElementById('roleSelectorOverlay').classList.add('on');
+    console.log('[CRS UI] roleSelectorOverlay shown ✓ (admin)');
   } else if (isAgentUser) {
     document.getElementById('rcTitle').textContent = 'Welcome, Agent! Choose your session';
     opts.innerHTML = `
@@ -2596,6 +2598,8 @@ function showRoleSelector(user, userData) {
         <div class="ro-body"><div class="ro-title">New / Prospective Tenant</div><div class="ro-desc">Browse properties and start a new application</div></div>
         <div class="ro-check"></div>
       </div>`;
+    document.getElementById('roleSelectorOverlay').classList.add('on');
+    console.log('[CRS UI] roleSelectorOverlay shown ✓ (agent)');
   } else {
     document.getElementById('rcTitle').textContent = 'Welcome! How would you like to continue?';
     opts.innerHTML = `
@@ -2614,7 +2618,6 @@ function showRoleSelector(user, userData) {
         <div class="ro-body"><div class="ro-title">Register as Agent</div><div class="ro-desc">Apply to become a Crestville Properties agent</div></div>
         <div class="ro-check"></div>
       </div>`;
-  } // end else
 
   document.getElementById('roleSelectorOverlay').classList.add('on');
   console.log('[CRS UI] roleSelectorOverlay shown ✓');
