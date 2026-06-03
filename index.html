@@ -1205,14 +1205,14 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
     <!-- LOGIN -->
     <div class="auth-panel on" id="ap-login">
       <div class="auth-field">
-        <label>Email Address</label>
+        <label for="loginEmail">Email Address</label>
         <input type="email" id="loginEmail" placeholder="your@email.com"
            onkeydown="if(event.key==='Enter')doLogin()"/>
       </div>
 
       <!-- Contract name — shown only for tenant emails found in database -->
       <div class="auth-field" id="loginNameField" style="display:none;visibility:hidden;height:0;overflow:hidden">
-        <label style="color:var(--ink)">Name on Contract
+        <label for="loginContractName" style="color:var(--ink)">Name on Contract
           <span style="font-size:.66rem;color:var(--dim);font-weight:400;margin-left:4px">as it appears on your tenancy agreement</span>
         </label>
         <input type="text" id="loginContractName" placeholder="e.g. Mr. Monday Sylvanus"
@@ -1223,7 +1223,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       </div>
 
       <div class="auth-field">
-        <label>Password</label>
+        <label for="loginPass">Password</label>
         <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
       </div>
 
@@ -1259,14 +1259,14 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
     </div>
         <!-- REGISTER -->
     <div class="auth-panel" id="ap-register">
-      <div class="auth-field"><label>Full Name</label><input type="text" id="regName" placeholder="Your full name"/></div>
-      <div class="auth-field"><label>Email Address</label><input type="email" id="regEmail" placeholder="your@email.com"/>
+      <div class="auth-field"><label for="regName">Full Name</label><input type="text" id="regName" placeholder="Your full name"/></div>
+      <div class="auth-field"><label for="regEmail">Email Address</label><input type="email" id="regEmail" placeholder="your@email.com"/>
       <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--rule);text-align:center;font-size:.72rem;color:var(--dim)">
         Premium properties · Transparent process · Professional management<br>
         <strong style="color:var(--ink)">Ojodu · Ibadan · Enugu</strong>
       </div>
     </div>
-      <div class="auth-field"><label>Password (min 6 chars)</label><input type="password" id="regPass" placeholder="••••••••"/></div>
+      <div class="auth-field"><label for="regPass">Password (min 6 chars)</label><input type="password" id="regPass" placeholder="••••••••"/></div>
       <div class="auth-error" id="regErr"></div>
       <button class="auth-btn" onclick="doRegister()">Create Account →</button>
     </div>
@@ -1442,7 +1442,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
           <div class="sec-card admin-only">
             <div class="sec-head">
               <h2>Revenue by Location</h2>
-              <input class="search-input" style="max-width:200px;padding:6px 10px;font-size:.8rem" id="chartFilter" placeholder="Filter location…" oninput="renderChart()"/>
+              <input aria-label="Filter chart by location" class="search-input" style="max-width:200px;padding:6px 10px;font-size:.8rem" id="chartFilter" placeholder="Filter location…" oninput="renderChart()"/>
             </div>
             <div class="sec-body"><div class="chart-wrap"><canvas id="revenueChart"></canvas></div></div>
           </div>
@@ -1517,12 +1517,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
         </div>
         <div class="page-body">
           <div class="search-row">
-            <input class="search-input" placeholder="🔍 Search by unit, location…" id="vacantSearch" oninput="renderVacant()"/>
-            <select class="filter-select" id="vacantCity" onchange="renderVacant()">
+            <input aria-label="Search vacant units" class="search-input" placeholder="🔍 Search by unit, location…" id="vacantSearch" oninput="renderVacant()"/>
+            <select aria-label="Filter by city" class="filter-select" id="vacantCity" onchange="renderVacant()">
               <option value="">All Cities</option>
               <option>Ojodu</option><option>Ibadan</option><option>Enugu</option>
             </select>
-            <select class="filter-select" id="vacantType" onchange="renderVacant()">
+            <select aria-label="Filter by property type" class="filter-select" id="vacantType" onchange="renderVacant()">
               <option value="">All Types</option>
               <option>2 Bedroom Flat</option><option>3 Bedroom Flat</option>
               <option>Self Contained</option><option>Room & Parlour</option><option>Commercial</option>
@@ -1605,7 +1605,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
             <div style="font-size:.78rem;color:var(--dim)" id="nmListMeta"></div>
-            <select id="nmFilter" onchange="nmRenderList()" style="font-size:.76rem;padding:5px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--card)">
+            <select aria-label="Filter notices" id="nmFilter" onchange="nmRenderList()" style="font-size:.76rem;padding:5px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--card)">
               <option value="">All notices</option><option value="active">Active only</option>
               <option value="expired">Expired only</option><option value="pinned">Pinned only</option><option value="paused">Paused only</option>
             </select>
@@ -1620,7 +1620,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
         <div class="page-header">
           <div><h1>Modification Requests</h1><div class="ph-sub">Tenant-submitted data correction requests</div></div>
           <div style="display:flex;gap:8px">
-            <select id="mrAdminFilter" onchange="mrAdminRender()" style="padding:7px 12px;border:1px solid var(--rule);border-radius:6px;font-size:.78rem;background:var(--card)">
+            <select aria-label="Filter maintenance requests" id="mrAdminFilter" onchange="mrAdminRender()" style="padding:7px 12px;border:1px solid var(--rule);border-radius:6px;font-size:.78rem;background:var(--card)">
               <option value="">All requests</option><option value="pending">Pending only</option>
               <option value="approved">Approved</option><option value="rejected">Rejected</option>
             </select>
@@ -1649,8 +1649,8 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
         </div>
         <div class="page-body">
           <div class="search-row">
-            <input class="search-input" placeholder="🔍 Search tenant, unit…" id="rmSearch" oninput="renderRentManager()"/>
-            <select class="filter-select" id="rmFilter" onchange="renderRentManager()">
+            <input aria-label="Search rent records" class="search-input" placeholder="🔍 Search tenant, unit…" id="rmSearch" oninput="renderRentManager()"/>
+            <select aria-label="Filter rent records" class="filter-select" id="rmFilter" onchange="renderRentManager()">
               <option value="">All Status</option>
               <option value="active">Active</option>
               <option value="overdue">Overdue</option>
@@ -1672,7 +1672,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
               <table class="data-table" id="rmTable">
                 <thead><tr>
                   <th style="width:36px;text-align:center">
-                    <input type="checkbox" id="rmSelectAllChk" title="Select all" onchange="rmToggleAll(this.checked)"
+                    <input type="checkbox" id="rmSelectAllChk" aria-label="Select all" title="Select all" onchange="rmToggleAll(this.checked)"
                       style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer"/>
                   </th>
                   <th style="width:36px;text-align:center;color:var(--dim);font-size:.7rem">#</th>
@@ -1708,9 +1708,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
           <!-- PANEL: Roster -->
           <div id="tenPanelRoster">
             <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-              <input id="tenSearch" placeholder="🔍 Search name, email, unit..." oninput="loadTenantsTable()"
+              <input aria-label="Search tenants" id="tenSearch" placeholder="🔍 Search name, email, unit..." oninput="loadTenantsTable()"
                 style="flex:1;min-width:200px;padding:9px 14px;border:1px solid var(--rule);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.84rem;background:var(--card);outline:none"/>
-              <select id="tenFilter" onchange="loadTenantsTable()"
+              <select aria-label="Filter tenants" id="tenFilter" onchange="loadTenantsTable()"
                 style="padding:9px 12px;border:1px solid var(--rule);border-radius:6px;font-size:.78rem;background:var(--card)">
                 <option value="">All Tenants</option>
                 <option value="active">Active Only</option>
@@ -1755,7 +1755,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
               All changes made by admin and tenants — edits, approvals, notices, logins and data modifications.
             </div>
             <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-              <select id="tenActivityFilter" onchange="renderActivityLog()"
+              <select aria-label="Filter activity log" id="tenActivityFilter" onchange="renderActivityLog()"
                 style="padding:7px 12px;border:1px solid var(--rule);border-radius:6px;font-size:.78rem;background:var(--card)">
                 <option value="">All Activity</option>
                 <option value="login">Logins</option>
@@ -1799,12 +1799,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
         <div class="page-header">
           <div><h1>Applications</h1><div class="ph-sub">New tenant KYT · Renewals · Payment approvals · eForm review</div></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <select id="appsFilterType" onchange="loadAdminApplications()" style="padding:7px 12px;border:1px solid var(--rule);border-radius:6px;font-size:.78rem;background:var(--card)">
+            <select aria-label="Filter applications by type" id="appsFilterType" onchange="loadAdminApplications()" style="padding:7px 12px;border:1px solid var(--rule);border-radius:6px;font-size:.78rem;background:var(--card)">
               <option value="">All Types</option>
               <option value="new_tenant">New Tenant</option>
               <option value="renewal">Renewal</option>
             </select>
-            <select id="appsFilterStep" onchange="loadAdminApplications()" style="padding:7px 12px;border:1px solid var(--rule);border-radius:6px;font-size:.78rem;background:var(--card)">
+            <select aria-label="Filter applications by step" id="appsFilterStep" onchange="loadAdminApplications()" style="padding:7px 12px;border:1px solid var(--rule);border-radius:6px;font-size:.78rem;background:var(--card)">
               <option value="">All Stages</option>
               <option value="kyc_submitted">KYT Review</option>
               <option value="renewal_submitted">Renewal Review</option>
@@ -1859,12 +1859,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
           <!-- TAB: ALL UNITS -->
           <div class="prop-sub-page on" id="tabUnits">
             <div class="search-row">
-              <input class="search-input" placeholder="🔍 Search property…" id="propSearch" oninput="renderProperties()"/>
-              <select class="filter-select" id="propCityFilter" onchange="renderProperties()">
+              <input aria-label="Search properties" class="search-input" placeholder="🔍 Search property…" id="propSearch" oninput="renderProperties()"/>
+              <select aria-label="Filter properties by city" class="filter-select" id="propCityFilter" onchange="renderProperties()">
                 <option value="">All Cities</option>
                 <option>Ojodu</option><option>Ibadan</option><option>Enugu</option>
               </select>
-              <select class="filter-select admin-only" id="propStatusFilter" onchange="renderProperties()">
+              <select aria-label="Filter properties by status" class="filter-select admin-only" id="propStatusFilter" onchange="renderProperties()">
                 <option value="">All Status</option>
                 <option value="occupied">Occupied</option>
                 <option value="vacant">Vacant</option>
@@ -1880,7 +1880,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
               <p>Upload a CSV file exported from your existing rent spreadsheet or the template below. The system will automatically extract property unit, location, tenant name, email, rent amount, tenancy start/expiry dates, and vacancy status. Existing records with matching unit IDs will be updated.</p>
 
               <div class="drop-zone" id="csvDropZone">
-                <input type="file" id="csvFileInput" accept=".csv,.xlsx,.xls" onchange="handleCSVImport(this)"/>
+                <input aria-label="Upload CSV file" type="file" id="csvFileInput" accept=".csv,.xlsx,.xls" onchange="handleCSVImport(this)"/>
                 <span class="drop-zone-icon">📊</span>
                 <div class="drop-zone-label">Drop CSV file here or click to browse</div>
                 <div class="drop-zone-sub">Accepts: .csv · Max 5 MB · Encoding: UTF-8</div>
@@ -2009,7 +2009,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
 
       <!-- Upload area -->
       <div class="doc-upload-area" id="docUploadArea">
-        <input type="file" id="docFileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="handleDocUpload(this)"/>
+        <input aria-label="Upload documents" type="file" id="docFileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="handleDocUpload(this)"/>
         <p>📎 <strong>Click to upload</strong> or drag files here<br>
         <small>PDF, JPG, PNG, DOC, DOCX · Max 10 MB per file</small></p>
       </div>
@@ -2046,7 +2046,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       </div>
 
       <div style="border-top:1px solid var(--rule);padding-top:16px;margin-top:4px">
-        <div class="fg" style="margin-bottom:12px"><label>Preferred Renewal Duration</label>
+        <div class="fg" style="margin-bottom:12px"><label for="renewDuration">Preferred Renewal Duration</label>
           <select id="renewDuration">
             <option value="1 Year">1 Year</option>
             <option value="2 Years">2 Years</option>
@@ -2054,7 +2054,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
             <option value="Other">Other (specify in message)</option>
           </select>
         </div>
-        <div class="fg"><label>Message to Landlord (optional)</label>
+        <div class="fg"><label for="renewMessage">Message to Landlord (optional)</label>
           <textarea id="renewMessage" rows="3" placeholder="Any special requests or notes for your renewal…"></textarea>
         </div>
       </div>
@@ -2078,57 +2078,57 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       <input type="hidden" id="rmEditId"/>
       <div class="form-grid c2" style="gap:14px">
         <div class="fg" style="grid-column:1/-1">
-          <label>Property / Unit <span style="color:var(--red)">*</span></label>
+          <label for="rmUnit">Property / Unit <span style="color:var(--red)">*</span></label>
           <select id="rmUnit">
             <option value="">— Select unit —</option>
           </select>
         </div>
         <div class="fg" style="grid-column:1/-1">
-          <label>Tenant Full Name <span style="color:var(--red)">*</span></label>
+          <label for="rmTenant">Tenant Full Name <span style="color:var(--red)">*</span></label>
           <input type="text" id="rmTenant" placeholder="Full legal name (as used in portal)"/>
         </div>
         <div class="fg" style="grid-column:1/-1">
-          <label>Name as Appeared on Contract</label>
+          <label for="rmContractName">Name as Appeared on Contract</label>
           <input type="text" id="rmContractName" placeholder="Exact name on tenancy agreement (if different)"/>
           <small style="font-size:.68rem;color:var(--dim);margin-top:3px;display:block">Used to match records across forms. Leave blank if same as above.</small>
         </div>
         <div class="fg">
-          <label>Tenant Email</label>
+          <label for="rmTenantEmail">Tenant Email</label>
           <input type="email" id="rmTenantEmail" placeholder="tenant@email.com"/>
         </div>
         <div class="fg">
-          <label>Tenant Phone</label>
+          <label for="rmTenantPhone">Tenant Phone</label>
           <input type="tel" id="rmTenantPhone" placeholder="+234..."/>
         </div>
         <div class="fg">
-          <label>Current Rent Amount (₦) <span style="color:var(--red)">*</span></label>
+          <label for="rmAmount">Current Rent Amount (₦) <span style="color:var(--red)">*</span></label>
           <input type="number" id="rmAmount" placeholder="500000"/>
         </div>
         <div class="fg">
-          <label>New / Proposed Rent (₦)</label>
+          <label for="rmNewRent">New / Proposed Rent (₦)</label>
           <input type="number" id="rmNewRent" placeholder="Leave blank if unchanged"/>
         </div>
         <div class="fg">
-          <label>Last Payment Date</label>
+          <label for="rmLastPayment">Last Payment Date</label>
           <input type="date" id="rmLastPayment"/>
         </div>
         <div class="fg">
-          <label>Tenancy Start Date</label>
+          <label for="rmStart">Tenancy Start Date</label>
           <input type="date" id="rmStart"/>
         </div>
         <div class="fg">
-          <label>Tenancy Expiry Date</label>
+          <label for="rmExpiry">Tenancy Expiry Date</label>
           <input type="date" id="rmExpiry"/>
         </div>
         <div class="fg" style="grid-column:1/-1">
-          <label>Vacancy Status</label>
+          <label for="rmVacancy">Vacancy Status</label>
           <select id="rmVacancy">
             <option value="occupied">Occupied</option>
             <option value="vacant">Vacant</option>
           </select>
         </div>
         <div class="fg" style="grid-column:1/-1">
-          <label>Notes</label>
+          <label for="rmNotes">Notes</label>
           <textarea id="rmNotes" placeholder="Optional notes…"></textarea>
         </div>
       </div>
@@ -7807,12 +7807,12 @@ function _addAdminFieldTogglePage() {
           <div style="font-size:.78rem;color:var(--dim);line-height:1.65">Enter your details <strong>exactly as on your tenancy agreement</strong> to access your portal.</div>
         </div>
         <div class="fg" style="margin-bottom:10px">
-          <label style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)">Full Name — as on Tenancy Agreement <span style="color:var(--red)">*</span></label>
+          <label for="etFullName" style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)">Full Name — as on Tenancy Agreement <span style="color:var(--red)">*</span></label>
           <input type="text" id="etFullName" placeholder="e.g. Mr. Emmanuel Anih (include title)"/>
           <div style="font-size:.67rem;color:var(--dim);margin-top:3px">Include Mr/Mrs/Ms exactly as written on your agreement</div>
         </div>
         <div class="fg" style="margin-bottom:10px">
-          <label style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)">Email Address on Record <span style="color:var(--red)">*</span></label>
+          <label for="etTenantEmail" style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)">Email Address on Record <span style="color:var(--red)">*</span></label>
           <input type="email" id="etTenantEmail" placeholder="Email registered with Crestechnologies IS Ltd"/>
           <div style="font-size:.67rem;color:var(--dim);margin-top:3px">The email address we have on file for your tenancy</div>
         </div>
@@ -7893,15 +7893,15 @@ function _addAdminFieldTogglePage() {
       <div class="pec-section">
         <div class="pec-section-title">Basic Details</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div class="fg span2"><label>Property Label / Name</label><input type="text" id="peLabel" placeholder="e.g. 2BDR Flat 1A"/></div>
-          <div class="fg"><label>City</label>
+          <div class="fg span2"><label for="peLabel">Property Label / Name</label><input type="text" id="peLabel" placeholder="e.g. 2BDR Flat 1A"/></div>
+          <div class="fg"><label for="peCity">City</label>
             <select id="peCity" style="width:100%;padding:10px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-size:.88rem;font-family:'DM Sans',sans-serif;background:var(--card);outline:none">
               <option value="Ojodu">Ojodu</option>
               <option value="Ibadan">Ibadan</option>
               <option value="Enugu">Enugu</option>
             </select>
           </div>
-          <div class="fg"><label>Property Type</label>
+          <div class="fg"><label for="peType">Property Type</label>
             <select id="peType" style="width:100%;padding:10px 12px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-size:.88rem;font-family:'DM Sans',sans-serif;background:var(--card);outline:none">
               <option>2 Bedroom Flat</option>
               <option>3 Bedroom Flat</option>
@@ -7910,9 +7910,9 @@ function _addAdminFieldTogglePage() {
               <option>Commercial</option>
             </select>
           </div>
-          <div class="fg" style="grid-column:1/-1"><label>Full Location / Address</label><input type="text" id="peLocation" placeholder="Full estate address"/></div>
-          <div class="fg"><label>Annual Rent (₦)</label><input type="number" id="peRent" placeholder="500000"/></div>
-          <div class="fg"><label>Available From</label><input type="date" id="peAvailFrom"/></div>
+          <div class="fg" style="grid-column:1/-1"><label for="peLocation">Full Location / Address</label><input type="text" id="peLocation" placeholder="Full estate address"/></div>
+          <div class="fg"><label for="peRent">Annual Rent (₦)</label><input type="number" id="peRent" placeholder="500000"/></div>
+          <div class="fg"><label for="peAvailFrom">Available From</label><input type="date" id="peAvailFrom"/></div>
         </div>
       </div>
 
@@ -7932,12 +7932,12 @@ function _addAdminFieldTogglePage() {
           <span>Amenities</span>
           <span class="asc-count" id="amenityCount">0 selected</span>
         </div>
-        <input class="amenity-select-search" id="amenitySearch"
+        <input aria-label="Search amenities" class="amenity-select-search" id="amenitySearch"
           placeholder="&#128269; Search amenities..."
           oninput="filterAmenityCards()"/>
         <div class="amenity-select-grid" id="amenitySelectGrid"></div>
         <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--rule);display:flex;gap:8px;align-items:center">
-          <input type="text" id="peAmenityInput"
+          <input aria-label="Add custom amenity" type="text" id="peAmenityInput"
             placeholder="+ Add custom amenity not in list"
             style="flex:1;padding:8px 11px;border:1px solid var(--rule);border-bottom:2px solid var(--gold);border-radius:5px 5px 0 0;font-size:.82rem;font-family:'DM Sans',sans-serif;background:var(--card);outline:none"
             onkeydown="if(event.key==='Enter'){event.preventDefault();addAmenityToEdit()}"/>
@@ -7986,11 +7986,11 @@ function _addAdminFieldTogglePage() {
     <div style="padding:20px">
       <p style="font-size:.82rem;color:var(--dim);margin-bottom:16px;line-height:1.65">Enter your details to access your tenancy record.</p>
       <div class="fg" style="margin-bottom:12px">
-        <label>Full Legal Name *</label>
+        <label for="qvName">Full Legal Name *</label>
         <input type="text" id="qvName" placeholder="As it appears on your tenancy agreement"/>
       </div>
       <div class="fg" style="margin-bottom:12px">
-        <label>Apartment / Unit *</label>
+        <label for="qvUnit">Apartment / Unit *</label>
         <input type="text" id="qvUnit" placeholder="e.g. 2BDR Flat 1A, Ojodu"/>
       </div>
       <div id="qvErr" style="font-size:.76rem;color:var(--red);margin:8px 0;min-height:16px;text-align:center"></div>
@@ -8014,20 +8014,20 @@ function _addAdminFieldTogglePage() {
       <div class="info" style="margin-bottom:14px">Confirm your payment details. The admin will verify and approve your payment.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
         <div class="fg">
-          <label class="lbl">Amount Paid (₦) <span style="color:var(--red)">*</span></label>
+          <label class="lbl" for="psAmount">Amount Paid (₦) <span style="color:var(--red)">*</span></label>
           <input type="number" id="psAmount" placeholder="e.g. 750000"/>
         </div>
         <div class="fg">
-          <label class="lbl">Date of Payment</label>
+          <label class="lbl" for="psDate">Date of Payment</label>
           <input type="date" id="psDate"/>
         </div>
       </div>
       <div class="fg" style="margin-bottom:12px">
-        <label class="lbl">Transaction Reference <span style="color:var(--red)">*</span></label>
+        <label class="lbl" for="psxRef">Transaction Reference <span style="color:var(--red)">*</span></label>
         <input type="text" id="psxRef" placeholder="Bank transaction reference number"/>
       </div>
       <div class="fg" style="margin-bottom:14px">
-        <label class="lbl">Payment Method</label>
+        <label class="lbl" for="psMethod">Payment Method</label>
         <select id="psMethod">
           <option>Bank Transfer</option>
           <option>Mobile Transfer</option>
@@ -8057,7 +8057,7 @@ function _addAdminFieldTogglePage() {
       <input type="hidden" id="aaWfId"/>
       <input type="hidden" id="aaAction"/>
       <div class="fg">
-        <label class="lbl" id="aaNotesLabel">Notes</label>
+        <label class="lbl" id="aaNotesLabel" for="aaNotes">Notes</label>
         <textarea id="aaNotes" rows="3" placeholder="Enter notes or reason..."></textarea>
       </div>
     </div>
