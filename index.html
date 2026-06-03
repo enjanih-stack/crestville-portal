@@ -1559,7 +1559,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--i
       </div>
 
       <!-- Contract name — shown only for tenant emails found in database -->
-      <div class="auth-field" id="loginNameField" style="display:none">
+      <div class="auth-field" id="loginNameField" style="display:none;visibility:hidden;height:0;overflow:hidden">
         <label style="color:var(--ink)">Name on Contract
           <span style="font-size:.66rem;color:var(--dim);font-weight:400;margin-left:4px">as it appears on your tenancy agreement</span>
         </label>
@@ -2673,42 +2673,22 @@ function _nameMatches(entered, record) {
 
 async function doLogin() {
   var errEl = document.getElementById('loginErr');
-  var email = ((document.getElementById('loginEmail') ? document.getElementById('loginEmail').value : '') || '').trim().toLowerCase();
-  var pass  = (document.getElementById('loginPass') ? document.getElementById('loginPass').value : '') || '';
+  var email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  var pass  = document.getElementById('loginPass').value;
 
   if (errEl) { errEl.textContent = ''; errEl.style.color = 'var(--red)'; }
-  // Clear any retry buttons
-  document.querySelectorAll('.login-retry-btn').forEach(function(el){ el.remove(); });
-
   if (!email) { if (errEl) errEl.textContent = 'Enter your email address.'; return; }
-  if (!pass)  { if (errEl) errEl.textContent = 'Enter your password.'; return; }
+  if (!pass)  { if (errEl) errEl.textContent = 'Enter your password.';      return; }
 
   if (errEl) { errEl.textContent = 'Signing in…'; errEl.style.color = 'var(--dim)'; }
-  var btn = document.getElementById('loginSignInBtn') || document.querySelector('.auth-btn');
+  var btn = document.querySelector('.auth-btn') || document.getElementById('loginSignInBtn');
   if (btn) btn.disabled = true;
-
   try {
     await firebase.auth().signInWithEmailAndPassword(email, pass);
     if (errEl) errEl.textContent = '';
   } catch(e) {
-    console.error('Login error:', e.code, e.message);
-    var msg = friendlyAuthError(e.code);
-    if (errEl) { errEl.textContent = msg; errEl.style.color = 'var(--red)'; }
-
-    // Network error — show retry + diagnosis
-    if (e.code === 'auth/network-request-failed') {
-      var div = document.createElement('div');
-      div.className = 'login-retry-btn';
-      div.style.cssText = 'margin-top:10px;padding:12px;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;font-size:.78rem;color:#664d03;line-height:1.7';
-      div.innerHTML = '<strong>Network blocked.</strong> Try:<br>'
-        + '• Switch to mobile data (turn off WiFi)<br>'
-        + '• Disable VPN if active<br>'
-        + '• <a href="https://status.firebase.google.com" target="_blank" style="color:#664d03">Check Firebase status</a><br><br>'
-        + '<button onclick="this.closest(\'.login-retry-btn\').remove();doLogin()" '
-        + 'style="background:#C9960C;color:#fff;border:none;padding:8px 20px;border-radius:5px;'
-        + 'font-size:.8rem;font-weight:600;cursor:pointer;width:100%">↺ Try Again</button>';
-      if (errEl) errEl.insertAdjacentElement('afterend', div);
-    }
+    console.error('Login error:', e.code);
+    if (errEl) { errEl.textContent = friendlyAuthError(e.code); errEl.style.color = 'var(--red)'; }
   } finally {
     if (btn) btn.disabled = false;
   }
