@@ -2758,6 +2758,18 @@ async function _setFirebasePersistence() {
 async function doGoogle() {
   var errEl = document.getElementById('loginErr');
   if (errEl) { errEl.textContent = 'Opening Google sign-in…'; errEl.style.color = 'var(--dim)'; }
+  try {
+    var provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    await firebase.auth().signInWithPopup(provider);
+    if (errEl) errEl.textContent = '';
+  } catch(e) {
+    console.error('Google error:', e.code);
+    if (errEl) { errEl.textContent = friendlyAuthError(e.code); errEl.style.color = 'var(--red)'; }
+  }
+}async function doGoogle() {
+  var errEl = document.getElementById('loginErr');
+  if (errEl) { errEl.textContent = 'Opening Google sign-in…'; errEl.style.color = 'var(--dim)'; }
   var prev = document.getElementById('storageBlockedMsg');
   if (prev) prev.remove();
   try {
