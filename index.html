@@ -3516,84 +3516,43 @@ function _normaliseRecord(r) {
 }
 
 function initAuth() {
-  firebase.auth().getRedirectResult().catch(function(e){ console.warn('redirect:', e.code); });
-
-  /* Read REST session saved by login.html */
-  var storedSess = null;
-  try {
-    var rawSess = localStorage.getItem('crs_auth') || sessionStorage.getItem('crs_auth');
-    if (rawSess) storedSess = JSON.parse(rawSess);
-  } catch(e){}
-
   firebase.auth().onAuthStateChanged(async function(user) {
     try { document.getElementById('globalLoader').classList.add('out'); } catch(e){}
 
-    /* Helper to boot from a resolved user + email */
-    async function bootUser(uid, email, idToken) {
-      var adminMode = ADMIN_EMAILS.includes(email.toLowerCase());
-      var userData = { role: adminMode ? 'admin' : 'tenant', email: email };
-      try {
-        var resp = await fetch(
-          'https://firestore.googleapis.com/v1/projects/solarappform/databases/(default)/documents/users/' + uid,
-          { headers: { 'Authorization': 'Bearer ' + idToken } }
-        );
-        var doc = await resp.json();
-        if (doc.fields) {
-          Object.keys(doc.fields).forEach(function(k) {
-            var v = doc.fields[k];
-            userData[k] = v.stringValue !== undefined ? v.stringValue
-              : v.booleanValue !== undefined ? v.booleanValue
-              : v.integerValue !== undefined ? parseInt(v.integerValue) : null;
-          });
-        }
-      } catch(e) { /* keep default userData */ }
-      isAdmin = adminMode || userData.role === 'admin';
-      var userObj = { uid: uid, email: email,
-        displayName: userData.name || email.split('@')[0],
-        emailVerified: true,
-        getIdToken: function() { return Promise.resolve(idToken); } };
-      currentUser = userObj;
-      if (isAdmin || userData.role === 'agent') { showRoleSelector(userObj, userData); }
-      else { await _bootApp(userObj, userData, false); }
-    }
-
     if (user) {
-      /* Firebase SDK session (Google sign-in) */
-      var tkn = await user.getIdToken();
-      await bootUser(user.uid, user.email, tkn);
-      return;
-    }
-
-    /* No Firebase session — check login.html REST token */
-    if (storedSess && storedSess.uid && storedSess.idToken && storedSess.expiry > Date.now()) {
-      await bootUser(storedSess.uid, storedSess.email, storedSess.idToken);
-      return;
-    }
-
-    /* Expired token — try refresh */
-    if (storedSess && storedSess.refreshToken) {
+      currentUser = user;
+      var email = (user.email || '').toLowerCase();
+      var adminMode = ADMIN_EMAILS.includes(email);
+      var userData = {};
       try {
-        var r = await fetch('https://securetoken.googleapis.com/v1/token?key=AIzaSyAiQ7q1qbwx1i_qjVFaTSJIeb9yneMT21U', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(storedSess.refreshToken)
-        });
-        var rd = await r.json();
-        if (rd.id_token) {
-          var newSess = { idToken: rd.id_token, uid: storedSess.uid, email: storedSess.email,
-            refreshToken: rd.refresh_token || storedSess.refreshToken,
-            expiry: Date.now() + ((parseInt(rd.expires_in)||3600)*1000) };
-          try { localStorage.setItem('crs_auth', JSON.stringify(newSess)); } catch(e){}
-          try { sessionStorage.setItem('crs_auth', JSON.stringify(newSess)); } catch(e){}
-          await bootUser(newSess.uid, newSess.email, newSess.idToken);
-          return;
+        var snap = await firebase.firestore().collection('users').doc(user.uid).get();
+        if (snap.exists) {
+          userData = snap.data();
+        } else {
+          userData = {
+            name: user.displayName || email.split('@')[0],
+            email: user.email,
+            role: adminMode ? 'admin' : 'tenant',
+            createdAt: new Date().toISOString()
+          };
+          try { await firebase.firestore().collection('users').doc(user.uid).set(userData); } catch(e2){}
         }
-      } catch(e) {}
-    }
+      } catch(e) {
+        console.warn('Firestore:', e.message);
+        if (!userData.role) userData = { role: adminMode ? 'admin' : 'tenant', email: user.email };
+      }
 
-    /* No valid session at all — redirect to login page */
-    currentUser = null; isAdmin = false;
-    window.location.replace('https://enjanih-stack.github.io/crestville-portal/login.html');
+      isAdmin = adminMode || userData.role === 'admin';
+      if (isAdmin || userData.role === 'agent') {
+        showRoleSelector(user, userData);
+      } else {
+        await _bootApp(user, userData, false);
+      }
+    } else {
+      currentUser = null;
+      isAdmin = false;
+      showAuthScreen();
+    }
   });
 }
 
