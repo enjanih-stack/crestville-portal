@@ -7785,6 +7785,125 @@ function _addAdminFieldTogglePage() {
 })();
 
 }
+/* ══════════════════════════════════════════════════════════
+   MISSING SYSTEM FUNCTIONS
+══════════════════════════════════════════════════════════ */
+
+/* ── Session state key ── */
+var SESSION_STATE_KEY = 'crs_session_state_v1';
+
+/* ── Save / restore session state (active page) ── */
+function saveSessionState() {
+  try {
+    var activePg = document.querySelector('.pg.on');
+    if (activePg) localStorage.setItem(SESSION_STATE_KEY, JSON.stringify({ page: activePg.id }));
+  } catch(e) {}
+}
+function restoreSessionState() {
+  try {
+    var s = localStorage.getItem(SESSION_STATE_KEY);
+    return s ? JSON.parse(s) : null;
+  } catch(e) { return null; }
+}
+function applySessionState(state) {
+  try {
+    if (state && state.page) {
+      var btn = document.getElementById(window._pageMap && window._pageMap[state.page] ? window._pageMap[state.page] : '');
+      showPage(state.page, btn || null);
+    }
+  } catch(e) {}
+}
+
+/* ── Idle timer ── */
+var _idleTimeout = null;
+var _idleCountdownInterval = null;
+var IDLE_WARN_MS  = 14 * 60 * 1000;  // 14 min → show warning
+var IDLE_TOTAL_MS = 15 * 60 * 1000;  // 15 min → sign out
+
+function startIdleTimer() {
+  _resetIdleInternal();
+  ['mousemove','keydown','mousedown','touchstart','scroll'].forEach(function(ev) {
+    document.addEventListener(ev, _resetIdleInternal, { passive: true });
+  });
+}
+
+function stopIdleTimer() {
+  clearTimeout(_idleTimeout);
+  clearInterval(_idleCountdownInterval);
+  ['mousemove','keydown','mousedown','touchstart','scroll'].forEach(function(ev) {
+    document.removeEventListener(ev, _resetIdleInternal);
+  });
+  var overlay = document.getElementById('idleOverlay');
+  if (overlay) overlay.classList.remove('on');
+}
+
+function _resetIdleInternal() {
+  clearTimeout(_idleTimeout);
+  clearInterval(_idleCountdownInterval);
+  var overlay = document.getElementById('idleOverlay');
+  if (overlay) overlay.classList.remove('on');
+  _idleTimeout = setTimeout(_showIdleWarning, IDLE_WARN_MS);
+}
+
+function _showIdleWarning() {
+  var overlay = document.getElementById('idleOverlay');
+  if (!overlay) { idleSignOut(); return; }
+  overlay.classList.add('on');
+  var countdown = 30;
+  var countEl = document.getElementById('idleCountdown');
+  if (countEl) { countEl.textContent = countdown; countEl.classList.remove('urgent'); }
+  clearInterval(_idleCountdownInterval);
+  _idleCountdownInterval = setInterval(function() {
+    countdown--;
+    if (countEl) {
+      countEl.textContent = countdown;
+      if (countdown <= 10) countEl.classList.add('urgent');
+    }
+    if (countdown <= 0) {
+      clearInterval(_idleCountdownInterval);
+      idleSignOut();
+    }
+  }, 1000);
+}
+
+function resetIdleTimer() {
+  _resetIdleInternal();
+}
+
+function idleSignOut() {
+  stopIdleTimer();
+  saveSessionState();
+  if (typeof firebase !== 'undefined') {
+    firebase.auth().signOut().catch(function(){});
+  }
+  var overlay = document.getElementById('idleOverlay');
+  if (overlay) overlay.classList.remove('on');
+  showAuthScreen();
+}
+
+/* ── Pull from Cloud (Firestore sync) ── */
+async function pullFromCloud(silent) {
+  if (!window._db || !window._auth || !window._auth.currentUser) return;
+  try {
+    var snap = await window._db.collection('rentRecords').get();
+    if (snap.empty) return;
+    var cloud = [];
+    snap.forEach(function(doc) { cloud.push(Object.assign({ id: doc.id }, doc.data())); });
+    if (cloud.length > 0) {
+      // Merge: cloud records win over local for matching IDs
+      var localMap = {};
+      rentLogs.forEach(function(r) { localMap[r.id] = r; });
+      cloud.forEach(function(r) { localMap[r.id] = r; });
+      rentLogs = Object.values(localMap);
+      saveLocal();
+      if (!silent) toast('✓ Records synced from cloud');
+      if (typeof renderAll === 'function') renderAll();
+    }
+  } catch(e) {
+    console.warn('[CRS] pullFromCloud error:', e.message);
+  }
+}
+
 /* ── 12. Wire showPage for new pages ── */
 (function() {
   var _origShowPage = typeof showPage === 'function' ? showPage : null;
