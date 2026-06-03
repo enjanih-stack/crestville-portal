@@ -2534,6 +2534,7 @@ function showRoleSelector(user, userData) {
   const opts  = document.getElementById('roleOptions');
   const panel = document.getElementById('etVerifyPanel');
   panel.classList.remove('on');
+  console.log('[CRS UI] showRoleSelector called, isAdmin=', isAdminUser, 'isAgent=', isAgentUser);
 
   // Pending agent — show waiting screen instead of role options
   if (isPendingAgent) {
@@ -2615,6 +2616,7 @@ function showRoleSelector(user, userData) {
       </div>`;
 
   document.getElementById('roleSelectorOverlay').classList.add('on');
+  console.log('[CRS UI] roleSelectorOverlay shown ✓');
 }
 
 function selectRole(role, el) {
@@ -7818,7 +7820,7 @@ function _addAdminFieldTogglePage() {
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--rule);margin-top:4px">
         <button class="btn btn-outline" onclick="signOutAndReturn()">← Sign Out</button>
-        <button class="btn btn-gold" onclick="continueWithRole()">Continue →</button>
+        <button class="btn btn-gold" id="rcContinueBtn" onclick="continueWithRole()">Continue →</button>
       </div>
     </div>
   </div>
