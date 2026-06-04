@@ -85,6 +85,89 @@ textarea{resize:vertical;min-height:90px}
 .dur-sub{font-size:.7rem;color:var(--dim);margin-top:2px}
 .clause-box{background:#fff8f8;border:1px solid rgba(140,31,31,.2);border-radius:6px;padding:14px 16px;font-size:.8rem;color:#4a1a1a;line-height:1.75;margin-bottom:14px}
 .clause-box strong{color:var(--red)}
+
+/* ── LATE WARNING ── */
+.late-warn{background:#fff0f0;border:2px solid var(--red);border-radius:8px;padding:14px 16px;margin-top:10px;display:none}
+.late-warn-title{font-size:.84rem;font-weight:700;color:var(--red);margin-bottom:6px;display:flex;align-items:center;gap:7px}
+.late-warn-body{font-size:.8rem;color:#5c1a1a;line-height:1.7;margin-bottom:10px}
+.late-consent{display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.8rem;color:#5c1a1a;line-height:1.6}
+.late-consent input{width:17px;height:17px;margin-top:2px;flex-shrink:0;accent-color:var(--red)}
+
+/* ── UPLOAD SIGNATURE TAB ── */
+.sig-tab-row{display:flex;border-bottom:2px solid var(--rule);margin-bottom:10px}
+.sig-tab-btn{padding:8px 18px;border:none;background:none;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
+.sig-tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+.sig-panel{display:none}
+.sig-panel.on{display:block}
+.sig-upload-area{border:2px dashed var(--rule);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative;background:var(--cream)}
+.sig-upload-area:hover{border-color:var(--gold);background:var(--gold-bg)}
+.sig-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.sig-upload-area img{max-height:120px;max-width:100%;border-radius:4px;display:none;margin:0 auto}
+.sua-icon{font-size:2rem;margin-bottom:6px;color:var(--dim)}
+.sua-txt{font-size:.78rem;color:var(--dim);line-height:1.5}
+
+/* ── YES/NO TOGGLE ── */
+.yn-toggle{display:flex;gap:0;border-radius:8px;overflow:hidden;border:2px solid var(--rule);max-width:280px}
+.yn-btn{flex:1;padding:12px;border:none;font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;background:var(--card);color:var(--dim);text-align:center}
+.yn-btn.active-yes{background:var(--green);color:#fff}
+.yn-btn.active-no{background:var(--red);color:#fff}
+
+/* ── TERM CERTAIN BOX ── */
+.term-certain{background:linear-gradient(135deg,#0f0e0c,#1a1612);border-radius:8px;padding:14px 16px;border-left:4px solid var(--gold);margin-bottom:14px}
+.tc-label{font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;opacity:.8}
+.tc-value{font-family:'Cormorant Garamond',Georgia,serif;font-size:1rem;font-weight:700;color:#fff}
+.tc-sub{font-size:.72rem;color:#9a8a6a;margin-top:3px;line-height:1.5}
+
+
+/* ── MISSING FIELD INDICATORS ── */
+.field-missing input, .field-missing select, .field-missing textarea {
+  border-bottom-color: var(--red) !important;
+  background: #fff8f8 !important;
+}
+.field-missing .dur-card, .field-missing .yn-toggle {
+  box-shadow: 0 0 0 2px var(--red);
+  border-radius: 8px;
+}
+.field-error-label {
+  font-size: .68rem;
+  color: var(--red);
+  margin-top: 3px;
+  display: none;
+}
+.field-missing .field-error-label { display: block; }
+.missing-list {
+  background: #fff0f0;
+  border: 1.5px solid var(--red);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 0;
+  display: none;
+}
+.missing-list.on { display: block; }
+.missing-list-title {
+  font-size: .74rem;
+  font-weight: 700;
+  color: var(--red);
+  margin-bottom: 7px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.missing-list ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.missing-list ul li {
+  font-size: .78rem;
+  color: #5c1a1a;
+  line-height: 1.8;
+  cursor: pointer;
+}
+.missing-list ul li:hover {
+  text-decoration: underline;
+  color: var(--red);
+}
+
 </style>
 </head>
 <body>
@@ -149,25 +232,25 @@ textarea{resize:vertical;min-height:90px}
 <option value="OJ-2B">3BDR Flat 2B — 11 Jibewa Somorin Close, Ojodu</option>
 <option value="OJ-4B">3BDR Flat 4B — 11 Jibewa Somorin Close, Ojodu</option>
 <option value="OJ-SC">Self Contain 2C — 11 Jibewa Somorin Close, Ojodu</option>
-<option value="OJ-SH">Shop & Office — 11 Jibewa Somorin Close, Ojodu</option>
-<option value="IB-RP">Room & Parlour — Ibadan</option>
+<option value="OJ-SH">Shop &amp; Office — 11 Jibewa Somorin Close, Ojodu</option>
+<option value="IB-RP">Room &amp; Parlour — Ibadan</option>
 <option value="IB-2B">2 Bedroom Flat — Ibadan</option>
-<option value="IB-S1">Shop 1 — Ibadan</option>
-<option value="IB-S2">Shop 2 — Ibadan</option>
 <option value="EN-2B">2BDR Flat — Enugu</option>
 <option value="EN-S1">Shop 1 — Enugu</option>
 <option value="EN-S2">Shop 2 — Enugu</option>
-<option value="EN-S3">Shop 3 — Enugu</option>
         </select>
       </div>
-      <div class="fg"><label class="lbl">Current Annual Rent (₦) <span class="req">*</span></label><input type="number" id="currentRent" placeholder="e.g. 750000" oninput="up()"/></div>
+      <div class="fg"><label class="lbl">Current Annual Rent (&#8358;) <span class="req">*</span></label>
+        <input type="number" id="currentRent" placeholder="e.g. 750000" oninput="up()"/>
+      </div>
     </div>
+
     <div class="fr">
-      <div class="fg"><label class="lbl">Current Tenancy Start Date <span class="req">*</span></label><input type="date" id="currentStart" oninput="up()"/></div>
-      <div class="fg"><label class="lbl">Current Tenancy Expiry Date <span class="req">*</span></label><input type="date" id="currentExpiry" oninput="up()"/></div>
-    </div>
-    <div class="fr">
-      <div class="fg full"><label class="lbl">Current Property Condition <span class="req">*</span></label>
+      <div class="fg"><label class="lbl">Current Tenancy Expiry Date <span class="req">*</span></label>
+        <input type="date" id="currentExpiry" oninput="checkExpiry();up()"/>
+        <p style="font-size:.7rem;color:var(--dim);margin-top:4px">The date your current tenancy agreement expires</p>
+      </div>
+      <div class="fg"><label class="lbl">Current Property Condition <span class="req">*</span></label>
         <select id="propCondition" onchange="up()">
           <option value="">— Select —</option>
           <option>Excellent — no issues</option>
@@ -177,6 +260,24 @@ textarea{resize:vertical;min-height:90px}
         </select>
       </div>
     </div>
+
+    <!-- LATE WARNING -->
+    <div class="late-warn" id="lateWarn">
+      <div class="late-warn-title">&#9888;&#65039; Late Renewal Notice — Action Required</div>
+      <div class="late-warn-body">
+        You have <strong id="daysLeftTxt">exceeded the 60-day grace period</strong> for tenancy renewal.
+        Crestechnologies IS Ltd requires renewal requests to be submitted at least <strong>60 days before expiry</strong>.
+        By submitting at this stage, you acknowledge that:<br><br>
+        &bull; The Landlord reserves the <strong>right to disqualify this renewal request</strong>.<br>
+        &bull; Continued occupation beyond expiry without a valid renewal constitutes a <strong>breach of tenancy</strong>.<br>
+        &bull; Legal action for possession and associated costs may be initiated if the property is not vacated by the expiry date.<br>
+        &bull; The Tenancy is contracted on a <strong>Term Certain</strong> basis — no statutory holdover rights apply.
+      </div>
+      <label class="late-consent">
+        <input type="checkbox" id="lateConsent" onchange="up()"/>
+        I understand and acknowledge that I have submitted this renewal request late. I accept that the Landlord reserves the right to disqualify my application and I remain bound by Clause X obligations.
+      </label>
+    </div>
   </div>
 </div>
 
@@ -184,9 +285,16 @@ textarea{resize:vertical;min-height:90px}
 <div class="card">
   <div class="card-head"><div class="card-num">C</div><h2>Renewal Duration &amp; Terms</h2></div>
   <div class="card-body">
+
+    <!-- TERM CERTAIN NOTICE -->
+    <div class="term-certain">
+      <div class="tc-label">Tenancy Term</div>
+      <div class="tc-value">&#8220;TERM CERTAIN&#8221;</div>
+      <div class="tc-sub">This tenancy is contracted on a Term Certain basis. The tenancy begins and ends on fixed dates. There is no statutory holdover right — the Tenant must vacate on expiry unless a new agreement is executed.</div>
+    </div>
+
     <div class="lbl" style="margin-bottom:10px">Preferred Renewal Duration <span class="req">*</span></div>
     <div class="duration-grid">
-      <div class="dur-card" onclick="selectDuration(this,'6 months')"><div class="dur-label">6 Months</div><div class="dur-sub">Short term</div></div>
       <div class="dur-card" onclick="selectDuration(this,'1 year')"><div class="dur-label">1 Year</div><div class="dur-sub">Standard</div></div>
       <div class="dur-card" onclick="selectDuration(this,'2 years')"><div class="dur-label">2 Years</div><div class="dur-sub">Extended</div></div>
       <div class="dur-card" onclick="selectDuration(this,'3 years')"><div class="dur-label">3 Years</div><div class="dur-sub">Long term</div></div>
@@ -196,22 +304,35 @@ textarea{resize:vertical;min-height:90px}
     <div id="otherDurationWrap" style="display:none;margin-bottom:14px">
       <div class="fg"><label class="lbl">Specify Duration</label><input type="text" id="otherDuration" placeholder="e.g. 18 months"/></div>
     </div>
-    <div class="fr">
-      <div class="fg"><label class="lbl">Preferred New Start Date</label><input type="date" id="newStart"/></div>
-      <div class="fg"><label class="lbl">Rent Increase Accepted? <span class="req">*</span></label>
-        <select id="rentIncrease" onchange="up()">
-          <option value="">— Select —</option>
-          <option value="yes_10">Yes — up to 10% increase acceptable</option>
-          <option value="yes_15">Yes — up to 15% increase acceptable</option>
-          <option value="yes_20">Yes — up to 20% increase acceptable</option>
-          <option value="negotiable">Open to negotiation</option>
-          <option value="no">No — requesting same rent as current</option>
-        </select>
+
+    <!-- AUTO START DATE -->
+    <div class="fr" style="margin-top:14px">
+      <div class="fg">
+        <label class="lbl">New Tenancy Start Date</label>
+        <input type="date" id="newStart" readonly style="background:#f4f1ea;color:var(--dim);cursor:default;border-bottom-color:var(--rule)"/>
+        <p style="font-size:.7rem;color:var(--dim);margin-top:4px">&#128274; Automatically set to the day after your current expiry date</p>
+      </div>
+      <div class="fg">
+        <label class="lbl">New Tenancy End Date</label>
+        <input type="date" id="newEnd" readonly style="background:#f4f1ea;color:var(--dim);cursor:default;border-bottom-color:var(--rule)"/>
+        <p style="font-size:.7rem;color:var(--dim);margin-top:4px">Calculated from duration selected above</p>
       </div>
     </div>
-    <div class="fr">
+
+    <!-- RENT INCREASE YES / NO -->
+    <div style="margin-top:16px">
+      <div class="lbl" style="margin-bottom:10px">Do you accept a possible rent increase? <span class="req">*</span></div>
+      <div class="yn-toggle">
+        <button class="yn-btn" id="btnYes" onclick="setRentIncrease('yes',this)">&#10003; Yes</button>
+        <button class="yn-btn" id="btnNo"  onclick="setRentIncrease('no',this)">&#10007; No</button>
+      </div>
+      <input type="hidden" id="rentIncrease" value=""/>
+      <div id="rentIncNote" style="font-size:.78rem;color:var(--dim);margin-top:8px;display:none;line-height:1.6"></div>
+    </div>
+
+    <div class="fr" style="margin-top:14px">
       <div class="fg full"><label class="lbl">Special Requests or Conditions</label>
-        <textarea id="specialReqs" placeholder="e.g. Request for painting, repairs, or any special conditions you'd like the landlord to consider before renewal…"></textarea>
+        <textarea id="specialReqs" placeholder="e.g. Request for painting, repairs, or any special conditions you'd like the landlord to consider before renewal&#x2026;"></textarea>
       </div>
     </div>
   </div>
@@ -286,11 +407,25 @@ textarea{resize:vertical;min-height:90px}
       <div class="fg"><label class="lbl">Date Signed <span class="req">*</span></label><input type="date" id="sigDate" oninput="up()"/></div>
     </div>
     <div class="lbl" style="margin-bottom:8px">Applicant Signature <span class="req">*</span></div>
-    <div class="sig-wrap">
-      <canvas id="sigCanvas" width="800" height="160"></canvas>
-      <div class="sig-btns"><button class="sig-clear" type="button" onclick="clearSig()">Clear</button></div>
+    <div class="sig-tab-row">
+      <button class="sig-tab-btn active" id="tabDraw" onclick="switchSigTab('draw')">&#x270F;&#xFE0F; Draw Signature</button>
+      <button class="sig-tab-btn" id="tabUpload" onclick="switchSigTab('upload')">&#x2B06; Upload Signature</button>
     </div>
-    <p style="font-size:.7rem;color:var(--dim);margin-top:6px">Draw your signature above using mouse or touch</p>
+    <div class="sig-panel on" id="panelDraw">
+      <div class="sig-wrap">
+        <canvas id="sigCanvas" width="800" height="160"></canvas>
+        <div class="sig-btns"><button class="sig-clear" type="button" onclick="clearSig()">Clear</button></div>
+      </div>
+      <p style="font-size:.7rem;color:var(--dim);margin-top:4px">Draw your signature above using mouse or touch</p>
+    </div>
+    <div class="sig-panel" id="panelUpload">
+      <div class="sig-upload-area" onclick="document.getElementById('sigUploadFile').click()">
+        <input type="file" id="sigUploadFile" accept="image/*" onchange="loadSigUpload(this)"/>
+        <div class="sua-icon">&#128444;&#65039;</div>
+        <div class="sua-txt">Click to upload your signature image<br>JPG or PNG &middot; Clear on white background</div>
+        <img id="sigUploadPreview" alt="Uploaded signature"/>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -341,25 +476,157 @@ function selectDuration(el, val) {
 }
 
 // ── Validation ────────────────────────────────────────────────────────────
-var REQUIRED = ['tenantName','tenantEmail','tenantPhone','unitSelect','currentRent','currentStart','currentExpiry','propCondition','rentStatus','rentIncrease','sigName','sigDate'];
+var REQUIRED = ['tenantName','tenantEmail','tenantPhone','unitSelect','currentRent','currentExpiry','propCondition','rentStatus','sigName','sigDate'];
+
+/* ── FIELD LABELS for missing list ── */
+var FIELD_LABELS = {
+  tenantName:    {label:'Full Legal Name',        section:'Section A — Tenant Details',      anchor:'tenantName'},
+  tenantEmail:   {label:'Email Address',           section:'Section A — Tenant Details',      anchor:'tenantEmail'},
+  tenantPhone:   {label:'Phone Number',            section:'Section A — Tenant Details',      anchor:'tenantPhone'},
+  unitSelect:    {label:'Property / Unit',         section:'Section B — Property & Tenancy',  anchor:'unitSelect'},
+  currentRent:   {label:'Current Annual Rent',     section:'Section B — Property & Tenancy',  anchor:'currentRent'},
+  currentExpiry: {label:'Current Tenancy Expiry Date', section:'Section B — Property & Tenancy', anchor:'currentExpiry'},
+  propCondition: {label:'Current Property Condition', section:'Section B — Property & Tenancy', anchor:'propCondition'},
+  rentStatus:    {label:'Rent Payment Status',     section:'Section D — Financial Standing',  anchor:'rentStatus'},
+  sigName:       {label:'Full Name (print)',        section:'Section F — Declaration',         anchor:'sigName'},
+  sigDate:       {label:'Date Signed',             section:'Section F — Declaration',         anchor:'sigDate'},
+  lateConsent:   {label:'Late Renewal Acknowledgement', section:'Section B — Property & Tenancy', anchor:'lateConsent'},
+  rentIncrease:  {label:'Rent Increase (Yes/No)',  section:'Section C — Renewal Terms',       anchor:'btnYes'},
+  clauseX:       {label:'Clause X acknowledgement', section:'Section E — Clause X',           anchor:'clauseXCheck'},
+  duration:      {label:'Renewal Duration',        section:'Section C — Renewal Terms',       anchor:null},
+  signature:     {label:'Applicant Signature',     section:'Section F — Declaration',         anchor:'sigCanvas'},
+};
 
 function up() {
-  var missing = REQUIRED.filter(function(id) {
+  var missing = [];
+
+  // Required text/select fields
+  REQUIRED.forEach(function(id) {
     var el = document.getElementById(id);
-    return !el || !el.value.trim();
+    var fg = el ? el.closest('.fg') : null;
+    if (!el || !el.value.trim()) {
+      missing.push(id);
+      if (fg) fg.classList.add('field-missing');
+    } else {
+      if (fg) fg.classList.remove('field-missing');
+    }
   });
-  var hasClause = document.getElementById('clauseXCheck').checked;
-  var hasSig = _sigDrawn;
+
+  // Late consent
+  var lateWarnEl = document.getElementById('lateWarn');
+  var lateConsentEl = document.getElementById('lateConsent');
+  var needsLate = lateWarnEl && lateWarnEl.style.display !== 'none';
+  if (needsLate && lateConsentEl && !lateConsentEl.checked) {
+    missing.push('lateConsent');
+    var lc = lateConsentEl.closest('.late-consent');
+    if (lc) lc.style.outline = '2px solid var(--red)';
+  } else {
+    var lc2 = lateConsentEl ? lateConsentEl.closest('.late-consent') : null;
+    if (lc2) lc2.style.outline = 'none';
+  }
+
+  // Rent increase
+  if (!document.getElementById('rentIncrease').value) {
+    missing.push('rentIncrease');
+    var yt = document.getElementById('btnYes');
+    if (yt) yt.closest('.yn-toggle').style.boxShadow = '0 0 0 2px var(--red)';
+  } else {
+    var yt2 = document.getElementById('btnYes');
+    if (yt2) yt2.closest('.yn-toggle').style.boxShadow = 'none';
+  }
+
+  // Duration
   var hasDur = !!_duration && (_duration !== 'Other' || document.getElementById('otherDuration').value.trim());
-  var allOk = !missing.length && hasClause && hasSig && hasDur;
-  var pct = Math.round(((REQUIRED.length - missing.length) / (REQUIRED.length + 3)) * 100);
-  document.getElementById('progBar').style.width = pct + '%';
-  document.getElementById('progPct').textContent = pct + '%';
+  if (!hasDur) {
+    missing.push('duration');
+    var dg = document.querySelector('.duration-grid');
+    if (dg) dg.style.boxShadow = '0 0 0 2px var(--red)';
+    if (dg) dg.style.borderRadius = '8px';
+  } else {
+    var dg2 = document.querySelector('.duration-grid');
+    if (dg2) dg2.style.boxShadow = 'none';
+  }
+
+  // Clause X
+  var cxEl = document.getElementById('clauseXCheck');
+  if (cxEl && !cxEl.checked) {
+    missing.push('clauseX');
+  }
+
+  // Signature
+  var sigOk = (_sigMode === 'draw' && _sigDrawn) || (_sigMode === 'upload' && !!_sigUploadData);
+  if (!sigOk) missing.push('signature');
+
+  var allOk = missing.length === 0;
+
+  // Progress bar
+  var total = REQUIRED.length + 5; // + lateConsent + rentInc + duration + clauseX + sig
+  var done  = total - missing.length;
+  var pct   = Math.min(100, Math.round((done / total) * 100));
+  document.getElementById('progBar').style.width  = pct + '%';
+  document.getElementById('progPct').textContent  = pct + '%';
+
+  // Submit button
   var btn = document.getElementById('submitBtn');
   var txt = document.getElementById('sbarTxt');
+  var showBtn = document.getElementById('showMissingBtn');
   btn.disabled = !allOk;
-  if (allOk) { txt.textContent = '&#10003; Ready to submit'; txt.className = 'sbar-status ok'; }
-  else { txt.textContent = missing.length + ' required field(s) incomplete'; txt.className = 'sbar-status'; }
+
+  if (allOk) {
+    txt.textContent  = '\u2713 Ready to submit';
+    txt.className    = 'sbar-status ok';
+    if (showBtn) showBtn.style.display = 'none';
+    document.getElementById('missingList').classList.remove('on');
+  } else {
+    txt.textContent = missing.length + ' field(s) incomplete — click \u201cWhat\u2019s missing?\u201d';
+    txt.className   = 'sbar-status';
+    if (showBtn) showBtn.style.display = 'inline-flex';
+  }
+}
+
+function showMissing() {
+  var list = document.getElementById('missingList');
+  var items = document.getElementById('missingListItems');
+  if (!list || !items) return;
+
+  var missingNow = [];
+  REQUIRED.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el || !el.value.trim()) missingNow.push(id);
+  });
+  var lateWarnEl = document.getElementById('lateWarn');
+  var lateConsentEl = document.getElementById('lateConsent');
+  if (lateWarnEl && lateWarnEl.style.display !== 'none' && lateConsentEl && !lateConsentEl.checked) missingNow.push('lateConsent');
+  if (!document.getElementById('rentIncrease').value) missingNow.push('rentIncrease');
+  if (!(_duration && (_duration !== 'Other' || document.getElementById('otherDuration').value.trim()))) missingNow.push('duration');
+  var cxEl = document.getElementById('clauseXCheck');
+  if (cxEl && !cxEl.checked) missingNow.push('clauseX');
+  var sigOk = (_sigMode === 'draw' && _sigDrawn) || (_sigMode === 'upload' && !!_sigUploadData);
+  if (!sigOk) missingNow.push('signature');
+
+  if (!missingNow.length) { list.classList.remove('on'); return; }
+
+  items.innerHTML = missingNow.map(function(id) {
+    var info = FIELD_LABELS[id] || {label: id, section: '', anchor: null};
+    return '<li onclick="jumpTo('' + (info.anchor||id) + '')">'
+      + '&#8594; <strong>' + info.label + '</strong>'
+      + (info.section ? ' <span style="color:#9a8a6a;font-size:.72rem">(' + info.section + ')</span>' : '')
+      + '</li>';
+  }).join('');
+
+  list.classList.add('on');
+  list.scrollIntoView({behavior:'smooth', block:'end'});
+}
+
+function jumpTo(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  el.focus && el.focus();
+  // Flash the element
+  el.style.transition = 'box-shadow .2s';
+  el.style.boxShadow  = '0 0 0 3px var(--red)';
+  setTimeout(function() { el.style.boxShadow = ''; }, 1800);
 }
 
 // ── Signature pad ─────────────────────────────────────────────────────────
@@ -401,6 +668,10 @@ function submitRenewal() {
   var curRent     = Number(document.getElementById('currentRent').value || 0);
   var curExpiry   = document.getElementById('currentExpiry').value;
   var duration    = _duration === 'Other' ? document.getElementById('otherDuration').value.trim() : _duration;
+  var newStartVal = document.getElementById('newStart').value;
+  var newEndVal   = document.getElementById('newEnd').value;
+  var rentIncVal  = document.getElementById('rentIncrease').value === 'yes' ? 'Yes — accepts increase' : 'No — same rent requested';
+  var lateFlag    = document.getElementById('lateWarn').style.display !== 'none' ? 'YES — submitted outside 60-day window' : 'No';
   var rentInc     = document.getElementById('rentIncrease');
   var rentIncTxt  = rentInc.options[rentInc.selectedIndex].text;
   var specialReqs = document.getElementById('specialReqs').value.trim();
@@ -453,6 +724,117 @@ function submitRenewal() {
   ss.style.display = 'flex';
   window.scrollTo({top:0,behavior:'smooth'});
 }
+
+/* ── EXPIRY DATE CHECK ── */
+function checkExpiry() {
+  var expiryVal = document.getElementById('currentExpiry').value;
+  if (!expiryVal) return;
+  var expiry = new Date(expiryVal);
+  var today  = new Date(); today.setHours(0,0,0,0);
+  var diffMs = expiry - today;
+  var daysLeft = Math.round(diffMs / 86400000);
+
+  var warn = document.getElementById('lateWarn');
+  var daysLeftTxt = document.getElementById('daysLeftTxt');
+  var lateConsent = document.getElementById('lateConsent');
+
+  if (daysLeft < 60) {
+    warn.style.display = 'block';
+    if (daysLeft < 0) {
+      daysLeftTxt.textContent = 'Your tenancy expired ' + Math.abs(daysLeft) + ' days ago';
+    } else {
+      daysLeftTxt.textContent = 'Only ' + daysLeft + ' day(s) remain — below the 60-day renewal window';
+    }
+  } else {
+    warn.style.display = 'none';
+    if (lateConsent) lateConsent.checked = false;
+  }
+
+  // Auto-set new start date (day after expiry)
+  var nextDay = new Date(expiry);
+  nextDay.setDate(nextDay.getDate() + 1);
+  var ns = document.getElementById('newStart');
+  if (ns) ns.value = nextDay.toISOString().split('T')[0];
+
+  // Recalc end date if duration already chosen
+  calcNewEnd();
+}
+
+function calcNewEnd() {
+  var nsVal = document.getElementById('newStart').value;
+  var dur   = document.getElementById('renewalDuration').value;
+  if (!nsVal || !dur) return;
+  var start = new Date(nsVal);
+  var end   = new Date(start);
+  if (dur === '1 year')  end.setFullYear(end.getFullYear() + 1);
+  else if (dur === '2 years') end.setFullYear(end.getFullYear() + 2);
+  else if (dur === '3 years') end.setFullYear(end.getFullYear() + 3);
+  else return;
+  end.setDate(end.getDate() - 1); // last day of term
+  var ne = document.getElementById('newEnd');
+  if (ne) ne.value = end.toISOString().split('T')[0];
+}
+
+/* ── RENT INCREASE TOGGLE ── */
+function setRentIncrease(val, btn) {
+  document.getElementById('rentIncrease').value = val;
+  document.getElementById('btnYes').classList.remove('active-yes');
+  document.getElementById('btnNo').classList.remove('active-no');
+  var noteEl = document.getElementById('rentIncNote');
+  if (val === 'yes') {
+    document.getElementById('btnYes').classList.add('active-yes');
+    noteEl.textContent = 'The Landlord will propose a revised rent. Final amount subject to agreement.';
+    noteEl.style.display = 'block';
+  } else {
+    document.getElementById('btnNo').classList.add('active-no');
+    noteEl.textContent = 'You are requesting the same rent as the current term. Subject to Landlord approval.';
+    noteEl.style.display = 'block';
+  }
+  up();
+}
+
+/* ── RECALC END DATE ON DURATION SELECT ── */
+var _origSelectDuration = selectDuration;
+function selectDuration(el, val) {
+  document.querySelectorAll('.dur-card').forEach(function(c) { c.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('renewalDuration').value = val;
+  document.getElementById('otherDurationWrap').style.display = val === 'Other' ? 'block' : 'none';
+  calcNewEnd();
+  up();
+}
+
+/* ── SIGNATURE TABS ── */
+function switchSigTab(tab) {
+  document.getElementById('tabDraw').classList.toggle('active', tab === 'draw');
+  document.getElementById('tabUpload').classList.toggle('active', tab === 'upload');
+  document.getElementById('panelDraw').classList.toggle('on', tab === 'draw');
+  document.getElementById('panelUpload').classList.toggle('on', tab === 'upload');
+  _sigMode = tab;
+  up();
+}
+
+var _sigMode = 'draw';
+var _sigUploadData = null;
+
+function loadSigUpload(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    _sigUploadData = e.target.result;
+    var img = document.getElementById('sigUploadPreview');
+    img.src = e.target.result;
+    img.style.display = 'block';
+    var icon = document.querySelector('#panelUpload .sua-icon');
+    var txt  = document.querySelector('#panelUpload .sua-txt');
+    if (icon) icon.style.display = 'none';
+    if (txt)  txt.style.display  = 'none';
+    up();
+  };
+  reader.readAsDataURL(file);
+}
+
 </script>
 </body>
 </html>
